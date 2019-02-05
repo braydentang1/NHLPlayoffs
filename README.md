@@ -15,7 +15,7 @@ http://www.puckon.net/ <br>
 http://www.espn.com/ <br>
 https://www.nhl.com/ <br>
 https://www.oddsportal.com/ <br>
-https://www.naturalstattrick.com/
+https://www.naturalstattrick.com/ <br>
 https://www.hockey-reference.com/
 
 Credit for the ELO calculator formulas goes to the owner of HockeyAnalytics. The source page can be found here:
