@@ -10,11 +10,11 @@ TODO:
 
 Data Pulled From:
 
-http://corsica.hockey/
-http://www.puckon.net/
-http://www.espn.com/
-https://www.nhl.com/
-https://www.oddsportal.com/
+http://corsica.hockey/ <br>
+http://www.puckon.net/ <br>
+http://www.espn.com/ <br>
+https://www.nhl.com/ <br>
+https://www.oddsportal.com/ <br>
 https://www.naturalstattrick.com/
 https://www.hockey-reference.com/
 
