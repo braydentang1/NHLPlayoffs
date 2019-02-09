@@ -37,7 +37,7 @@ calculateEH = function(ELO_Home, ELO_Visitor){
   ifelse(is.na(EH), stop("NA"), EH)
 }
 
-getData = function(year, last.games){
+getData = function(year, last.games = 0){
   
   teamnames = read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year,"_standings.html", sep="")) %>%
                 html_nodes("#standings td.left") %>%
