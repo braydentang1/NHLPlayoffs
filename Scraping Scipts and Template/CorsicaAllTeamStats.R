@@ -47,7 +47,9 @@ processData = function(team.1, team.2, highest.seed, year, data){
   
   bind_cols(CF._Team = data$"CF%"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"CF%"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
   CF_Per60Team = data$"CF/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"CF/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
-  CA_Per60Team = data$"CA/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"CA/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])])
+  CA_Per60Team = data$"CA/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"CA/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
+  xGF.60 = data$"xGF/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"xGF/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
+  xGA.60 = data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])])
   
 }
 

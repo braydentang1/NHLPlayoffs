@@ -158,21 +158,6 @@ if(year != 2013){
   RecordsOverTime
 }
 
-calculateTeamPoints = function(teamPage){
-  
-  teamPage = teamPage$page
-  
-Points = teamPage %>%
-    html_nodes(".prevnext+ p") %>%
-    html_text(.) %>%
-    sub(".* \\(", "", .) %>%
-    sub(" points).*", "",.) %>%
-    as.numeric(.)
-
-Points
-  
-}
-
 calculatePlayerPoints = function(teamPage){
   
 teamPage = teamPage$page
@@ -242,8 +227,7 @@ rm(allWinners)
 
 final = tibble(WeightedGoalieSavePercntage = unlist(lapply(allTeamPages, FUN = calculateGoalieStats, returnGoalieSavePercentage = TRUE))) %>%
             bind_cols(., WeightedGPS = unlist(lapply(allTeamPages, FUN = calculateGoalieStats, returnGoalieSavePercentage = FALSE)), 
-                         PlayerPoints = unlist(lapply(allTeamPages, FUN = calculatePlayerPoints)),
-                         Points = unlist(lapply(allTeamPages, FUN = calculateTeamPoints))) %>%
+                         PlayerPoints = unlist(lapply(allTeamPages, FUN = calculatePlayerPoints))) %>%
             bind_cols(allData,.)  
 
 RecordsOverTime = bind_rows(lapply(allTeamPages, FUN = calculateRecordOverTime)) %>%

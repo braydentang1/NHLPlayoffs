@@ -53,7 +53,7 @@ getData = function(year){
   #removed "GS", "CF.", "Rel.CF." since they are already included in Full Data
   data = data %>%
               group_by(Team) %>%
-              summarise_at(funs(mean(., na.rm = TRUE), sd(., na.rm=TRUE), min(.,na.rm=TRUE), max(., na.rm=TRUE)), .vars = c("iCF/60",
+              summarise_at(funs(mean(., na.rm = TRUE), sd(., na.rm=TRUE), min(.,na.rm=TRUE), max(., na.rm=TRUE)), .vars = c("iCF/60", "P1", "P1/60", "GS", "GS/60", "CF", "Rel CF%",
                                                                                                                   "ixGF/60", "ZSR", "CF% QoT", "CF% QoC")) %>%
               mutate(Team = as.character(Team))
   
