@@ -3,10 +3,10 @@ An attempt to predict the NHL playoffs. Currently sits at 0.62 AUROC.
 
 TODO:
 
-- [x] Finish the scraping automation (done).
-- [ ] Redo the modelling script. 
-- [ ] Try to improve the model; ideally 0.63 consistently should be possible.
-- [ ] Shiny app.
+- [x] 1. Finish the scraping automation (done).
+- [ ] 2. Redo the modelling script. 
+- [ ] 3. Try to improve the model; ideally 0.63 consistently should be possible.
+- [ ] 4. Shiny app.
 
 Data Pulled From:
 
