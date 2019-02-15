@@ -246,29 +246,39 @@ modelPipe.inner = function(k, folds){
       test = frameswithPCA$test
       
       rm(train.param, frameswithPCA)
-      gc()
       
-      results = randomGridSearch(iterations = 3, innerTrainX = train, innerTestX = test)
+      results = randomGridSearch(iterations = 150, innerTrainX = train, innerTestX = test)
  
   
   list(alpha = results$alpha, lambda = results$lambda)
   
 }
 
-processVarImp = function(varImpRaw){
+processVarImp = function(varImpRaw, final = FALSE){
   
-  varImpNames = varImpRaw %>% select(., Variable)
+  varImpNames = varImpRaw %>% 
+    select(., contains("Variable")) %>%
+    .[,1]
+  
+  if(final == FALSE){
+  
   final = varImpRaw %>% 
                         select(., contains("meanImportance")) %>%
                         transmute(Importance = rowMeans(.)) %>%
                         bind_cols(varImpNames, .)
+  }else{
+    
+  final = varImpRaw %>% 
+                        select(., contains("Importance")) %>%
+                        transmute(Importance = rowMeans(.)) %>%
+                        bind_cols(varImpNames, .)
+  }
+  
   final
 }
 
 set.seed(40689)
-seeds = sample(1:1000000000, 2, replace = FALSE)
-ROC_rep = vector("numeric", length(seeds))
-VarImp_rep = vector("list", length(seeds))
+seeds = sample(1:1000000000, 150, replace = FALSE)
 
 cluster = makeCluster(detectCores())
 registerDoParallel(cluster)
@@ -282,14 +292,19 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   finalResults = mapply(FUN = modelPipe.outer, j = 1:length(allFolds), lambda.final = bestParam$lambda, alpha.final = bestParam$alpha, 
                       MoreArgs = list(folds = allFolds), SIMPLIFY = FALSE)
 
-  ROC_rep[p] = mean(unlist(lapply(finalResults, function(x){unlist(x$ROC)})))
+  ROC = mean(unlist(lapply(finalResults, function(x){unlist(x$ROC)})))
 
-  VarImp_rep[[p]] = processVarImp(as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))))
+  VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))), final = FALSE)
   
-  write_csv(ROC_rep, paste("Iteration_", p, ".csv", sep = ""))
-  list(ROC = ROC_rep, VarImp = VarImp_rep)
+  write_csv(tibble(ignore = c(p)), paste("Iteration_", p, ".csv", sep = ""))
+  list(ROC = ROC, VarImp = VarImp)
 
 }
 
 stopCluster(cluster)
 rm(cluster)
+
+finalROC = unlist(results[c(seq(1, length(results), 2))])
+finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(bind_cols,.), final = TRUE) 
+
+
