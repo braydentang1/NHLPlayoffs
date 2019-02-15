@@ -40,10 +40,11 @@ baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
                              
   varImp = tibble::rownames_to_column(cbind.data.frame(meanImportance = varImp$VariableImportance), var = "Variable")
   
-  out = list(Predictions = pred$Predicted, VariableImportance = varImp)
+  list(Predictions = pred$Predicted, VariableImportance = varImp)
 }
 
 #LogLoss Function
+
 logLoss = function(scores, label){
   
   if (is.factor(label)){
@@ -56,7 +57,7 @@ logLoss = function(scores, label){
   tmp = tmp %>% mutate(scores = ifelse(scores == 1, 0.9999999999999999, ifelse(scores == 0 , 0.0000000000000001, scores))) %>%
     mutate(logLoss = -(target * log(scores) + (1-target) * log(1-scores)))
   
-  out = mean(tmp$logLoss)
+  mean(tmp$logLoss)
   
 }
 
@@ -70,7 +71,7 @@ addPCA_variables = function(traindata, testdata){
     pca_parameters = prcomp(traindata_tmp, center = FALSE, scale. = FALSE)
     pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5]
     pca_traindata = predict(pca_parameters, newdata = traindata_tmp)[,1:5]
-    out = list(train = cbind(traindata, pca_traindata), test = cbind(testdata, pca_newdata))
+    list(train = cbind(traindata, pca_traindata), test = cbind(testdata, pca_newdata))
 
 }
 
@@ -86,15 +87,16 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
     testdata_tmp = testdata %>% select_if(., is.numeric)
         
         }else{
-        
+  
     traindata_tmp = traindata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
     testdata_tmp = testdata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
+    
     }
     
     newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = y, xte = data.matrix(testdata_tmp), k = 1)
     KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE))
     KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)) 
-    out = list(train = cbind(traindata, KNN_train), test = cbind(testdata, KNN_test))
+    list(train = cbind(traindata, KNN_train), test = cbind(testdata, KNN_test))
 }
 
 #Read Data In
@@ -114,6 +116,7 @@ allData = read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data 
   
 
 #...................................Do Some Engineering of Features..................#
+
 allData = allData %>% mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),12))) %>%
             mutate(Ratio_of_GoalstoGoalsAgainst = GoalsFor/GoalsAgainst) %>%
             mutate(Ratio_of_HitstoBlocks = HitsatES/BlocksatES) %>%
@@ -142,7 +145,7 @@ allData = allData %>% mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3
             mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
             mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
 
-options(repr.matrix.max.rows=600, repr.matrix.max.cols=200, scipen = 999)
+#...................................Check Skewness and Kurtosis..................#
 
 kurt = allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::kurtosis(., na.rm=TRUE))) %>%
                                          gather(., Variable, Kurtosis)
@@ -154,7 +157,73 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
                                           gather(., Variable, Skew) %>%
                                           filter(., Skew >= 1)
 
-#...................................Data Splitting....................................#
+#...................................Define the random grid search..................#
+
+randomGridSearch = function(alpha_val, s.lambda_val, innerTrainX, innerTestX, y){
+  
+  modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
+                       label_train = y, alpha.a = alpha_val, s_lambda.a = s.lambda_val)
+  
+  list(AUROC = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions,
+                   levels = c("L", "W"))$auc, LogLoss = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper))
+}
+
+#..................................Pre Processing Function..................#
+
+preProcess.nhl = function(trainX){
+  
+  mainRecipe = recipe(ResultProper ~., data=trainX) %>%
+    step_zv(all_numeric()) %>%
+    step_center(all_numeric()) %>%
+    step_scale(all_numeric()) %>%
+    step_dummy(all_predictors(), -all_numeric()) %>%
+    step_zv(all_predictors()) %>%
+    step_knnimpute(neighbors = 15, all_numeric(), all_predictors()) %>%
+    step_interact(terms = ~ SRS:Fenwick:ELORating) %>%
+    step_interact(terms = ~ RegularSeasonWinPercentage:contains("Points")) %>%
+    step_interact(terms = ~ FaceoffWinPercentage:ShotPercentage) %>%
+    step_interact(terms = ~ contains("Round"):VegasOpeningOdds) %>%
+    step_interact(terms = ~ SDRecord:SOS) 
+  
+  PreProcessing = prep(mainRecipe, training = trainX)
+  
+  list(frame = bake(PreProcessing, new_data=trainX), processing = PreProcessing)
+
+}
+
+innerTrain = function(k, trainX, innerPartition){
+  
+  ROCFinal = list()
+  LogLossFinal = list()
+  
+  processingParam = preProcess.nhl(trainX[innerPartition[[k]],])
+  
+  innerTrainX = processingParam$frame
+  y = innerTrainX$ResultProper
+  
+  innerTestX = bake(processingParam$processing, new_data=trainX[-innerPartition[[k]],])
+  
+  frameswithPCA = addPCA_variables(traindata = innerTrainX, testdata = innerTestX)
+  
+  innerTrainX = frameswithPCA$train
+  innerTestX = frameswithPCA$test
+  
+  rm(frameswithPCA, processingParam)
+  
+  #....................................Training Model...................................#
+  
+  allStats = bind_rows(mapply(randomGridSearch, alpha_val = randomGrid$alpha, s.lambda_val = randomGrid$lambda, MoreArgs = list(innerTrainX = innerTrainX, 
+                                                                                                                                innerTestX = innerTestX, y=y), SIMPLIFY = FALSE))    
+  ROCFinal[[k]] = allStats$AUROC
+  LogLossFinal[[k]] = allStats$LogLoss
+  
+  remove(innerTrainX, innerTestX, allStats)
+  gc()
+  
+  list(AUROCFinal = ROCFinal, LogLossFinal = LogLossFinal)
+  
+}
+
 set.seed(40689)
 seeds = sample(1:1000000000, 150, replace = FALSE)
 ROC_rep = numeric()
@@ -176,80 +245,27 @@ VarImp = list()
 
 for(j in 1:length(allFolds)) {
 
-  #..................................Generate Random Grid and Define Training Set..............................#
+#..................................Generate Random Grid and Define Training Set..............................#
+  
   cat("Generating Random Grid.....\n")
   set.seed(346002)
-  randomGrid = data.frame(alpha = runif(146,0,1), lambda = sample(1:70,146, replace = TRUE))
+  randomGrid = data.frame(alpha = runif(5,0,1), lambda = sample(1:70,5, replace = TRUE))
   
   trainX = allData[-allFolds[[j]],]
   
-  #...........................Create Inner Data Partition for Hyper Parameter Tuning.....#
+#...........................Create Inner Data Partition for Hyper Parameter Tuning.....#
   set.seed(40689)
-  innerPartition = caret::createDataPartition(y=trainX$ResultProper, times = 1, p = 0.80)
+  innerPartition = caret::createDataPartition(y=trainX$ResultProper, times = 2, p = 0.80)
   
-  #...................................Tune Model.........................................#
+#...................................Tune Model.........................................#
   
-  ROCFinal = list()
-  LogLossFinal = list()
- for (k in 1:length(innerPartition)){
-    
-    innerTrainX = trainX[innerPartition[[k]],]
-    
-    #...................................Define Recipe, Do More Engineering.................#
+allGrids = lapply(1:length(innerPartition), FUN = innerTrain, trainX = trainX, innerPartition = innerPartition)
 
-    innermainRecipe = recipe(ResultProper ~., data=innerTrainX) %>%
-      step_zv(all_numeric()) %>%
-      step_center(all_numeric()) %>%
-      step_scale(all_numeric()) %>%
-      step_dummy(all_predictors(), -all_numeric()) %>%
-      step_zv(all_predictors()) %>%
-      step_knnimpute(neighbors = 15, all_numeric(), all_predictors()) %>%
-      step_interact(terms = ~ SRS:Fenwick:ELORating) %>%
-      step_interact(terms = ~ RegularSeasonWinPercentage:contains("Points")) %>%
-      step_interact(terms = ~ FaceoffWinPercentage:ShotPercentage) %>%
-      step_interact(terms = ~ contains("Round"):VegasOpeningOdds) %>%
-      step_interact(terms = ~ SDRecord:SOS) 
-
-    innerPreProcessing = prep(innermainRecipe, training = innerTrainX)
-    innerTrainX = bake(innerPreProcessing, new_data=innerTrainX)
-    y = innerTrainX$ResultProper
-     
-    innerTestX = trainX[-innerPartition[[k]],]
-    innerTestX = bake(innerPreProcessing, new_data=innerTestX)
-    
-    frameswithPCA = addPCA_variables(traindata = innerTrainX, testdata = innerTestX)
-    innerTrainX = frameswithPCA$train
-    innerTestX = frameswithPCA$test
-    rm(frameswithPCA)
-     
-    #....................................Training Model...................................#
-    ROCtemp = numeric()
-    logLosstemp = numeric()
-
-for (m in 1:nrow(randomGrid)){
-        
-      alpha_val = as.numeric(randomGrid[m, 1])
-      s.lambda_val = as.integer(randomGrid[m,2])
-    
-      modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                            label_train = y, alpha.a = alpha_val, s_lambda.a = s.lambda_val)
-      ROCtemp[m] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions,
-                       levels = c("L", "W"))$auc
-      logLosstemp[m] = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper)
-      remove(modelX, alpha_val, s.lambda_val)
-    }
-    ROCFinal[[k]] = ROCtemp
-    LogLossFinal[[k]] = logLosstemp
-    remove(innerTrainX, innermainRecipe, innerTestX, innerPreProcessing, ROCtemp, logLosstemp, m)
-    gc()
-  }
-  
-  remove(innerPartition, k)
-    
+rm(innerPartition)
 #...................................Get the Best Parameters...........................#
     
   #For ROC:
-  ROCFinal = ROCFinal %>% Reduce(function(x,y) cbind(x,y), .) %>% as_tibble(.) %>% mutate(., AverageROC = rowMeans(.))
+  ROCFinal = ROCFinal %>% Reduce(function(x,y) cbind(AUROC = x, LogLoss = y), .) %>% as_tibble(.) %>% mutate(., AverageROC = rowMeans(.))
   indx = which.max(ROCFinal$AverageROC)
   alpha_final = as.numeric(randomGrid[indx, 1])
   s.lambda_final = as.integer(randomGrid[indx, 2])
@@ -331,9 +347,11 @@ VarImp_rep = finalVarImp
 remove(finalVarImp)
 
 write.table(ROC_rep, file = paste("Iteration_", p, ".txt", sep=""), row.names = FALSE)
+
 list(ROC_rep, LogLoss_rep, VarImp_rep)  
                       
 }
+
 stopCluster(cluster)
 ROC_rep = results[seq(1,length(results), 3)] %>% unlist(.)
 LogLoss_rep = results[seq(2, length(results), 3)] %>% unlist(.)
