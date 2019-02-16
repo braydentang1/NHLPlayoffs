@@ -1,5 +1,5 @@
-require(rvest)
-require(tidyverse)
+library(rvest)
+library(tidyverse)
 
 template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv")
 

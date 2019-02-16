@@ -1,5 +1,5 @@
-require(tidyverse)
-require(rvest)
+library(tidyverse)
+library(rvest)
 
 template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv") %>%
   mutate_all(funs(str_replace(., "Mighty Ducks of Anaheim", "Anaheim Ducks"))) %>%

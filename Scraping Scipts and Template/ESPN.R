@@ -1,5 +1,5 @@
-require(tidyverse)
-require(rvest)
+library(tidyverse)
+library(rvest)
 
 template = read.csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE) 
 

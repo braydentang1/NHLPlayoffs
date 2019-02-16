@@ -1,5 +1,5 @@
-require(tidyverse)
-require(rvest)
+library(tidyverse)
+library(rvest)
 
 template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv") %>%
               mutate(Team1 = ifelse(Team1 == "St Louis Blues", "St. Louis Blues", Team1)) %>%

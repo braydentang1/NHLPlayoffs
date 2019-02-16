@@ -1,5 +1,5 @@
-require(tidyverse)
-require(rvest)
+library(tidyverse)
+library(rvest)
 
 getData = function(year){
 
