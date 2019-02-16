@@ -247,7 +247,7 @@ modelPipe.inner = function(k, folds){
       
       rm(train.param, frameswithPCA)
       
-      results = randomGridSearch(iterations = 150, innerTrainX = train, innerTestX = test)
+      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test)
  
   
   list(alpha = results$alpha, lambda = results$lambda)
@@ -296,7 +296,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
 
   VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))), final = FALSE)
   
-  write_csv(tibble(ignore = c(p)), paste("Iteration_", p, ".csv", sep = ""))
+  write_csv(tibble(ROC = ROC), paste("Iteration_", p, ".csv", sep = ""))
   list(ROC = ROC, VarImp = VarImp)
 
 }
