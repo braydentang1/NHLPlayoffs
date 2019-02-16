@@ -3,15 +3,15 @@ setwd("C:/Users/Brayden/Documents/NHLModel/Status")
 
 #Dependencies
 
-require(glmnet)
-require(caret)
-require(pROC)
-require(tidyverse)
-require(recipes)
-require(moments)
-require(doParallel)
-require(foreach)
-require(fastknn)
+library(glmnet)
+library(caret)
+library(pROC)
+library(tidyverse)
+library(recipes)
+library(moments)
+library(doParallel)
+library(foreach)
+library(fastknn)
 
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
