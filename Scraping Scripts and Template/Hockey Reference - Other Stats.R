@@ -1,7 +1,7 @@
 library(rvest)
 library(tidyverse)
 
-template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv")
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -19,7 +19,7 @@ lookup_Accronyms$Accronym = ifelse(lookup_Accronyms$Accronym == "VGK", "VEG", lo
 rm(accronyms_pg, accronyms, fullnames)
 
 grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
-  
+
   if(any(Round %in% c("quarter-finals", "semi-finals", "finals", "stanley-cup-final")) ==  FALSE){
     stop("Invalid round format.")
   }
@@ -36,7 +36,7 @@ grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
       Round = "stanley-cup-final"
     }
   }
-  
+
   teamsCombined = combine(team.1, team.2) %>%
                     tolower(.) %>% 
                     str_replace_all(., fixed(" "), "-") %>%
@@ -172,7 +172,7 @@ PlayerPoints
 
 getTeamNames = function(year){
   
-      read_html(paste("C:/Users/Brayden/Documents/NHLModel/Hockey Reference/", year, ".html", sep = "")) %>%
+      read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Hockey Reference/", year, ".html", sep = "")) %>%
       html_nodes("#stats tbody .left") %>%
       html_text(.) %>%
       str_remove(.,"[*]") %>%
@@ -247,5 +247,5 @@ allStats = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 =
 
 rm(RecordsOverTime, final, giveH2H)
 
-setwd("C:/Users/Brayden/Documents/NHLModel/Required Data Sets")
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(allStats, "HockeyReference2.csv")

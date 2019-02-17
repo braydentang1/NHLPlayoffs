@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv") %>%
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
               mutate_all(funs(str_replace(., "Mighty Ducks of Anaheim", "Anaheim Ducks"))) %>%
               mutate_all(funs(str_replace(., "Phoenix Coyotes", "Arizona Coyotes")))
 
@@ -26,7 +26,7 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData = function(year){
   
-  data = read_csv(paste("C:/Users/Brayden/Documents/NHLModel/Game Score/", year, ".csv", sep=""), na = "--") %>%
+  data = read_csv(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Game Score/", year, ".csv", sep=""), na = "--") %>%
           .[,2:ncol(.)] %>%
     mutate(TradedPlayer = ifelse(grepl("/", Team) == TRUE, 1,0)) %>%
     mutate(Team = gsub(" ", "", Team, fixed = TRUE)) %>%

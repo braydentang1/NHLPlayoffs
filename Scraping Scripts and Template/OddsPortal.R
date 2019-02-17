@@ -3,8 +3,8 @@ library(rvest)
 
 getData = function(year){
 
-main = read_html(paste("C:/Users/Brayden/Documents/NHLModel/Odds HTML Renders/", year, " pg1.html", sep=""))
-main2 = read_html(paste("C:/Users/Brayden/Documents/NHLModel/Odds HTML Renders/", year, " pg2.html", sep=""))
+main = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep=""))
+main2 = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg2.html", sep=""))
 
 teams = main %>% 
           html_nodes(".table-participant") %>%
@@ -81,11 +81,14 @@ processData = function(year, team.1, team.2, data){
 }
 
 
-template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv") 
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
 template[template == "St Louis Blues"] = "St. Louis Blues"
 template[template == "Mighty Ducks of Anaheim"] = "Anaheim Ducks"
 template[template == "Phoenix Coyotes"] = "Arizona Coyotes"
 template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
+
+#Note: the function call below sends an error because on OddsPortal the actual odds are missing! But, these values are not important as we only 
+#take the first game odds
 
 allData = bind_rows(lapply(2006:2018, FUN = getData))
 
@@ -93,5 +96,5 @@ template = template %>%
                 rowwise %>%
                 mutate(VegasOpeningOdds = processData(year = Year, team.1 = Team1, team.2 = Team2, data = allData))
 
-setwd("C:/Users/Brayden/Documents/NHLModel/Required Data Sets")
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[,7], "VegasOddsOpening.csv")

@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read.csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -19,7 +19,7 @@ lookup_Accronyms = cbind(FullName = fullnames, Accronym = accronyms) %>%
 
 rm(accronyms_pg, accronyms, fullnames)
 
-getData_pot = function(year){
+getData_pon = function(year){
   
     year2 = year - 1
     
@@ -128,7 +128,7 @@ processData = function(team.1, team.2, highest.seed, data, year){
        HitsPercentageLast20 = as.numeric(team_HitsPercentageLast20[which(c(team.1,team.2) == highest.seed)] - team_HitsPercentageLast20[which(c(team.1, team.2) != highest.seed)]))
 }
 
-allYears = bind_rows(lapply(seq(2006, 2018,1), FUN = getData_pot)) %>% rename(Team = FullName)
+allYears = bind_rows(lapply(seq(2006, 2018,1), FUN = getData_pon)) %>% rename(Team = FullName)
 
 template = template %>% rowwise %>% 
   mutate(Fenwick = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$Fenwick) %>%
@@ -140,5 +140,5 @@ template = template %>% rowwise %>%
   mutate(BlocksPercentage_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$BlocksPercentageLast20) %>% 
   mutate(HitsPercentage_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$HitsPercentageLast20)
 
-setwd("C:/Users/Brayden/Documents/NHLModel/Required Data Sets")
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[, 7:ncol(template)], "FenwickScores.csv")

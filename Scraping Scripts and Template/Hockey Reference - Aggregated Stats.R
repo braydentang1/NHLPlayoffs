@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv")
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -27,7 +27,7 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData = function(year){
   
-  main = read_html(paste("C:/Users/Brayden/Documents/NHLModel/Hockey Reference/",year,".html", sep=""))
+  main = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Hockey Reference/",year,".html", sep=""))
   
   team_name = main %>%
               html_nodes("#stats tbody .left") %>%
@@ -168,5 +168,5 @@ final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = te
         bind_cols(teams, .)
 rm(teams)
 
-setwd("C:/Users/Brayden/Documents/NHLModel/Required Data Sets")
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final[,2:ncol(final)], "HockeyReference1.csv")

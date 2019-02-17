@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv") %>%
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
               mutate(Team1 = ifelse(Team1 == "St Louis Blues", "St. Louis Blues", Team1)) %>%
               mutate(Team2 = ifelse(Team2 == "St Louis Blues", "St. Louis Blues", Team2)) %>%
               mutate(Highest.Seed = ifelse(Highest.Seed == "St Louis Blues", "St. Louis Blues", Highest.Seed))
@@ -104,10 +104,10 @@ constant = ifelse(last.games == 0, 1, nrow(data)-last.games)
   
 }
 
-frames_delay = lapply(seq(2006, 2018,1), FUN = getData, last.games = 400)
+frames_delay = lapply(seq(2006, 2018, 1), FUN = getData, last.games = 400)
 data_delay = bind_rows(frames_delay)
 
-frames = lapply(seq(2006, 2018,1), FUN = getData, last.games = 0)
+frames = lapply(seq(2006, 2018, 1), FUN = getData, last.games = 0)
 data = bind_rows(frames)
 
 rm(frames, frames_delay)
@@ -126,5 +126,5 @@ template = template %>% rowwise %>%
   mutate(ELORating = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = data, year = Year)) %>%
   mutate(ELORating_Q4 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = data_delay, year = Year))
 
-setwd("C:/Users/Brayden/Documents/NHLModel/Required Data Sets")
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[, 7:8], "ELORatings_January25_2019.csv")

@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read.csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
+template = read.csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
                 
 
 getData_nst = function(year){
@@ -41,5 +41,5 @@ template = template %>%
   rowwise %>% 
   mutate(SCF = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)) 
 
-setwd("C:/Users/Brayden/Documents/NHLModel/Required Data Sets")
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[,7], "SCFScores_Feb3rd_2019.csv")

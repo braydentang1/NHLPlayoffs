@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read.csv("C:/Users/Brayden/Documents/NHLModel/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
+template = read.csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -20,7 +20,7 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData_nhl = function(year){
   
-  mainpage = read_html(paste("C:/Users/Brayden/Documents/NHLModel/NHL HTML Renders/NHL.com - Stats ",year,".html", sep=""))
+  mainpage = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/NHL HTML Renders/NHL.com - Stats ",year,".html", sep=""))
   
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
@@ -61,7 +61,7 @@ processData = function(team.1, team.2, highest.seed, data, year){
        FaceoffWinPercentage = as.numeric(team_FaceoffWinPercentage[which(c(team.1,team.2) == highest.seed)] - team_FaceoffWinPercentage[which(c(team.1, team.2) != highest.seed)]))
 }
 
-allData = lapply(c(seq(2006, 2012,1), seq(2014,2018,1)), FUN = getData_nhl) %>% bind_rows(.)
+allData = lapply(2006:2018, FUN = getData_nhl) %>% bind_rows(.)
 
 template = template %>% 
             rowwise %>%
@@ -69,5 +69,5 @@ template = template %>%
             mutate(BlocksatES = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)$BlocksatES) %>%
             mutate(FaceoffWinPercentage = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)$FaceoffWinPercentage)
 
-setwd("C:/Users/Brayden/Documents/NHLModel/Required Data Sets")
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[, 7:9], "NHLOfficialStatsJanuary25th.csv")
