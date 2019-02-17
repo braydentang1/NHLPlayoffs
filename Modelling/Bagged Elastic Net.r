@@ -118,7 +118,7 @@ allData = read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data 
 
 #...................................Engineering of some features..................#
 
-allData = allData %>% mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),12))) %>%
+allData = allData %>% mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13))) %>%
             mutate(Ratio_of_GoalstoGoalsAgainst = GoalsFor/GoalsAgainst) %>%
             mutate(Ratio_of_HitstoBlocks = HitsatES/BlocksatES) %>%
             mutate(logofPoints = sign(Points) * log(abs(Points) + 1)) %>%
@@ -143,6 +143,9 @@ allData = allData %>% mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3
             mutate(xGDifftoSOS = (xGF.60 - xGA.60)/SOS) %>% 
             mutate(GStoSOS = GS_mean / SOS) %>%
             mutate(SRStoSOS = SRS/SOS) %>%
+            mutate("CF% QoT_min" = sign(allData$"CF% QoT_min") * log(abs(allData$"CF% QoT_min") + 1)) %>%
+            mutate(ZSR_min = sign(ZSR_min) * log(abs(ZSR_min) + 1)) %>%
+            mutate("Rel CF%_min" = sign(allData$"Rel CF%_min") * log(abs(allData$"Rel CF%_min") + 1)) %>%
             mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
             mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
 
