@@ -217,6 +217,84 @@ getWinner = function(pages, year, highest.seed, team.1, team.2){
               
 }
 
+#Can't use due to data leak. Is there a way around this: ie. grab starting roster on opening game of a series?
+compareLists.inj = function(page, team.1, team.2, highest.seed){
+  
+  team.1_ACC = lookup_Accronyms$Accronym[which(lookup_Accronyms$FullName == team.1)]
+  team.2_ACC = lookup_Accronyms$Accronym[which(lookup_Accronyms$FullName == team.2)]
+  highest.seed_ACC = lookup_Accronyms$Accronym[which(lookup_Accronyms$FullName == highest.seed)]
+  
+  backupGoalie.Team1Reg = page %>%
+    html_nodes(paste("#goalies-",team.1_ACC, " a", sep = "")) %>%
+    html_text(.) %>%
+    .[2:length(.)] 
+  
+  backupGoalie.Team2Reg = page %>%
+    html_nodes(paste("#goalies-",team.2_ACC, " a", sep = "")) %>%
+    html_text(.) %>%
+    .[2:length(.)] 
+  
+  listSeries.team1 = page %>% 
+              html_nodes(paste("#series_stats_",team.1_ACC," a", sep = "")) %>%
+              html_text(.) %>%
+              tibble(PlayerName = .)
+  
+  listSeries.team1 = page %>%
+              html_nodes(paste("#series_goalies_stats_", team.1_ACC, " a", sep = "")) %>%
+              html_text(.) %>%
+              tibble(PlayerName = .) %>%
+              bind_rows(listSeries.team1, .)
+  
+  listSeries.team2 = page %>%
+              html_nodes(paste("#series_stats_", team.2_ACC, " a", sep ="")) %>%
+              html_text(.) %>%
+              tibble(PlayerName = .)
+  
+  listSeries.team2 = page %>%
+    html_nodes(paste("#series_goalies_stats_", team.2_ACC, " a", sep = "")) %>%
+    html_text(.) %>%
+    tibble(PlayerName = .) %>%
+    bind_rows(listSeries.team2, .)
+  
+  listRegular.team1 = page %>%
+              html_nodes(paste("#skaters-",team.1_ACC," a", sep ="")) %>%
+              html_text(.) %>%
+              tibble(PlayerName = .)
+  
+  ATOIRegular.team1 = page %>%
+              html_nodes(paste("#skaters-", team.1_ACC ," tbody .right:nth-child(21)", sep = "")) %>%
+              html_text(.) %>%
+              str_replace(., ":", ".") %>%
+              as.numeric(.) %>%
+              tibble(ATOI = . ) %>%
+              bind_cols(listRegular.team1, .) %>%
+              filter(., ATOI >= mean(ATOI), !PlayerName %in% backupGoalie.Team2Reg)
+  
+  rm(listRegular.team1)
+  
+  listRegular.team2 = page %>%
+              html_nodes(paste("#skaters-", team.2_ACC, " a", sep = "")) %>%
+              html_text(.) %>%
+              tibble(PlayerName = .)
+  
+  ATOIRegular.team2 = page %>%
+    html_nodes(paste("#skaters-", team.2_ACC ," tbody .right:nth-child(21)", sep = "")) %>%
+    html_text(.) %>%
+    str_replace(., ":", ".") %>%
+    as.numeric(.) %>%
+    tibble(ATOI = . ) %>%
+    bind_cols(listRegular.team2, .) %>%
+    filter(., ATOI >= mean(ATOI), !PlayerName %in% backupGoalie.Team2Reg)
+  
+  rm(listRegular.team2)
+  
+ifelse(team.1_ACC == highest.seed_ACC, 
+       length(setdiff(ATOIRegular.team1$PlayerName, listSeries.team1$PlayerName)) - length(setdiff(ATOIRegular.team2$PlayerName, listSeries.team2$PlayerName)),
+       length(setdiff(ATOIRegular.team2$PlayerName, listSeries.team2$PlayerName)) - length(setdiff(ATOIRegular.team1$PlayerName, listSeries.team1$PlayerName)))
+  
+}
+
+
 allData = bind_rows(lapply(2006:2018, FUN = getTeamNames)) 
 
 allTeamPages = mapply(FUN = grabPageandGamesofSpecificTeam, team = allData$Team, year = allData$Year, SIMPLIFY = FALSE)
@@ -245,7 +323,7 @@ allStats = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 =
            bind_cols(tibble(ResultProper = giveWinners),., giveH2H) %>%
            bind_cols(bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Team2, year = template$Year, MoreArgs = list(data = RecordsOverTime), SIMPLIFY = FALSE)))
 
-rm(RecordsOverTime, final, giveH2H)
+rm(RecordsOverTime, final, giveH2H, giveInjuryCount)
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(allStats, "HockeyReference2.csv")
