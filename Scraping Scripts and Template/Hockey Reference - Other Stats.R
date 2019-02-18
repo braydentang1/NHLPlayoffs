@@ -234,7 +234,7 @@ compareLists.inj = function(page, team.1, team.2, highest.seed){
     html_text(.) %>%
     .[2:length(.)] 
   
-  listSeries.team1 = page %>% 
+  listSeries.team1names = page %>% 
               html_nodes(paste("#series_stats_",team.1_ACC," a", sep = "")) %>%
               html_text(.) %>%
               tibble(PlayerName = .)
@@ -243,9 +243,11 @@ compareLists.inj = function(page, team.1, team.2, highest.seed){
               html_nodes(paste("#series_goalies_stats_", team.1_ACC, " a", sep = "")) %>%
               html_text(.) %>%
               tibble(PlayerName = .) %>%
-              bind_rows(listSeries.team1, .)
+              bind_rows(listSeries.team1names, .)
   
-  listSeries.team2 = page %>%
+  rm(listSeries.team1names)
+  
+  listSeries.team2names = page %>%
               html_nodes(paste("#series_stats_", team.2_ACC, " a", sep ="")) %>%
               html_text(.) %>%
               tibble(PlayerName = .)
@@ -254,7 +256,9 @@ compareLists.inj = function(page, team.1, team.2, highest.seed){
     html_nodes(paste("#series_goalies_stats_", team.2_ACC, " a", sep = "")) %>%
     html_text(.) %>%
     tibble(PlayerName = .) %>%
-    bind_rows(listSeries.team2, .)
+    bind_rows(listSeries.team2names, .)
+  
+  rm(listSeries.team2names)
   
   listRegular.team1 = page %>%
               html_nodes(paste("#skaters-",team.1_ACC," a", sep ="")) %>%
