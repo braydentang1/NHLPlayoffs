@@ -193,7 +193,7 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX){
     writeLines(paste("Iteration:", m, sep = " "))
     
     alpha_val = as.numeric(runif(1, 0, 1))
-    s.lambda_val = as.integer(sample(1:70, 1))
+    s.lambda_val = as.integer(sample(1:80, 1))
     
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
                        label_train = innerTrainX$ResultProper, alpha.a = alpha_val, s_lambda.a = s.lambda_val)
@@ -289,7 +289,7 @@ registerDoParallel(cluster)
 results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse", "glmnet", "caret", "pROC", "recipes", "fastknn")) %dopar% {
   
   set.seed(seeds[p])
-  allFolds = caret::createFolds(y = allData$ResultProper, k = 4)
+  allFolds = caret::createFolds(y = allData$ResultProper, k = 3)
   
   bestParam = bind_rows(lapply(1:length(allFolds), FUN = modelPipe.inner, folds = allFolds)) 
   finalResults = mapply(FUN = modelPipe.outer, j = 1:length(allFolds), lambda.final = bestParam$lambda, alpha.final = bestParam$alpha, 
