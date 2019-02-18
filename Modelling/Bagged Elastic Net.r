@@ -103,16 +103,16 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
 #..................................Read data in....................................#
 
 cat("Reading in Data..... \n")
-allData = read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/ELORatings_January25_2019.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/NHLOfficialStatsJanuary25th.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/SCFScores_Feb3rd_2019.csv")) %>%
-              bind_cols(read_csv("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
+allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/ELORatings_January25_2019.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStatsJanuary25th.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores_Feb3rd_2019.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
               mutate(ResultProper = as.factor(ResultProper))
   
 
