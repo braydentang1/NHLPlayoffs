@@ -3,7 +3,7 @@ A model that aims to predict the outcome of a NHL playoff series before the firs
 
 Currently sits at 0.675 AUROC.
 
-### Folder Descriptions:
+Folder Descriptions:
 =====
 1. All Team Stats: .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
 2. Game Score: .csv files pulled from corsica.hockey. Used in the .R file CorsicaGameScore. 
