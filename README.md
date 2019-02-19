@@ -1,12 +1,12 @@
 # NHLPlayoffs
 An attempt to predict the NHL playoffs. Currently sits at 0.675 AUROC.\
 
-Folder Descriptions:
+### Folder Descriptions:
 
 
 
 
-TODO:
+### TODO:
 
 - [x] 1. Finish the scraping automation.
 - [x] 2. Redo the modelling script. In particular, the for loops are awful and there is a lot of code that can be improved.
