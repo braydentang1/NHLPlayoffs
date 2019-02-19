@@ -4,7 +4,7 @@ A model that aims to predict the outcome of a NHL playoff series before the firs
 Currently sits at 0.675 AUROC.
 
 Folder Descriptions:
-=====
+-----
 1. **All Team Stats:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
 2. **Game Score:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaGameScore. 
 3. **Hockey Reference:** .html renders of various web pages from hockey-reference. This is used to get around webpages that require JavaScript to be run upon opening the webpage in a browser which, to my knowledge, rvest cannot deal with. Used for scraping.
@@ -16,8 +16,8 @@ Folder Descriptions:
 9. **Scraping Scripts and Template:** All .R files used to scrape the webpages and to proceess the data in a format that allows for making predictions. <br> The dataset itself is processed so that one row/observation is the difference between each variable, from the higher seeds perspective. Note that this decision has no theoretical basis and that a ratio, sum, product, or other transformation could have been used instead. I just thought that a difference made the most intuitive sense. Another note: feature engineering becomes hardeer when doing this process since the data is preprocessed as a difference. <br> There is an Excel template file that requires one to fill out a few columns; namely the two teams involved in the series, the year, the round, the highest seed betweeen the two teams (for processing), and the conference. Nothing is actually done in Excel, this is purely to get the data in a usable format and to help in function calls/html links. Every .R scraping file pulls this template in and builds off it. Any spreadsheet editor can be used to fill this out, and one can easily add rows in .R if need be rather than using a spreadsheet.
 
 
-### TODO:
-
+TODO:
+-----
 - [x] 1. Finish the scraping automation.
 - [x] 2. Redo the modelling script. In particular, the for loops are awful and there is a lot of code that can be improved.
 - [x] 3. Try to improve the model; ideally 0.63 consistently should be possible. Add 2013 data.
