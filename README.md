@@ -4,7 +4,7 @@ A model that aims to predict the outcome of a NHL playoff series before the firs
 Currently sits at 0.675 AUROC.
 
 ### Folder Descriptions:
-
+=====
 1. All Team Stats: .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
 2. Game Score: .csv files pulled from corsica.hockey. Used in the .R file CorsicaGameScore. 
 3. Hockey Reference: .html renders of various web pages from hockey-reference. This is used to get around webpages that require JavaScript to be run upon opening the webpage in a browser which, to my knowledge, rvest cannot deal with. Used for scraping.
