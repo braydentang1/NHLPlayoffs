@@ -1,5 +1,5 @@
 # NHLPlayoffs
-An attempt to predict the NHL playoffs. Currently sits at 0.675 AUROC.  
+An attempt to predict the NHL playoffs. Currently sits at 0.675 AUROC.  \
 
 Folder Descriptions:
 
