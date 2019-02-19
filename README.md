@@ -1,12 +1,22 @@
 # NHLPlayoffs
-An attempt to predict the NHL playoffs. Currently sits at 0.675 AUROC.
+A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-TODO:
+Currently sits at 0.675 AUROC.
+
+### Folder Descriptions:
+
+..*All Team Stats: 
+
+
+
+
+
+### TODO:
 
 - [x] 1. Finish the scraping automation.
 - [x] 2. Redo the modelling script. In particular, the for loops are awful and there is a lot of code that can be improved.
 - [x] 3. Try to improve the model; ideally 0.63 consistently should be possible. Add 2013 data.
-- [ ] 4/5. Document how to run the scripts for scratch + other critical decisions.
+- [ ] 4/5. Document how to run the scripts from scratch + other critical decisions.
 - [ ] 4/5. Shiny app.
 
 Data Pulled From:
