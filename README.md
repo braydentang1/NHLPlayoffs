@@ -17,14 +17,14 @@ Folder Descriptions:
 
 How To Run:
 -----
-Using the .csv files already processed in the folder "Required Data Sets":
+_Using the .csv files already processed in the folder "Required Data Sets":_
 
 1. Download the repository.
 2. Open up the .R file in the Modelling folder, called "Bagged Elastic Net.r".  
 3. Change the working directory (the first line in the script) to some arbitrary folder (it doesn't matter what folder; this is purely for status checks on the process when running in parallel).
 4. In the part of the script with title "Read Data In", change each file path to each respective file in the folder "Required Data Sets" located in the repository.
 
-Creating the .csv files yourself (and changing the preprocessing):
+_Creating the .csv files yourself (and changing the preprocessing):_
 
 1. Download the repository.
 2. Run every .R file in Scraping Scripts and Template. Note that you will have to change the file path to link to the correct file in the repository. In general, the file path that pulls in the template will need to be changed for all of the scraping scripts. Also, the .R files that pull in external .csv/.html files from the repository (Corsica All Team Stats/Game Score, Hockey Reference Aggregated Stats, NHL Official, and OddsPortal) will need to have their file paths changed to the relevant folders in this repository. <br> Each processed .csv file is output to a folder that needs to be changed to match your own local computer. 
