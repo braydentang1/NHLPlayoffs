@@ -20,7 +20,7 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData_nhl = function(year){
   
-  mainpage = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/NHL HTML Renders/NHL.com - Stats ",year,".html", sep=""))
+  mainpage = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/NHL HTML Renders/Hits and Blocks/NHL.com - Stats ",year,".html", sep=""))
   
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
@@ -43,7 +43,18 @@ getData_nhl = function(year){
     html_text(.) %>%
     as.numeric(.) 
   
-  data = tibble(Year = rep(year, length(TeamName)),Team = TeamName, BlocksatES = Blocks, HitsatES = Hits, FaceoffWinPercentage = FaceoffWinPercentage) %>%
+  GiveAways = mainpage %>%
+    html_nodes(".rt-td:nth-child(13)") %>%
+    html_text(.) %>%
+    as.numeric(.) 
+  
+  TakeAways = mainpage %>%
+    html_nodes(".rt-td:nth-child(14)") %>%
+    html_text(.) %>%
+    as.numeric(.) 
+  
+  data = tibble(Year = rep(year, length(TeamName)),Team = TeamName, BlocksatES = Blocks, HitsatES = Hits, FaceoffWinPercentage = FaceoffWinPercentage, 
+                GiveAways = GiveAways, TakeAways = TakeAways) %>%
           mutate(Team = ifelse(Team == "Anaheim Ducks" & year <= 2006, "Mighty Ducks of Anaheim", Team))
   
 }
@@ -55,19 +66,20 @@ processData = function(team.1, team.2, highest.seed, data, year){
   team_Hits = c(data$HitsatES[which(data$Team == team.1)], data$HitsatES[which(data$Team == team.2)])
   team_Blocks = c(data$BlocksatES[which(data$Team == team.1)], data$BlocksatES[which(data$Team == team.2)])
   team_FaceoffWinPercentage = c(data$FaceoffWinPercentage[which(data$Team == team.1)], data$FaceoffWinPercentage[which(data$Team == team.2)])
+  team_GiveAways = c(data$GiveAways[which(data$Team == team.1)], data$GiveAways[which(data$Team == team.2)])
+  team_TakeAways = c(data$TakeAways[which(data$Team == team.1)], data$TakeAways[which(data$Team == team.2)])
   
   list(HitsatES = as.numeric(team_Hits[which(c(team.1,team.2) == highest.seed)] - team_Hits[which(c(team.1, team.2) != highest.seed)]),
        BlocksatES = as.numeric(team_Blocks[which(c(team.1,team.2) == highest.seed)] - team_Blocks[which(c(team.1, team.2) != highest.seed)]),
-       FaceoffWinPercentage = as.numeric(team_FaceoffWinPercentage[which(c(team.1,team.2) == highest.seed)] - team_FaceoffWinPercentage[which(c(team.1, team.2) != highest.seed)]))
+       FaceoffWinPercentage = as.numeric(team_FaceoffWinPercentage[which(c(team.1,team.2) == highest.seed)] - team_FaceoffWinPercentage[which(c(team.1, team.2) != highest.seed)]),
+       GiveAways = as.numeric(team_GiveAways[which(c(team.1,team.2) == highest.seed)] - team_GiveAways[which(c(team.1, team.2) != highest.seed)]),
+       TakeAways = as.numeric(team_TakeAways[which(c(team.1,team.2) == highest.seed)] - team_TakeAways[which(c(team.1, team.2) != highest.seed)]))
 }
 
 allData = lapply(2006:2018, FUN = getData_nhl) %>% bind_rows(.)
 
-template = template %>% 
-            rowwise %>%
-            mutate(HitsatES = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)$HitsatES) %>%
-            mutate(BlocksatES = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)$BlocksatES) %>%
-            mutate(FaceoffWinPercentage = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)$FaceoffWinPercentage)
+final = bind_rows(mapply(processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData),
+               SIMPLIFY = FALSE))
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[, 7:9], "NHLOfficialStatsJanuary25th.csv")
+write_csv(final, "NHLOfficialStatsJanuary25th.csv")
