@@ -26,12 +26,11 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData = function(year){
   
-  data = read_csv(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/All Team Stats/", year,".csv", sep = "")) 
-  
-  data[data == "L.A"] = "LAK"
-  data[data == "N.J"] = "NJD"
-  data[data == "S.J"] = "SJS"
-  data[data == "T.B"] = "TBL"
+  data = read_csv(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/All Team Stats/", year,".csv", sep = "")) %>%
+          mutate_if(is.character, funs(str_replace(., "L.A", "LAK"))) %>%
+          mutate_if(is.character, funs(str_replace(., "N.J", "NJD"))) %>%
+          mutate_if(is.character, funs(str_replace(., "S.J", "SJS"))) %>%
+          mutate_if(is.character, funs(str_replace(., "T.B", "TBL")))
   
   bind_cols(tibble(Year = rep(year, nrow(data))), data)
   
@@ -49,7 +48,10 @@ processData = function(team.1, team.2, highest.seed, year, data){
   CF_Per60Team = data$"CF/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"CF/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
   CA_Per60Team = data$"CA/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"CA/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
   xGF.60 = data$"xGF/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"xGF/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
-  xGA.60 = data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])])
+  xGA.60 = data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
+  PDO = data$PDO[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$PDO[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
+  PenaltiesTaken = data$PENT[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$PENT[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
+  PenaltiesDrawn = data$PEND[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$PEND[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])])
   
 }
 
