@@ -59,24 +59,76 @@ getData_nhl_HitsandBlocks = function(year){
   
 }
 
-processData = function(team.1, team.2, highest.seed, data, year){
+getData_nhl_LeadingandTrailing = function(year){
+  
+  mainpage = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/NHL HTML Renders/Leading and Trailing/",year,".html", sep=""))
+  
+  TeamName = mainpage %>%
+    html_nodes(".rt-td:nth-child(2)") %>%
+    html_text(.) %>%
+    gsub("é", "e",.) %>%
+    gsub("\\.", "",.) 
+  
+  WinPercent_Lead1P = mainpage %>%
+    html_nodes(".rt-td:nth-child(13)") %>%
+    html_text(.) %>%
+    as.numeric(.)
+  
+  WinPercent_Lead2P = mainpage %>%
+    html_nodes(".rt-td:nth-child(17)") %>%
+    html_text(.) %>%
+    as.numeric(.)
+  
+  WinPercent_Trail1P = mainpage %>%
+    html_nodes(".rt-td:nth-child(21)") %>%
+    html_text(.) %>%
+    as.numeric(.)
+  
+  WinPercent_Trail2P = mainpage %>%
+    html_nodes(".rt-td:nth-child(25)") %>%
+    html_text(.) %>%
+    as.numeric(.)
+  
+  OT_Losses_Lead1P = mainpage %>%
+    html_nodes(".rt-td:nth-child(12)") %>%
+    html_text(.) %>%
+    as.numeric(.)
+  
+  OT_Losses_Lead2P = mainpage %>%
+    html_nodes(".rt-td:nth-child(16)") %>%
+    html_text(.) %>%
+    as.numeric(.)
+  
+  data = tibble(WinPercent_Lead1P = WinPercent_Lead1P,
+                WinPercent_Lead2P = WinPercent_Lead2P, 
+                WinPercent_Trail1P = WinPercent_Trail1P, 
+                WinPercent_Trail2P = WinPercent_Trail2P,
+                OT_Losses_Lead1P = OT_Losses_Lead1P,
+                OT_Losses_Lead2P = OT_Losses_Lead2P) 
+  
+}
+
+findMatch = function(team.1, team.2, stat, data, highest.seed){
+  tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
+  tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)] 
+}
+
+processData = function(team.1, team.2, highest.seed, year, data){
   
   data = data %>% filter(., Year == year)
   
-  team_Hits = c(data$HitsatES[which(data$Team == team.1)], data$HitsatES[which(data$Team == team.2)])
-  team_Blocks = c(data$BlocksatES[which(data$Team == team.1)], data$BlocksatES[which(data$Team == team.2)])
-  team_FaceoffWinPercentage = c(data$FaceoffWinPercentage[which(data$Team == team.1)], data$FaceoffWinPercentage[which(data$Team == team.2)])
-  team_GiveAways = c(data$GiveAways[which(data$Team == team.1)], data$GiveAways[which(data$Team == team.2)])
-  team_TakeAways = c(data$TakeAways[which(data$Team == team.1)], data$TakeAways[which(data$Team == team.2)])
+  team_vec = as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
+    rownames_to_column(.) %>%
+    spread(rowname, value) 
   
-  list(HitsatES = as.numeric(team_Hits[which(c(team.1,team.2) == highest.seed)] - team_Hits[which(c(team.1, team.2) != highest.seed)]),
-       BlocksatES = as.numeric(team_Blocks[which(c(team.1,team.2) == highest.seed)] - team_Blocks[which(c(team.1, team.2) != highest.seed)]),
-       FaceoffWinPercentage = as.numeric(team_FaceoffWinPercentage[which(c(team.1,team.2) == highest.seed)] - team_FaceoffWinPercentage[which(c(team.1, team.2) != highest.seed)]),
-       GiveAways = as.numeric(team_GiveAways[which(c(team.1,team.2) == highest.seed)] - team_GiveAways[which(c(team.1, team.2) != highest.seed)]),
-       TakeAways = as.numeric(team_TakeAways[which(c(team.1,team.2) == highest.seed)] - team_TakeAways[which(c(team.1, team.2) != highest.seed)]))
+  team_vec
+  
 }
 
-allData = lapply(2006:2018, FUN = getData_nhl_HitsandBlocks) %>% bind_rows(.)
+allData = lapply(2006:2018, FUN = getData_nhl_HitsandBlocks) %>%
+          bind_rows(.) %>%
+          bind_cols(., bind_rows(lapply(2006:2018, FUN = getData_nhl_LeadingandTrailing))) 
+          
 
 final = bind_rows(mapply(processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData),
                SIMPLIFY = FALSE))
