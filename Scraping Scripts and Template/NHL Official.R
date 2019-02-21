@@ -99,12 +99,15 @@ getData_nhl_LeadingandTrailing = function(year){
     html_text(.) %>%
     as.numeric(.)
   
-  data = tibble(WinPercent_Lead1P = WinPercent_Lead1P,
+  data = tibble(Year = rep(year, length(TeamName)),
+                Team = TeamName,
+                WinPercent_Lead1P = WinPercent_Lead1P,
                 WinPercent_Lead2P = WinPercent_Lead2P, 
                 WinPercent_Trail1P = WinPercent_Trail1P, 
                 WinPercent_Trail2P = WinPercent_Trail2P,
                 OT_Losses_Lead1P = OT_Losses_Lead1P,
-                OT_Losses_Lead2P = OT_Losses_Lead2P) 
+                OT_Losses_Lead2P = OT_Losses_Lead2P) %>%
+    mutate(Team = ifelse(Team == "Anaheim Ducks" & year <= 2006, "Mighty Ducks of Anaheim", Team))
   
 }
 
@@ -127,7 +130,7 @@ processData = function(team.1, team.2, highest.seed, year, data){
 
 allData = lapply(2006:2018, FUN = getData_nhl_HitsandBlocks) %>%
           bind_rows(.) %>%
-          bind_cols(., bind_rows(lapply(2006:2018, FUN = getData_nhl_LeadingandTrailing))) 
+          left_join(., bind_rows(lapply(2006:2018, FUN = getData_nhl_LeadingandTrailing)), by = c("Year", "Team")) 
           
 
 final = bind_rows(mapply(processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData),
