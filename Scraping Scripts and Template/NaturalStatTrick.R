@@ -42,4 +42,4 @@ template = template %>%
   mutate(SCF = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)) 
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[,7], "SCFScores_Feb3rd_2019.csv")
+write_csv(template[,7], "SCFScores.csv")

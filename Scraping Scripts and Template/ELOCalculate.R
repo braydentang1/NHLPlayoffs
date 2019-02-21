@@ -127,4 +127,4 @@ template = template %>% rowwise %>%
   mutate(ELORating_Q4 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = data_delay, year = Year))
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[, 7:8], "ELORatings_January25_2019.csv")
+write_csv(template[, 7:8], "ELORatings.csv")

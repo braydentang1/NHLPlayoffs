@@ -18,7 +18,7 @@ lookup_Accronyms$Accronym = ifelse(lookup_Accronyms$Accronym == "VGK", "VEG", lo
 
 rm(accronyms_pg, accronyms, fullnames)
 
-getData_nhl = function(year){
+getData_nhl_HitsandBlocks = function(year){
   
   mainpage = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/NHL HTML Renders/Hits and Blocks/NHL.com - Stats ",year,".html", sep=""))
   
@@ -76,10 +76,10 @@ processData = function(team.1, team.2, highest.seed, data, year){
        TakeAways = as.numeric(team_TakeAways[which(c(team.1,team.2) == highest.seed)] - team_TakeAways[which(c(team.1, team.2) != highest.seed)]))
 }
 
-allData = lapply(2006:2018, FUN = getData_nhl) %>% bind_rows(.)
+allData = lapply(2006:2018, FUN = getData_nhl_HitsandBlocks) %>% bind_rows(.)
 
 final = bind_rows(mapply(processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData),
                SIMPLIFY = FALSE))
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(final, "NHLOfficialStatsJanuary25th.csv")
+write_csv(final, "NHLOfficialStats.csv")
