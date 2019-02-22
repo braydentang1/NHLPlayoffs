@@ -1,7 +1,7 @@
 # NHLPlayoffs
 A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-Currently sits at 0.675 AUROC.
+Currently sits at 0.677 AUROC.
 
 Folder Descriptions:
 -----
