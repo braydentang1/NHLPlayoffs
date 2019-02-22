@@ -20,26 +20,58 @@ getData_nst = function(year){
           html_text(.) %>%
           as.numeric(.) 
   
-  data = tibble(Year = rep(year, length(teams)), Team = teams, SCF = SCF)
+  SCA = mainpage %>%
+          html_nodes("td:nth-child(24)") %>%
+          html_text(.) %>%
+          as.numeric(.)
+  
+  HighDangerSC_Percent = mainpage %>%
+          html_nodes("td:nth-child(33)") %>%
+          html_text(.) %>%
+          as.numeric(.)
+  
+  HDCA = mainpage %>% 
+          html_nodes("td:nth-child(35)") %>%
+          html_text(.) %>%
+          as.numeric(.)
+    
+  data = tibble(Year = rep(year, length(teams)), Team = teams, SCF = SCF,
+                SCA = SCA, HighDangerSC_Percent = HighDangerSC_Percent, HDCA = HDCA)
   
 }
 
-processData = function(team.1, team.2, highest.seed, data, year){
+findMatch = function(team.1, team.2, stat, data, highest.seed){
+  
+  tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
+  tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)]
+  
+}
+
+processData = function(team.1, team.2, highest.seed, year, data){
+  
   data = data %>% filter(., Year == year)
   
-  team_SCF = c(data$SCF[which(data$Team == team.1)], data$SCF[which(data$Team == team.2)])
-  if(any(is.na(team_SCF))){
-    NA
+  if(nrow(data) == 0){
+    
+      tibble(Variable = colnames(data)[3:ncol(data)], .rows = NA) %>%
+          spread(Variable, .rows)
+    
   }else{
-  as.numeric(team_SCF[which(c(team.1,team.2) == highest.seed)] - team_SCF[which(c(team.1, team.2) != highest.seed)])}
+  
+  team_vec = as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
+    rownames_to_column(.) %>%
+    spread(rowname, value) 
+  
+  team_vec
+  
+  }
 }
 
 allData = lapply(seq(2008,2018,1), FUN = getData_nst) %>%
               bind_rows(.)
 
-template = template %>% 
-  rowwise %>% 
-  mutate(SCF = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allData, year = Year)) 
+final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year,
+               MoreArgs = list(data = allData), SIMPLIFY = FALSE))
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[,7], "SCFScores.csv")
+write_csv(final, "SCFScores.csv")
