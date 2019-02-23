@@ -1,4 +1,3 @@
-
 #Set the directory for parallel computation status checks. Change this to any folder on your computer so that we can monitor 
 #the status of the repeated cross validation.
 setwd("C:/Users/Brayden/Documents/NHLModel/Status")
