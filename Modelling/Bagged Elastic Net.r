@@ -71,8 +71,8 @@ addPCA_variables = function(traindata, testdata){
     testdata_tmp = testdata[, !names(testdata) %in% c("ResultProper")] %>% select_if(., is.numeric)
     
     pca_parameters = prcomp(traindata_tmp, center = FALSE, scale. = FALSE)
-    pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:6]
-    pca_traindata = predict(pca_parameters, newdata = traindata_tmp)[,1:6]
+    pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5]
+    pca_traindata = predict(pca_parameters, newdata = traindata_tmp)[,1:5]
     list(train = cbind(traindata, pca_traindata), test = cbind(testdata, pca_newdata))
 }
 
