@@ -1,3 +1,4 @@
+
 #Set the directory for parallel computation status checks. Change this to any folder on your computer so that we can monitor 
 #the status of the repeated cross validation.
 setwd("C:/Users/Brayden/Documents/NHLModel/Status")
@@ -18,7 +19,7 @@ require(fastknn)
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
   
   set.seed(40689)
-  samples = caret::createResample(y = label_train, times = 17)
+  samples = caret::createResample(y = label_train, times = 15)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
   
@@ -76,7 +77,6 @@ addPCA_variables = function(traindata, testdata){
 }
 
 #..................................kNN Function....................................#
-
 addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
     
     y = traindata$ResultProper
@@ -116,7 +116,6 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
               mutate(ResultProper = as.factor(ResultProper))
 
 #...................................Engineering of some features..................#
-
 allData = allData %>% 
             mutate(Ratio_of_GoalstoGoalsAgainst = GoalsFor/GoalsAgainst) %>%
             mutate(Ratio_of_HitstoBlocks = HitsatES/BlocksatES) %>%
@@ -164,7 +163,6 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
                                           filter(., Skew >= 1)
 
 #.......................Define recipe.............................................#
-
 preProcess.recipe = function(trainX){
   
   mainRecipe = recipe(ResultProper ~., data=trainX) %>%
@@ -174,7 +172,9 @@ preProcess.recipe = function(trainX){
     step_knnimpute(neighbors = 15, all_numeric(), all_predictors()) %>%
     step_interact(terms = ~ SRS:Fenwick:ELORating) %>%
     step_interact(terms = ~ PenaltyKillPercentage:PowerPlayOppurtunities) %>%
-    step_interact(terms = ~ H2H:VegasOpeningOdds)
+    step_interact(terms = ~ H2H:VegasOpeningOdds) %>%
+    step_interact(terms = ~ RegularSeasonWinPercentage:contains("Points")) %>%
+    step_interact(terms = ~ FaceoffWinPercentage:ShotPercentage)
     
   mainRecipe
 }
@@ -218,15 +218,7 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   test = frameswithPCA$test
   
   rm(train.param, frameswithPCA)
-  
-  frameswithKNN = addKNN_variables(traindata = train, testdata = test, include_PCA = FALSE) 
     
-  train = frameswithKNN$train
-  test = frameswithKNN$test
-  
-  rm(frameswithKNN)  
-  gc()
-  
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
                                              alpha.a = alpha.final, s_lambda.a = lambda.final)
   
@@ -240,7 +232,7 @@ modelPipe.inner = function(k, folds){
   
   mainTrain = allData[-folds[[k]], ]
   
-  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.8)
+  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.80)
 
     train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]], ])
     train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
@@ -252,18 +244,9 @@ modelPipe.inner = function(k, folds){
       test = frameswithPCA$test
       
       rm(train.param, frameswithPCA)
-    
-      frameswithKNN = addKNN_variables(traindata = train, testdata = test, include_PCA = FALSE) 
-    
-      train = frameswithKNN$train
-      test = frameswithKNN$test
-  
-      rm(frameswithKNN)  
-      gc()
-      
+        
       results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test)
  
-  
   list(alpha = results$alpha, lambda = results$lambda)
   
 }
