@@ -245,7 +245,7 @@ modelPipe.inner = function(k, folds){
       
       rm(train.param, frameswithPCA)
         
-      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test)
+      results = randomGridSearch(iterations = 70, innerTrainX = train, innerTestX = test)
  
   list(alpha = results$alpha, lambda = results$lambda)
   

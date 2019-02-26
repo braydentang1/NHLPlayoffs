@@ -217,88 +217,6 @@ getWinner = function(pages, year, highest.seed, team.1, team.2){
               
 }
 
-#Can't use due to data leak. Is there a way around this: ie. grab starting roster on opening game of a series?
-compareLists.inj = function(page, team.1, team.2, highest.seed){
-  
-  team.1_ACC = lookup_Accronyms$Accronym[which(lookup_Accronyms$FullName == team.1)]
-  team.2_ACC = lookup_Accronyms$Accronym[which(lookup_Accronyms$FullName == team.2)]
-  highest.seed_ACC = lookup_Accronyms$Accronym[which(lookup_Accronyms$FullName == highest.seed)]
-  
-  backupGoalie.Team1Reg = page %>%
-    html_nodes(paste("#goalies-",team.1_ACC, " a", sep = "")) %>%
-    html_text(.) %>%
-    .[2:length(.)] 
-  
-  backupGoalie.Team2Reg = page %>%
-    html_nodes(paste("#goalies-",team.2_ACC, " a", sep = "")) %>%
-    html_text(.) %>%
-    .[2:length(.)] 
-  
-  listSeries.team1names = page %>% 
-              html_nodes(paste("#series_stats_",team.1_ACC," a", sep = "")) %>%
-              html_text(.) %>%
-              tibble(PlayerName = .)
-  
-  listSeries.team1 = page %>%
-              html_nodes(paste("#series_goalies_stats_", team.1_ACC, " a", sep = "")) %>%
-              html_text(.) %>%
-              tibble(PlayerName = .) %>%
-              bind_rows(listSeries.team1names, .)
-  
-  rm(listSeries.team1names)
-  
-  listSeries.team2names = page %>%
-              html_nodes(paste("#series_stats_", team.2_ACC, " a", sep ="")) %>%
-              html_text(.) %>%
-              tibble(PlayerName = .)
-  
-  listSeries.team2 = page %>%
-    html_nodes(paste("#series_goalies_stats_", team.2_ACC, " a", sep = "")) %>%
-    html_text(.) %>%
-    tibble(PlayerName = .) %>%
-    bind_rows(listSeries.team2names, .)
-  
-  rm(listSeries.team2names)
-  
-  listRegular.team1 = page %>%
-              html_nodes(paste("#skaters-",team.1_ACC," a", sep ="")) %>%
-              html_text(.) %>%
-              tibble(PlayerName = .)
-  
-  ATOIRegular.team1 = page %>%
-              html_nodes(paste("#skaters-", team.1_ACC ," tbody .right:nth-child(21)", sep = "")) %>%
-              html_text(.) %>%
-              str_replace(., ":", ".") %>%
-              as.numeric(.) %>%
-              tibble(ATOI = . ) %>%
-              bind_cols(listRegular.team1, .) %>%
-              filter(., ATOI >= mean(ATOI), !PlayerName %in% backupGoalie.Team2Reg)
-  
-  rm(listRegular.team1)
-  
-  listRegular.team2 = page %>%
-              html_nodes(paste("#skaters-", team.2_ACC, " a", sep = "")) %>%
-              html_text(.) %>%
-              tibble(PlayerName = .)
-  
-  ATOIRegular.team2 = page %>%
-    html_nodes(paste("#skaters-", team.2_ACC ," tbody .right:nth-child(21)", sep = "")) %>%
-    html_text(.) %>%
-    str_replace(., ":", ".") %>%
-    as.numeric(.) %>%
-    tibble(ATOI = . ) %>%
-    bind_cols(listRegular.team2, .) %>%
-    filter(., ATOI >= mean(ATOI), !PlayerName %in% backupGoalie.Team2Reg)
-  
-  rm(listRegular.team2)
-  
-ifelse(team.1_ACC == highest.seed_ACC, 
-       length(setdiff(ATOIRegular.team1$PlayerName, listSeries.team1$PlayerName)) - length(setdiff(ATOIRegular.team2$PlayerName, listSeries.team2$PlayerName)),
-       length(setdiff(ATOIRegular.team2$PlayerName, listSeries.team2$PlayerName)) - length(setdiff(ATOIRegular.team1$PlayerName, listSeries.team1$PlayerName)))
-  
-}
-
-
 allData = bind_rows(lapply(2006:2018, FUN = getTeamNames)) 
 
 allTeamPages = mapply(FUN = grabPageandGamesofSpecificTeam, team = allData$Team, year = allData$Year, SIMPLIFY = FALSE)
@@ -310,7 +228,8 @@ rm(allWinners)
 final = tibble(WeightedGoalieSavePercntage = unlist(lapply(allTeamPages, FUN = calculateGoalieStats, returnGoalieSavePercentage = TRUE))) %>%
             bind_cols(., WeightedGPS = unlist(lapply(allTeamPages, FUN = calculateGoalieStats, returnGoalieSavePercentage = FALSE)), 
                          PlayerPoints = unlist(lapply(allTeamPages, FUN = calculatePlayerPoints))) %>%
-            bind_cols(allData,.)  
+            bind_cols(allData,.) %>%
+            mutate(PlayerPoints = ifelse(Year == 2013, PlayerPoints/48, PlayerPoints/82))
 
 RecordsOverTime = bind_rows(lapply(allTeamPages, FUN = calculateRecordOverTime)) %>%
                   bind_cols(Team = allData$Team, .) %>%

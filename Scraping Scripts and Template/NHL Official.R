@@ -28,15 +28,19 @@ getData_nhl_HitsandBlocks = function(year){
     gsub("é", "e",.) %>%
     gsub("\\.", "",.) 
   
-  Hits = mainpage %>%
+  HitsatES = mainpage %>%
     html_nodes(".rt-td:nth-child(10)") %>%
     html_text(.) %>%
-    as.numeric(.)
+    as.numeric(.) %>%
+    tibble(HitsatES = .) %>%
+    mutate(HitsatES = case_when(year == 2013 ~ HitsatES/48, year != 2013 ~ HitsatES/82))
   
-  Blocks = mainpage %>%
+  BlocksatES = mainpage %>%
     html_nodes(".rt-td:nth-child(11)") %>%
     html_text(.) %>%
-    as.numeric(.) 
+    as.numeric(.) %>%
+    tibble(BlocksatES = .) %>%
+    mutate(BlocksatES = case_when(year == 2013 ~ BlocksatES/48, year != 2013 ~ BlocksatES/82))
   
   FaceoffWinPercentage = mainpage %>%
     html_nodes(".rt-td:nth-child(18)") %>%
@@ -46,15 +50,19 @@ getData_nhl_HitsandBlocks = function(year){
   GiveAways = mainpage %>%
     html_nodes(".rt-td:nth-child(13)") %>%
     html_text(.) %>%
-    as.numeric(.) 
+    as.numeric(.) %>%
+    tibble(GiveAways = .) %>%
+    mutate(GiveAways = case_when(year == 2013 ~ GiveAways/48, year != 2013 ~ GiveAways/82))
   
   TakeAways = mainpage %>%
     html_nodes(".rt-td:nth-child(14)") %>%
     html_text(.) %>%
-    as.numeric(.) 
+    as.numeric(.) %>%
+    tibble(TakeAways = .) %>%
+    mutate(TakeAways = case_when(year == 2013 ~ TakeAways/48, year != 2013 ~ TakeAways/82))
   
-  data = tibble(Year = rep(year, length(TeamName)),Team = TeamName, BlocksatES = Blocks, HitsatES = Hits, FaceoffWinPercentage = FaceoffWinPercentage, 
-                GiveAways = GiveAways, TakeAways = TakeAways) %>%
+  data = tibble(Year = rep(year, length(TeamName)), Team = TeamName, FaceoffWinPercentage = FaceoffWinPercentage) %>%
+          bind_cols(., BlocksatES, HitsatES, GiveAways, TakeAways) %>%
           mutate(Team = ifelse(Team == "Anaheim Ducks" & year <= 2006, "Mighty Ducks of Anaheim", Team))
   
 }
@@ -92,22 +100,25 @@ getData_nhl_LeadingandTrailing = function(year){
   OT_Losses_Lead1P = mainpage %>%
     html_nodes(".rt-td:nth-child(12)") %>%
     html_text(.) %>%
-    as.numeric(.)
+    as.numeric(.) %>%
+    tibble(OT_Losses_Lead1P = .) %>%
+    mutate(OT_Losses_Lead1P = case_when(year == 2013 ~ OT_Losses_Lead1P/48, year != 2013 ~ OT_Losses_Lead1P/82))
   
   OT_Losses_Lead2P = mainpage %>%
     html_nodes(".rt-td:nth-child(16)") %>%
     html_text(.) %>%
-    as.numeric(.)
+    as.numeric(.) %>%
+    tibble(OT_Losses_Lead2P = .) %>%
+    mutate(OT_Losses_Lead2P = case_when(year == 2013 ~ OT_Losses_Lead2P/48, year != 2013 ~ OT_Losses_Lead2P/82))
   
   data = tibble(Year = rep(year, length(TeamName)),
                 Team = TeamName,
                 WinPercent_Lead1P = WinPercent_Lead1P,
                 WinPercent_Lead2P = WinPercent_Lead2P, 
                 WinPercent_Trail1P = WinPercent_Trail1P, 
-                WinPercent_Trail2P = WinPercent_Trail2P,
-                OT_Losses_Lead1P = OT_Losses_Lead1P,
-                OT_Losses_Lead2P = OT_Losses_Lead2P) %>%
-    mutate(Team = ifelse(Team == "Anaheim Ducks" & year <= 2006, "Mighty Ducks of Anaheim", Team))
+                WinPercent_Trail2P = WinPercent_Trail2P) %>%
+         bind_cols(., OT_Losses_Lead1P, OT_Losses_Lead2P) %>%
+         mutate(Team = ifelse(Team == "Anaheim Ducks" & year <= 2006, "Mighty Ducks of Anaheim", Team))
   
 }
 

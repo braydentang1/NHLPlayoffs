@@ -14,29 +14,35 @@ getData_nst = function(year){
     html_nodes(".lh") %>%
     html_text(.) %>%
     .[2:length(.)]
-  
+
+  #SCF is already a percentage in this case, no need to standardize  
   SCF = mainpage %>% 
           html_nodes("td:nth-child(25)") %>%
           html_text(.) %>%
           as.numeric(.) 
-  
+
   SCA = mainpage %>%
           html_nodes("td:nth-child(24)") %>%
           html_text(.) %>%
-          as.numeric(.)
+          as.numeric(.) %>%
+          tibble(SCA = .) %>%
+          mutate(SCA = case_when(year == 2013 ~ SCA/48, year != 2013 ~ SCA/82))
   
   HighDangerSC_Percent = mainpage %>%
           html_nodes("td:nth-child(33)") %>%
           html_text(.) %>%
-          as.numeric(.)
+          as.numeric(.) 
   
   HDCA = mainpage %>% 
           html_nodes("td:nth-child(35)") %>%
           html_text(.) %>%
-          as.numeric(.)
+          as.numeric(.) %>%
+          tibble(HDCA = .) %>%
+          mutate(HDCA = case_when(year == 2013 ~ HDCA/48, year != 2013 ~ HDCA/82))
     
   data = tibble(Year = rep(year, length(teams)), Team = teams, SCF = SCF,
-                SCA = SCA, HighDangerSC_Percent = HighDangerSC_Percent, HDCA = HDCA)
+                HighDangerSC_Percent = HighDangerSC_Percent) %>%
+          bind_cols(., HDCA, SCA)
   
 }
 

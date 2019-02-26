@@ -63,7 +63,7 @@ getData_pon = function(year){
       html_nodes("td:nth-child(14)") %>%
       html_text(.) %>%
       as.numeric(.) %>%
-      tibble(SOG_Last20 = .)
+      tibble(SOG_Last20 = .) 
     
     rm(last20page_main)
     
@@ -128,7 +128,7 @@ processData = function(team.1, team.2, highest.seed, data, year){
        HitsPercentageLast20 = as.numeric(team_HitsPercentageLast20[which(c(team.1,team.2) == highest.seed)] - team_HitsPercentageLast20[which(c(team.1, team.2) != highest.seed)]))
 }
 
-allYears = bind_rows(lapply(seq(2006, 2018,1), FUN = getData_pon)) %>% rename(Team = FullName)
+allYears = bind_rows(lapply(seq(2006, 2018,1), FUN = getData_pon)) %>% rename(Team = FullName) %>% select(-Accronym1)
 
 template = template %>% rowwise %>% 
   mutate(Fenwick = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$Fenwick) %>%
