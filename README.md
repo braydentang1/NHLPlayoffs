@@ -61,4 +61,4 @@ Credit for the ELO calculator formulas goes to the owner of HockeyAnalytics. The
 
 http://hockeyanalytics.com/2016/07/elo-ratings-for-the-nhl/
 
-Credit to my good friend Mr. Riley Peters for several discussions on logic flaws in the processing as well as multiple ideas for improving the model.
+Credit to my good friend Riley Peters for several discussions on logic flaws in the processing as well as multiple ideas for improving the model.
