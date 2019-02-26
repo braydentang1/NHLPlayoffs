@@ -44,6 +44,9 @@ TODO:
 - [ ] 4/5. Document how to run the scripts from scratch + other critical decisions.
 - [ ] 4/5. Shiny app.
 
+Sources/Credits:
+-----
+
 Data Pulled From:
 
 http://corsica.hockey/ <br>
