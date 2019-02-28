@@ -23,7 +23,7 @@ getData_nst = function(year){
   SCA = mainpage %>%
           html_nodes("td:nth-child(24)") %>%
           html_text(.) %>%
-          as.numeric(.)
+          as.numeric(.) 
   
   HighDangerSC_Percent = mainpage %>%
           html_nodes("td:nth-child(33)") %>%
@@ -34,6 +34,14 @@ getData_nst = function(year){
           html_nodes("td:nth-child(35)") %>%
           html_text(.) %>%
           as.numeric(.)
+  
+  if(year == 2013){
+    SCA = SCA/48
+    HDCA = HDCA/48
+  }else{
+    SCA = SCA/82
+    HDCA = HDCA/82
+  }
     
   data = tibble(Year = rep(year, length(teams)), Team = teams, SCF = SCF,
                 SCA = SCA, HighDangerSC_Percent = HighDangerSC_Percent, HDCA = HDCA)

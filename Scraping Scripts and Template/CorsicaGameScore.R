@@ -53,6 +53,8 @@ getData = function(year){
   #removed "GS", "CF.", "Rel.CF." since they are already included in Full Data
   data = data %>%
               group_by(Team) %>%
+              mutate(CF = CF/TOI) %>%
+              mutate(P1 = P1/TOI) %>%
               summarise_at(funs(mean(., na.rm = TRUE), sd(., na.rm=TRUE), min(.,na.rm=TRUE), max(., na.rm=TRUE)), .vars = c("iCF/60", "P1", "P1/60", "GS", "GS/60", "CF", "Rel CF%",
                                                                                                                   "ixGF/60", "ZSR", "CF% QoT", "CF% QoC", "TOI% QoT", "TOI% QoC")) %>%
               mutate(Team = as.character(Team))
@@ -81,16 +83,24 @@ processData = function(team.1, team.2, highest.seed, data, year){
   data = data %>% 
           filter(., Year == year)
   
+  if(nrow(data) == 0){
+    
+    tibble(Variable = colnames(data)[2:(ncol(data)-1)], .rows = NA) %>%
+      spread(Variable, .rows)
+    
+  }else{
+  
   team_vec = as_tibble(unlist(lapply(colnames(data)[2:(ncol(data)-1)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
     rownames_to_column(.) %>%
     spread(rowname, value) 
   
-  colnames(team_vec) = colnames(data)[2:(ncol(data)-1)]
   team_vec
+  
+  }
   
 }
 
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allCombined), SIMPLIFY = FALSE)) 
-
+  
 setwd("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets")
 write_csv(final, "CorsicaGameScoreStats.csv")
