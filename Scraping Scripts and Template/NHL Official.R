@@ -31,7 +31,7 @@ getData_nhl_HitsandBlocks = function(year){
   Hits = mainpage %>%
     html_nodes(".rt-td:nth-child(10)") %>%
     html_text(.) %>%
-    as.numeric(.)
+    as.numeric(.) 
   
   Blocks = mainpage %>%
     html_nodes(".rt-td:nth-child(11)") %>%
@@ -51,7 +51,19 @@ getData_nhl_HitsandBlocks = function(year){
   TakeAways = mainpage %>%
     html_nodes(".rt-td:nth-child(14)") %>%
     html_text(.) %>%
-    as.numeric(.) 
+    as.numeric(.)
+  
+  if(year == 2013){
+    Hits = Hits/48
+    Blocks = Blocks/48
+    GiveAways = GiveAways/48
+    TakeAways = TakeAways/48
+  }else{
+    Hits = Hits/82
+    Blocks = Blocks/82
+    GiveAways = GiveAways/82
+    TakeAways = TakeAways/82
+  }
   
   data = tibble(Year = rep(year, length(TeamName)),Team = TeamName, BlocksatES = Blocks, HitsatES = Hits, FaceoffWinPercentage = FaceoffWinPercentage, 
                 GiveAways = GiveAways, TakeAways = TakeAways) %>%
@@ -98,6 +110,15 @@ getData_nhl_LeadingandTrailing = function(year){
     html_nodes(".rt-td:nth-child(16)") %>%
     html_text(.) %>%
     as.numeric(.)
+  
+  if(year == 2013){
+    OT_Losses_Lead1P = OT_Losses_Lead1P/48
+    OT_Losses_Lead2P = OT_Losses_Lead2P/48
+  }else{
+    OT_Losses_Lead1P = OT_Losses_Lead1P/82
+    OT_Losses_Lead2P = OT_Losses_Lead2P/82
+  }
+  
   
   data = tibble(Year = rep(year, length(TeamName)),
                 Team = TeamName,
