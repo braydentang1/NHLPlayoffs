@@ -41,8 +41,6 @@ processData = function(team.1, team.2, highest.seed, year, data){
   data = data %>% 
             filter(., Year == year)
   
-  games = ifelse(year == 2013, 48, 82)
-  
   teamAcc = c(lookup_Accronyms$Team[which(lookup_Accronyms$FullName == team.1)], lookup_Accronyms$Team[which(lookup_Accronyms$FullName == team.2)])
   highestseedAcc = teamAcc[which(teamAcc == lookup_Accronyms$Team[which(lookup_Accronyms$FullName == highest.seed)])]
   
@@ -52,8 +50,8 @@ processData = function(team.1, team.2, highest.seed, year, data){
   xGF.60 = data$"xGF/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"xGF/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
   xGA.60 = data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$"xGA/60"[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
   PDO = data$PDO[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$PDO[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
-  PenaltiesTaken = data$PENT[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])]/games - data$PENT[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])]/games,
-  PenaltiesDrawn = data$PEND[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])]/games - data$PEND[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])]/games)
+  PenaltiesTaken = data$PENT[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$PENT[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])],
+  PenaltiesDrawn = data$PEND[which(data$Team == teamAcc[which(teamAcc == highestseedAcc)])] - data$PEND[which(data$Team == teamAcc[which(teamAcc != highestseedAcc)])])
   
 }
 

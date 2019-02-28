@@ -65,8 +65,7 @@ getData = function(year){
     html_nodes("#stats tbody .right:nth-child(8)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(Points = .) %>%
-    mutate(Points = case_when(year == 2013 ~ Points/48, year != 2013 ~ Points/82))
+    tibble(Points = .) 
   
   PointsPercentage = main %>%
     html_nodes("#stats tbody .right:nth-child(9)") %>%
@@ -78,15 +77,13 @@ getData = function(year){
     html_nodes("#stats tbody .right:nth-child(10)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(GoalsFor = .) %>%
-    mutate(GoalsFor = case_when(year == 2013 ~ GoalsFor/48, year != 2013 ~ GoalsFor/82))
+    tibble(GoalsFor = .)
   
   GoalsAgainst = main %>%
     html_nodes("#stats tbody .right:nth-child(11)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(GoalsAgainst = .) %>%
-    mutate(GoalsAgainst = case_when(year == 2013 ~ GoalsAgainst/48, year != 2013 ~ GoalsAgainst/82))
+    tibble(GoalsAgainst = .)
   
   GoalDifferential = tibble(GoalDiff = GoalsFor$GoalsFor - GoalsAgainst$GoalsAgainst)
   
@@ -112,15 +109,13 @@ getData = function(year){
     html_nodes("tbody .right:nth-child(19)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PowerPlayGoals = .) %>%
-    mutate(PowerPlayGoals = case_when(year == 2013 ~ PowerPlayGoals/48, year != 2013 ~ PowerPlayGoals/82))
+    tibble(PowerPlayGoals = .)
   
   PowerPlayOppurtunities = main %>%
     html_nodes("tbody .right:nth-child(20)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PowerPlayOppurtunities =.) %>%
-    mutate(PowerPlayOppurtunities = case_when(year == 2013 ~ PowerPlayOppurtunities/48, year != 2013 ~ PowerPlayOppurtunities/82))
+    tibble(PowerPlayOppurtunities =.)
   
   PowerPlayPercentage = main %>%
     html_nodes("tbody .right:nth-child(21)") %>%
@@ -138,8 +133,7 @@ getData = function(year){
     html_nodes("tbody .right:nth-child(29)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(SOG = .) %>%
-    mutate(SOG = case_when(year == 2013 ~ SOG/48, year != 2013 ~ SOG/82))
+    tibble(SOG =.)
   
   ShotPercentage = main %>%
     html_nodes("tbody .right:nth-child(30)") %>%

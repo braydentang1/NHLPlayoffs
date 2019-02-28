@@ -87,7 +87,7 @@ template[template == "Mighty Ducks of Anaheim"] = "Anaheim Ducks"
 template[template == "Phoenix Coyotes"] = "Arizona Coyotes"
 template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
 
-#Note: the function call below sends a warning because on OddsPortal the actual odds are missing! But, these values are not important as we only 
+#Note: the function call below sends an error because on OddsPortal the actual odds are missing! But, these values are not important as we only 
 #take the first game odds
 
 allData = bind_rows(lapply(2006:2018, FUN = getData))

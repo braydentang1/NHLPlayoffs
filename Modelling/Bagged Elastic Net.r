@@ -1,6 +1,4 @@
-
-#Set the directory for parallel computation status checks. Change this to any folder on your computer so that we can monitor 
-#the status of the repeated cross validation.
+#Set the directory for parallel computation status checks.
 setwd("C:/Users/Brayden/Documents/NHLModel/Status")
 
 #Dependencies
@@ -62,7 +60,6 @@ logLoss = function(scores, label){
   mean(tmp$logLoss)
 }
 
-
 #..................................PCA Function....................................#
 
 addPCA_variables = function(traindata, testdata){
@@ -77,14 +74,17 @@ addPCA_variables = function(traindata, testdata){
 }
 
 #..................................kNN Function....................................#
+
 addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
     
     y = traindata$ResultProper
-    
+    traindata = traindata[, !names(traindata) %in% c("ResultProper")]
+    testdata = testdata[, !names(testdata) %in% c("ResultProper")]
+
     if(include_PCA == TRUE){
         
-    traindata_tmp = traindata %>% select_if(., is.numeric) 
-    testdata_tmp = testdata %>% select_if(., is.numeric) 
+    traindata_tmp = traindata %>% select_if(., is.numeric)
+    testdata_tmp = testdata %>% select_if(., is.numeric)
         
         }else{
   
@@ -93,14 +93,14 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
     
     }
     
-    newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = y, xte = data.matrix(testdata_tmp), k = 2)
+    newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = y, xte = data.matrix(testdata_tmp), k = 1)
     KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE))
     KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)) 
-    list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
+    list(train = cbind(traindata, KNN_train), test = cbind(testdata, KNN_test))
 }
 
+
 #..................................Read data in....................................#
-#Change directories to pull in data from the "Required Data Sets" folder located in the repository.
 
 cat("Reading in Data..... \n")
 allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
@@ -114,9 +114,11 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
               mutate(ResultProper = as.factor(ResultProper))
+  
 
 #...................................Engineering of some features..................#
-allData = allData %>% 
+
+allData = allData %>% mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13))) %>%
             mutate(Ratio_of_GoalstoGoalsAgainst = GoalsFor/GoalsAgainst) %>%
             mutate(Ratio_of_HitstoBlocks = HitsatES/BlocksatES) %>%
             mutate(logofPoints = sign(Points) * log(abs(Points) + 1)) %>%
@@ -144,11 +146,8 @@ allData = allData %>%
             mutate("CF% QoT_min" = sign(allData$"CF% QoT_min") * log(abs(allData$"CF% QoT_min") + 1)) %>%
             mutate(ZSR_min = sign(ZSR_min) * log(abs(ZSR_min) + 1)) %>%
             mutate("Rel CF%_min" = sign(allData$"Rel CF%_min") * log(abs(allData$"Rel CF%_min") + 1)) %>%
-            mutate("ixGF/60_max.TO.Rel CF%_max" = `Rel CF%_max` / `ixGF/60_max`) %>%
             mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
             mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
-
-options(repr.matrix.max.rows=600, repr.matrix.max.cols=200, scipen = 999)
 
 #...................................Check skewness and kurtosis..................#
 
@@ -163,21 +162,25 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
                                           filter(., Skew >= 1)
 
 #.......................Define recipe.............................................#
+
 preProcess.recipe = function(trainX){
   
   mainRecipe = recipe(ResultProper ~., data=trainX) %>%
     step_zv(all_numeric()) %>%
     step_center(all_numeric()) %>%
     step_scale(all_numeric()) %>%
+    step_dummy(all_predictors(), -all_numeric()) %>%
+    step_zv(all_predictors()) %>%
     step_knnimpute(neighbors = 15, all_numeric(), all_predictors()) %>%
     step_interact(terms = ~ SRS:Fenwick:ELORating) %>%
-    step_interact(terms = ~ PenaltyKillPercentage:PowerPlayOppurtunities) %>%
-    step_interact(terms = ~ H2H:VegasOpeningOdds) %>%
     step_interact(terms = ~ RegularSeasonWinPercentage:contains("Points")) %>%
-    step_interact(terms = ~ FaceoffWinPercentage:ShotPercentage)
-    
+    step_interact(terms = ~ FaceoffWinPercentage:ShotPercentage) %>%
+    step_interact(terms = ~ contains("Round"):VegasOpeningOdds) %>%
+    step_interact(terms = ~ SDRecord:SOS) 
+  
   mainRecipe
 }
+
 
 randomGridSearch = function(iterations, innerTrainX, innerTestX){
   
@@ -206,6 +209,7 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX){
   list(alpha = alpha.fin, lambda = lambda.fin)
 }
 
+
 modelPipe.outer = function(j, folds, lambda.final, alpha.final){
  
   train.param = prep(preProcess.recipe(trainX = allData[-folds[[j]],]), training = allData[-folds[[j]],])
@@ -218,7 +222,8 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   test = frameswithPCA$test
   
   rm(train.param, frameswithPCA)
-    
+  gc()
+  
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
                                              alpha.a = alpha.final, s_lambda.a = lambda.final)
   
@@ -232,11 +237,11 @@ modelPipe.inner = function(k, folds){
   
   mainTrain = allData[-folds[[k]], ]
   
-  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.80)
+  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.8)
 
-    train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]], ])
-    train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
-    test = bake(train.param, new_data = mainTrain[-innerFolds[[1]],])
+      train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
+      train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
+      test = bake(train.param, new_data = mainTrain[-innerFolds[[1]],])
       
       frameswithPCA = addPCA_variables(traindata = train, testdata = test)
       
@@ -244,9 +249,10 @@ modelPipe.inner = function(k, folds){
       test = frameswithPCA$test
       
       rm(train.param, frameswithPCA)
-        
-      results = randomGridSearch(iterations = 70, innerTrainX = train, innerTestX = test)
+      
+      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test)
  
+  
   list(alpha = results$alpha, lambda = results$lambda)
   
 }
@@ -307,5 +313,3 @@ finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>
 paste("Final AUROC: ", mean(finalROC), " with a 95% confidence interval given by ", "[", mean(finalROC) - qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), ", ", 
       mean(finalROC) + qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), "]", sep = "")
 
-
-finalVarImp %>% arrange(., -Importance)
