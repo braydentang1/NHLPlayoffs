@@ -1,17 +1,18 @@
-#Set the directory for parallel computation status checks.
+#Set the directory for parallel computation status checks. Change this to any folder on your computer so that we can monitor 
+#the status of the repeated cross validation.
 setwd("C:/Users/Brayden/Documents/NHLModel/Status")
 
 #Dependencies
 
-library(glmnet)
-library(caret)
-library(pROC)
-library(tidyverse)
-library(recipes)
-library(moments)
-library(doParallel)
-library(foreach)
-library(fastknn)
+require(glmnet)
+require(caret)
+require(pROC)
+require(tidyverse)
+require(recipes)
+require(moments)
+require(doParallel)
+require(foreach)
+require(fastknn)
 
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
@@ -24,7 +25,7 @@ baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
   for (g in 1:length(samples)){
     train_temp = train[samples[[g]], ]
     a = label_train[samples[[g]]]
-    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = a, family = "binomial", alpha = alpha.a, nlambda = 120, standardize = FALSE)
+    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = a, family = "binomial", alpha = alpha.a, nlambda = 100, standardize = FALSE)
     pred[[g]] = predict(modelX, newx = data.matrix(test[, !names(test) %in% c("ResultProper")]), type = "response")[, s_lambda.a]
     varImp[[g]] = varImp(modelX, lambda = modelX$lambda[s_lambda.a])
     colnames(varImp[[g]])[1] = paste("Overall:", g, sep = "")
@@ -59,6 +60,7 @@ logLoss = function(scores, label){
   
   mean(tmp$logLoss)
 }
+
 
 #..................................PCA Function....................................#
 
@@ -99,8 +101,8 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
     list(train = cbind(traindata, KNN_train), test = cbind(testdata, KNN_test))
 }
 
-
 #..................................Read data in....................................#
+#Change directories to pull in data from the "Required Data Sets" folder located in the repository.
 
 cat("Reading in Data..... \n")
 allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
@@ -114,40 +116,32 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
               mutate(ResultProper = as.factor(ResultProper))
-  
 
 #...................................Engineering of some features..................#
 
-allData = allData %>% mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13))) %>%
-            mutate(Ratio_of_GoalstoGoalsAgainst = GoalsFor/GoalsAgainst) %>%
-            mutate(Ratio_of_HitstoBlocks = HitsatES/BlocksatES) %>%
-            mutate(logofPoints = sign(Points) * log(abs(Points) + 1)) %>%
-            mutate(sqrtofPoints = abs(Points)^0.5) %>%
-            mutate(PenaltyMinstoPowerPlay = PenaltyMinsPG*60*82 /PowerPlayPercentage) %>%
-            mutate(Ratio_of_SRStoPoints = SRS/Points) %>%
+allData = allData %>% 
+            mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13))) %>%
+            mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
+            mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
             mutate(AverageGoalDiff_PerGame = GoalsFor/82) %>%
             mutate(AveragePenaltyDiff_PerGame = PenaltyMinsPG/82) %>%
-            mutate(logofSOG = sign(SOG) * log(abs(SOG) + 1)) %>%
-            mutate(sqrtofRPI = abs(RPI)^0.5) %>%
-            mutate(PowerPlaytoPenaltyKill = PowerPlayPercentage/PenaltyKillPercentage) %>%
-            mutate(PowerPlaytoPenaltyKill = sign(PowerPlaytoPenaltyKill) * log(abs(PowerPlaytoPenaltyKill) + 1)) %>%
-            mutate(SCFtoGoalsAgainst = SCF/GoalsAgainst) %>%
+            mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
+            mutate(PPO_x_PenaltyKill = PowerPlayOppurtunities * PenaltyKillPercentage) %>%
             mutate(PointsPercentage = Points/164) %>%
             mutate(GS_max_log = sign(GS_mean) * log(abs(GS_mean) + 1)) %>%
             mutate(CA_Per60Team_log = sign(CA_Per60Team) * log(abs(CA_Per60Team) + 1)) %>%
-            mutate(Ratio_of_GoalstoGoalsAgainstlog = sign(Ratio_of_GoalstoGoalsAgainst) * log(abs(Ratio_of_GoalstoGoalsAgainst) +1)) %>%
-            mutate(Ratio_of_HitstoBlockslog = sign(Ratio_of_HitstoBlocks) * log(abs(Ratio_of_HitstoBlocks) + 1)) %>%
-            mutate(SCFtoGoalsAgainstlog = sign(SCFtoGoalsAgainst) * log(abs(SCFtoGoalsAgainst) + 1)) %>%
-            mutate(PointsPercentagesqrt = abs(PointsPercentage)^0.5) %>%
+            mutate(Ratio_of_GoalstoGoalsAgainstlog = sign(GoalsFor/GoalsAgainst) * log(abs(GoalsFor/GoalsAgainst) +1)) %>%
+            mutate(Ratio_of_HitstoBlockslog = sign(HitsatES/BlocksatES) * log(abs(HitsatES/BlocksatES) + 1)) %>%
+            mutate(SCFtoGoalsAgainstlog = sign(SCF/GoalsAgainst) * log(abs(SCF/GoalsAgainst) + 1)) %>%
             mutate(CorsiDifftoSOSlog = sign((CF_Per60Team - CA_Per60Team)/SOS) * log(abs((CF_Per60Team - CA_Per60Team)/SOS) + 1)) %>%
             mutate(xGDifftoSOS = (xGF.60 - xGA.60)/SOS) %>% 
             mutate(GStoSOS = GS_mean / SOS) %>%
             mutate(SRStoSOS = SRS/SOS) %>%
-            mutate("CF% QoT_min" = sign(allData$"CF% QoT_min") * log(abs(allData$"CF% QoT_min") + 1)) %>%
-            mutate(ZSR_min = sign(ZSR_min) * log(abs(ZSR_min) + 1)) %>%
-            mutate("Rel CF%_min" = sign(allData$"Rel CF%_min") * log(abs(allData$"Rel CF%_min") + 1)) %>%
+            mutate("ixGF/60_max.TO.Rel CF%_max" = allData$'Rel CF%_max' / allData$'ixGF/60_max') %>%
             mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
             mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
+
+options(repr.matrix.max.rows=600, repr.matrix.max.cols=200, scipen = 999)
 
 #...................................Check skewness and kurtosis..................#
 
@@ -159,7 +153,7 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
 rm(kurt)
 allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
                                           gather(., Variable, Skew) %>%
-                                          filter(., Skew >= 1)
+                                          filter(., abs(Skew) >= 1)
 
 #.......................Define recipe.............................................#
 
@@ -173,6 +167,7 @@ preProcess.recipe = function(trainX){
     step_zv(all_predictors()) %>%
     step_knnimpute(neighbors = 15, all_numeric(), all_predictors()) %>%
     step_interact(terms = ~ SRS:Fenwick:ELORating) %>%
+    step_interact(terms = ~ H2H:VegasOpeningOdds) %>%
     step_interact(terms = ~ RegularSeasonWinPercentage:contains("Points")) %>%
     step_interact(terms = ~ FaceoffWinPercentage:ShotPercentage) %>%
     step_interact(terms = ~ contains("Round"):VegasOpeningOdds) %>%
@@ -181,34 +176,33 @@ preProcess.recipe = function(trainX){
   mainRecipe
 }
 
-
-randomGridSearch = function(iterations, innerTrainX, innerTestX){
+randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
   
   score = 0
   alpha.fin = numeric(1)
   lambda.fin = integer(1)
+      
+  set.seed(seed.a)
+  alpha_val = as.numeric(runif(n = iterations, min = 0, max = 1))
+  s.lambda_val = as.integer(sample(1:80, iterations, replace = TRUE))
   
   for(m in 1:iterations){
     
     writeLines(paste("Iteration:", m, sep = " "))
-    
-    alpha_val = as.numeric(runif(1, 0, 1))
-    s.lambda_val = as.integer(sample(1:80, 1))
-    
+     
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                       label_train = innerTrainX$ResultProper, alpha.a = alpha_val, s_lambda.a = s.lambda_val)
+                       label_train = innerTrainX$ResultProper, alpha.a = alpha_val[m], s_lambda.a = s.lambda_val[m])
   
     score.new = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
     
     if(score.new > score){
-      alpha.fin = alpha_val
-      lambda.fin = s.lambda_val
+      alpha.fin = alpha_val[m]
+      lambda.fin = s.lambda_val[m]
       score = score.new
     }
   }
   list(alpha = alpha.fin, lambda = lambda.fin)
 }
-
 
 modelPipe.outer = function(j, folds, lambda.final, alpha.final){
  
@@ -233,10 +227,11 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   list(ROC = ROC, VarImp = VarImp)
 }
 
-modelPipe.inner = function(k, folds){
+modelPipe.inner = function(k, folds, seed.a){
   
   mainTrain = allData[-folds[[k]], ]
   
+  set.seed(seed.a)  
   innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.8)
 
       train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
@@ -250,7 +245,7 @@ modelPipe.inner = function(k, folds){
       
       rm(train.param, frameswithPCA)
       
-      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test)
+      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
  
   
   list(alpha = results$alpha, lambda = results$lambda)
@@ -282,8 +277,9 @@ processVarImp = function(varImpRaw, final = FALSE){
 
 set.seed(40689)
 seeds = sample(1:1000000000, 150, replace = FALSE)
+ROC.status = rep(as.numeric(NA), length(seeds))
 
-cluster = makeCluster(detectCores())
+cluster = makeCluster(detectCores(), outfile = "messages.txt")
 registerDoParallel(cluster)
 
 results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse", "glmnet", "caret", "pROC", "recipes", "fastknn")) %dopar% {
@@ -291,15 +287,16 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   set.seed(seeds[p])
   allFolds = caret::createFolds(y = allData$ResultProper, k = 3)
   
-  bestParam = bind_rows(lapply(1:length(allFolds), FUN = modelPipe.inner, folds = allFolds)) 
+  bestParam = bind_rows(lapply(1:length(allFolds), FUN = modelPipe.inner, folds = allFolds, seed.a = seeds[p])) 
   finalResults = mapply(FUN = modelPipe.outer, j = 1:length(allFolds), lambda.final = bestParam$lambda, alpha.final = bestParam$alpha, 
                       MoreArgs = list(folds = allFolds), SIMPLIFY = FALSE)
 
   ROC = mean(unlist(lapply(finalResults, function(x){unlist(x$ROC)})))
-
+  ROC.status[p] = ROC
+    
   VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))), final = FALSE)
   
-  write_csv(tibble(ROC = ROC), paste("Iteration_", p, ".csv", sep = ""))
+  writeLines(paste("Iteration_", p, "Running Average AUROC:", mean(ROC.status, na.rm = TRUE), sep = " "))
   list(ROC = ROC, VarImp = VarImp)
 
 }
@@ -313,3 +310,5 @@ finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>
 paste("Final AUROC: ", mean(finalROC), " with a 95% confidence interval given by ", "[", mean(finalROC) - qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), ", ", 
       mean(finalROC) + qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), "]", sep = "")
 
+
+finalVarImp %>% arrange(., -Importance)
