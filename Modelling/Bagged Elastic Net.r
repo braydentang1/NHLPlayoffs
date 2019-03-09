@@ -4,15 +4,15 @@ setwd("C:/Users/Brayden/Documents/NHLModel/Status")
 
 #Dependencies
 
-require(glmnet)
-require(caret)
-require(pROC)
-require(tidyverse)
-require(recipes)
-require(moments)
-require(doParallel)
-require(foreach)
-require(fastknn)
+library(glmnet)
+library(caret)
+library(pROC)
+library(tidyverse)
+library(recipes)
+library(moments)
+library(doParallel)
+library(foreach)
+library(fastknn)
 
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
@@ -25,21 +25,21 @@ baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
   for (g in 1:length(samples)){
     train_temp = train[samples[[g]], ]
     a = label_train[samples[[g]]]
-    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = a, family = "binomial", alpha = alpha.a, nlambda = 100, standardize = FALSE)
+    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = a, family = "binomial", alpha = alpha.a, nlambda = 120, standardize = FALSE)
     pred[[g]] = predict(modelX, newx = data.matrix(test[, !names(test) %in% c("ResultProper")]), type = "response")[, s_lambda.a]
-    varImp[[g]] = varImp(modelX, lambda = modelX$lambda[s_lambda.a])
-    colnames(varImp[[g]])[1] = paste("Overall:", g, sep = "")
+    varImp[[g]] = tibble::rownames_to_column(varImp(modelX, lambda = modelX$lambda[s_lambda.a]), var = "Variable")
+    colnames(varImp[[g]])[2] = paste("Overall:", g, sep = "")
     remove(modelX, train_temp, a)
   }
   
-  pred = pred %>% Reduce(function(x,y) cbind(x,y),.) %>% as_tibble() %>%
-    mutate(Predicted = rowMeans(.))
+  pred = bind_cols(pred) %>%
+    transmute(Predicted = rowMeans(.))
   
-  varImp = varImp %>% Reduce(function(x,y) cbind(x,y),.) %>% as_tibble() %>%
-    mutate(VariableImportance = rowMeans(.))
+  varImp = varImp %>% Reduce(function(x,y) left_join(x,y, by = "Variable"), .) 
   
-                             
-  varImp = tibble::rownames_to_column(cbind.data.frame(meanImportance = varImp$VariableImportance), var = "Variable")
+  means = varImp %>% select_if(is.numeric) %>% transmute(VariableImportance = rowMeans(.))
+  
+  varImp = tibble(Variable = varImp$Variable, meanImportance = means$VariableImportance)
   
   list(Predictions = pred$Predicted, VariableImportance = varImp)
 }
@@ -184,7 +184,7 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
       
   set.seed(seed.a)
   alpha_val = as.numeric(runif(n = iterations, min = 0, max = 1))
-  s.lambda_val = as.integer(sample(1:80, iterations, replace = TRUE))
+  s.lambda_val = as.integer(sample(1:90, iterations, replace = TRUE))
   
   for(m in 1:iterations){
     
@@ -232,7 +232,7 @@ modelPipe.inner = function(k, folds, seed.a){
   mainTrain = allData[-folds[[k]], ]
   
   set.seed(seed.a)  
-  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.8)
+  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.75)
 
       train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
       train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
@@ -245,33 +245,24 @@ modelPipe.inner = function(k, folds, seed.a){
       
       rm(train.param, frameswithPCA)
       
-      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
+      results = randomGridSearch(iterations = 75, innerTrainX = train, innerTestX = test, seed = seed.a)
  
   
   list(alpha = results$alpha, lambda = results$lambda)
   
 }
 
-processVarImp = function(varImpRaw, final = FALSE){
+processVarImp = function(varImpRaw){
   
   varImpNames = varImpRaw %>% 
     select(., contains("Variable")) %>%
     .[,1]
   
-  if(final == FALSE){
-  
-  final = varImpRaw %>% 
-                        select(., contains("meanImportance")) %>%
-                        transmute(Importance = rowMeans(.)) %>%
-                        bind_cols(varImpNames, .)
-  }else{
-    
   final = varImpRaw %>% 
                         select(., contains("Importance")) %>%
                         transmute(Importance = rowMeans(.)) %>%
                         bind_cols(varImpNames, .)
-  }
-  
+
   final
 }
 
@@ -294,7 +285,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   ROC = mean(unlist(lapply(finalResults, function(x){unlist(x$ROC)})))
   ROC.status[p] = ROC
     
-  VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))), final = FALSE)
+  VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))))
   
   writeLines(paste("Iteration_", p, "Running Average AUROC:", mean(ROC.status, na.rm = TRUE), sep = " "))
   list(ROC = ROC, VarImp = VarImp)
@@ -305,7 +296,7 @@ stopCluster(cluster)
 rm(cluster)
 
 finalROC = unlist(results[c(seq(1, length(results), 2))])
-finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(bind_cols,.), final = TRUE) 
+finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(bind_cols,.)) 
 
 paste("Final AUROC: ", mean(finalROC), " with a 95% confidence interval given by ", "[", mean(finalROC) - qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), ", ", 
       mean(finalROC) + qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), "]", sep = "")
