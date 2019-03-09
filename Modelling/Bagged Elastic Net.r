@@ -76,12 +76,17 @@ addPCA_variables = function(traindata, testdata){
 }
 
 #..................................kNN Function....................................#
+#Distances = cumulative distance from observation to the first, second, third, etc. nearest neighbour for each class label. 
+#So for example, knn1 = distance from observation to first nearest neighbour that has label "W". knn2 = distance from observation
+#to second nearest neighbour that has label "W". knn3 = distance from observation to first nearest neighbour that has label "L", 
+#and knn3 = distance from observation to second nearest neighbour that has label "L".
 
-addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
+#Probabilities = calculates the proportion of winners out of the k most closest neighbours to an observation
+
+addKNN_variables = function(traindata, testdata, include_PCA = FALSE, distances = TRUE){
     
-    y = traindata$ResultProper
-    traindata = traindata[, !names(traindata) %in% c("ResultProper")]
-    testdata = testdata[, !names(testdata) %in% c("ResultProper")]
+    traindata_tmp = traindata[, !names(traindata) %in% c("ResultProper")]
+    testdata_tmp = testdata[, !names(testdata) %in% c("ResultProper")]
 
     if(include_PCA == TRUE){
         
@@ -95,11 +100,25 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE){
     
     }
     
-    newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = y, xte = data.matrix(testdata_tmp), k = 1)
-    KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE))
-    KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)) 
-    list(train = cbind(traindata, KNN_train), test = cbind(testdata, KNN_test))
+    if (distances == TRUE){
+    
+    newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 1, normalize = NULL)
+    KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)) %>% as_tibble(.)
+    KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)) %>% as_tibble(.)
+    
+    list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
+    
+    }else{
+      
+    KNN_train  = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(traindata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2])
+    KNN_test = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2])
+    
+    list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
+      
+    }
+    
 }
+
 
 #..................................Read data in....................................#
 #Change directories to pull in data from the "Required Data Sets" folder located in the repository.
@@ -216,8 +235,14 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   test = frameswithPCA$test
   
   rm(train.param, frameswithPCA)
-  gc()
   
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, include_PCA = TRUE, distances = FALSE)
+  
+  train = frameswithKNN$train
+  test = frameswithKNN$test
+  
+  rm(frameswithKNN)
+
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
                                              alpha.a = alpha.final, s_lambda.a = lambda.final)
   
@@ -245,7 +270,14 @@ modelPipe.inner = function(k, folds, seed.a){
       
       rm(train.param, frameswithPCA)
       
-      results = randomGridSearch(iterations = 75, innerTrainX = train, innerTestX = test, seed = seed.a)
+      frameswithKNN = addKNN_variables(traindata = train, testdata = test, include_PCA = TRUE, distances = FALSE)
+      
+      train = frameswithKNN$train
+      test = frameswithKNN$test
+      
+      rm(frameswithKNN)
+      
+      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
  
   
   list(alpha = results$alpha, lambda = results$lambda)
@@ -287,7 +319,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
     
   VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))))
   
-  writeLines(paste("Iteration_", p, "Running Average AUROC:", mean(ROC.status, na.rm = TRUE), sep = " "))
+  writeLines(paste("REPEAT:", p, "...", "Running Average AUROC:", mean(ROC.status, na.rm = TRUE), sep = " "))
   list(ROC = ROC, VarImp = VarImp)
 
 }
