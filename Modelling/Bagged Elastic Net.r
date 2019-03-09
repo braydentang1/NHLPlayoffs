@@ -335,3 +335,11 @@ paste("Final AUROC: ", mean(finalROC), " with a 95% confidence interval given by
 
 
 finalVarImp %>% arrange(., -Importance)
+
+#..............................................Graphing the AUROC scores.........................#
+
+graphingParameters = tibble(ROC = finalROC)
+
+ggplot(data = graphingParameters, aes(graphingParameters$ROC), colour = "Hist") +
+  geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
+  labs(title = "150 Repeats of Nested Cross Validation", x = "AUROC", subtitle = "Bins = 10, Width = 0.01")
