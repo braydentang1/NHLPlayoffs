@@ -44,6 +44,8 @@ TODO:
 - [ ] 4/5. Document how to run the scripts from scratch + other critical decisions.
 - [ ] 4/5. Shiny app.
 
+Credits:
+-----
 Data Pulled From:
 
 http://corsica.hockey/ <br>
@@ -57,3 +59,5 @@ https://www.hockey-reference.com/
 Credit for the ELO calculator formulas goes to the owner of HockeyAnalytics. The source page can be found here:
 
 http://hockeyanalytics.com/2016/07/elo-ratings-for-the-nhl/
+
+A big thanks to my good friend Mr. Riley Peters for spotting the logic flaws in some of the pre processing as well as his large amount of knowledge on the game of hockey and his unmatched intuition! 
