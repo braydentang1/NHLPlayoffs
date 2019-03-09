@@ -3,6 +3,8 @@ A model that aims to predict the outcome of a NHL playoff series before the firs
 
 Currently sits at an average AUROC score of 0.664 with an approximate 95% confidence interval for the __mean AUROC__ given by [0.661, 0.668].
 
+!(https://github.com/braydentang1/NHLPlayoffs.git/Histogram.jpeg)
+
 Folder Descriptions:
 -----
 1. **All Team Stats:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
