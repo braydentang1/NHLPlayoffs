@@ -1,7 +1,7 @@
 # NHLPlayoffs
 A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-Currently sits at 0.677 AUROC.
+Currently sits at an average AUROC score of 0.664 with an approximate 95% confidence interval for the __mean AUROC__ given by [0.661, 0.668].
 
 Folder Descriptions:
 -----
