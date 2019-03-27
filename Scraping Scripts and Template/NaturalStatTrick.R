@@ -8,7 +8,7 @@ getData_nst = function(year){
   
   year2 = year - 1
   
-  mainpage = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year2,year,"&thruseason=",year2,year,"&stype=2&sit=5v5&score=all&rate=n&team=all&loc=B&gpf=410&fd=&td=", sep=""))
+  mainpage = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year2,year,"&thruseason=",year2,year,"&stype=2&sit=5v5&score=all&rate=y&team=all&loc=B&gpf=410&fd=&td=", sep=""))
   
   teams = mainpage %>%
     html_nodes(".lh") %>%
@@ -35,18 +35,11 @@ getData_nst = function(year){
           html_text(.) %>%
           as.numeric(.)
   
-  if(year == 2013){
-    SCA = SCA/48
-    HDCA = HDCA/48
-  }else{
-    SCA = SCA/82
-    HDCA = HDCA/82
-  }
-    
   data = tibble(Year = rep(year, length(teams)), Team = teams, SCF = SCF,
                 SCA = SCA, HighDangerSC_Percent = HighDangerSC_Percent, HDCA = HDCA)
   
 }
+
 
 findMatch = function(team.1, team.2, stat, data, highest.seed){
   
@@ -61,6 +54,7 @@ processData = function(team.1, team.2, highest.seed, year, data){
   
   team_vec = as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
     rownames_to_column(.) %>%
+    mutate(rowname = colnames(data)[3:ncol(data)]) %>%
     spread(rowname, value) 
   
   team_vec
@@ -72,7 +66,7 @@ allData = lapply(seq(2008,2018,1), FUN = getData_nst) %>%
 
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year,
                MoreArgs = list(data = allData), SIMPLIFY = FALSE)) %>%
-        select_if(~sum(!is.na(.)) > 0)
+        select_if(~sum(!is.na(.)) > 0) 
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "SCFScores.csv")

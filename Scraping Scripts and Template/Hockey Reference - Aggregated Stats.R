@@ -163,6 +163,7 @@ processData = function(team.1, team.2, highest.seed, year, data){
   
   team_vec = as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
                   rownames_to_column(.) %>%
+                  mutate(rowname = colnames(data)[3:ncol(data)]) %>%
                   spread(rowname, value) 
 
 }

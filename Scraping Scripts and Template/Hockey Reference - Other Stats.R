@@ -65,6 +65,8 @@ grabPageandGamesofSpecificTeam = function(team, year){
 
 calculateH2H = function(mainpage, highest.seed, process = FALSE){
   
+  paste(highest.seed)
+  
   teamNames = mainpage %>%
     html_nodes("#content span a") %>%
     html_text(.) %>%
@@ -78,16 +80,17 @@ calculateH2H = function(mainpage, highest.seed, process = FALSE){
   H2Hstats = mainpage %>%
     html_nodes("h2+ .game_summaries .winner td:nth-child(1) a") %>%
     html_text(.) %>%
-    table() %>%
-    as_tibble(.) 
+    table() 
   
-  if(nrow(H2Hstats) != 0){
+  if(length(H2Hstats) != 0){
     
     H2Hstats = H2Hstats %>%
+      as_tibble(.) %>%
       set_names(c("FullName", "Wins")) %>%
       mutate(WinRatio = Wins/sum(Wins)) %>%
       right_join(., teamNames, by = "FullName") %>%
       replace_na(., list(Wins = 0, WinRatio = 0))
+    
   }else {
     H2Hstats = NA
   }
@@ -191,6 +194,7 @@ processData = function(team.1, team.2, highest.seed, year, data){
   
   team_vec = as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
     rownames_to_column(.) %>%
+    mutate(rowname = colnames(data)[3:ncol(data)]) %>%
     spread(rowname, value) 
   
   team_vec

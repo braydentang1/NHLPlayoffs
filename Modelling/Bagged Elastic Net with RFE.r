@@ -64,16 +64,32 @@ logLoss = function(scores, label){
 
 
 #..................................PCA Function....................................#
+#I tried to center and scale these variables after they were mistakenly left uncentered and unscaled (recall: the model has a loss function that is a function of the 
+#magnitude of the parameters themselves, hence, it is vital we center and scale variables to be unitless so that the magnitude of such variables are not unfairly penalized.
+#However....the validation results were quite different than before, roughly a drop of 0.03-0.04 in AUROC which is quite significant.)
 
-addPCA_variables = function(traindata, testdata){
+addPCA_variables = function(traindata, testdata, standardize = FALSE){
     
     traindata_tmp = traindata[, !names(traindata) %in% c("ResultProper")] %>% select_if(., is.numeric)
     testdata_tmp = testdata[, !names(testdata) %in% c("ResultProper")] %>% select_if(., is.numeric)
     
     pca_parameters = prcomp(traindata_tmp, center = FALSE, scale. = FALSE)
-    pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5]
-    pca_traindata = predict(pca_parameters, newdata = traindata_tmp)[,1:5]
-    list(train = cbind(traindata, pca_traindata), test = cbind(testdata, pca_newdata))
+    pca_traindata = predict(pca_parameters, newdata = traindata_tmp)[,1:5] %>% as_tibble(.) 
+    
+    if(standardize == TRUE){
+      
+      pca_train.params = caret::preProcess(pca_traindata, method = c("center", "scale"))
+      pca_traindata = predict(pca_train.params, newdata = pca_traindata)
+      pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(.) %>% predict(pca_train.params, newdata = .)
+      
+    }else{
+      
+     pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(.) 
+
+    }
+    
+
+    list(train = bind_cols(traindata, pca_traindata), test = bind_cols(testdata, pca_newdata))
 }
 
 #..................................kNN Function....................................#
@@ -85,40 +101,49 @@ addPCA_variables = function(traindata, testdata){
 #Probabilities = calculates the proportion of winners out of the k most closest neighbours to an observation
 
 addKNN_variables = function(traindata, testdata, include_PCA = FALSE, distances = TRUE){
-  
-  #Selects variables that are top performing....
-  traindata_tmp = traindata[, !names(traindata) %in% c("ResultProper")] %>% select(., H2H, WeightedGPS, Q2Record, PowerPlayOppurtunities, PenaltyKillPercentage, VegasOpeningOdds, "TOI% QoT_mean")
-  testdata_tmp = testdata[, !names(testdata) %in% c("ResultProper")] %>% select(., H2H, WeightedGPS, Q2Record, PowerPlayOppurtunities, PenaltyKillPercentage, VegasOpeningOdds, "TOI% QoT_mean")
-  
-  if(include_PCA == TRUE){
     
+  #Selects variables that are top performing....
+    traindata_tmp = traindata[, !names(traindata) %in% c("ResultProper")] %>% select(., H2H, WeightedGPS, Q2Record, PowerPlayOppurtunities, PenaltyKillPercentage, VegasOpeningOdds, "TOI% QoT_mean")
+    testdata_tmp = testdata[, !names(testdata) %in% c("ResultProper")] %>% select(., H2H, WeightedGPS, Q2Record, PowerPlayOppurtunities, PenaltyKillPercentage, VegasOpeningOdds, "TOI% QoT_mean")
+
+    if(include_PCA == TRUE){
+        
     traindata_tmp = traindata %>% select_if(., is.numeric)
     testdata_tmp = testdata %>% select_if(., is.numeric)
-    
-  }else{
-    
+        
+        }else{
+  
     traindata_tmp = traindata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
     testdata_tmp = testdata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
     
-  }
-  
-  if (distances == TRUE){
+    }
+    
+    if (distances == TRUE){
     
     newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 1, normalize = NULL)
-    KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)) %>% as_tibble(.)
-    KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% transmute_all(., .funs = function(x) (x - mean(x, na.rm=TRUE)) / sd(x, na.rm=TRUE)) %>% as_tibble(.)
+    KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) 
+    
+    KNN_train.params = caret::preProcess(KNN_train, method = c("center", "scale"))
+    KNN_train = predict(KNN_train.params, newdata = KNN_train)
+    
+    KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% predict(KNN_train.params, newdata = .)
     
     list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
     
-  }else{
+    }else{
+      
+    KNN_train  = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(traindata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) 
     
-    KNN_train  = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(traindata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) %>% mutate("knn_L" = 1 - knn_W)
-    KNN_test = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) %>% mutate("knn_L" = 1 - knn_W)
+    KNN_train.params = caret::preProcess(KNN_train, method = c("center", "scale"))
+    KNN_train = predict(KNN_train.params, newdata = KNN_train)
+    
+    KNN_test = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) %>%
+      predict(KNN_train.params, newdata = .)
     
     list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
+      
+    }
     
-  }
-  
 }
 
 
@@ -136,11 +161,8 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv")) %>%
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
+              bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
               mutate(ResultProper = as.factor(ResultProper))
-
-#...................................Read in Variable Importance List After RFE....................#
-
-VarImportance.List = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Model Output/VariableImportance_March17th.csv") %>% .[,1]
 
 #...................................Engineering of some features..................#
 
@@ -185,11 +207,10 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
 preProcess.recipe = function(trainX){
   
   mainRecipe = recipe(ResultProper ~., data=trainX) %>%
-    step_zv(all_numeric()) %>%
-    step_center(all_numeric()) %>%
-    step_scale(all_numeric()) %>%
     step_dummy(all_predictors(), -all_numeric()) %>%
     step_zv(all_predictors()) %>%
+    step_center(all_predictors()) %>%
+    step_scale(all_predictors()) %>%
     step_knnimpute(neighbors = 15, all_numeric(), all_predictors()) %>%
     step_interact(terms = ~ SRS:Fenwick:ELORating) %>%
     step_interact(terms = ~ H2H:VegasOpeningOdds) %>%
@@ -229,13 +250,13 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
   list(alpha = alpha.fin, lambda = lambda.fin)
 }
 
-modelPipe.outer = function(j, folds, lambda.final, alpha.final){
- 
+modelPipe.outer = function(j, folds, lambda.final, alpha.final, VarImp = NULL, subset.n = NULL){
+  
   train.param = prep(preProcess.recipe(trainX = allData[-folds[[j]],]), training = allData[-folds[[j]],])
   train = bake(train.param, new_data = allData[-folds[[j]], ])
   test = bake(train.param, new_data = allData[folds[[j]], ])
   
-  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
+  frameswithPCA = addPCA_variables(traindata = train, testdata = test, standardize = FALSE)
   
   train = frameswithPCA$train
   test = frameswithPCA$test
@@ -249,13 +270,16 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   
   rm(frameswithKNN)
   
-  #NEW: Subset top twenty variables from VarImportance List, found after 70 iterations of RFE
+  #....Subset selection....#
+  if(!is.null(VarImp) && !is.null(subset.n)){
+    
+    train = train %>% select(., ResultProper, VarImp$Variable[1:subset.n])
+    test = test %>% select(., ResultProper, VarImp$Variable[1:subset.n])
+    
+  }
   
-  train = train %>% select(., ResultProper, VarImportance.List$Variable[1:20])
-  test = test %>% select(., ResultProper, VarImportance.List$Variable[1:20])
-
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
-                                             alpha.a = alpha.final, s_lambda.a = lambda.final)
+                      alpha.a = alpha.final, s_lambda.a = lambda.final)
   
   ROC = roc(response = test$ResultProper, predictor = model$Predictions, levels = c("L", "W"))$auc
   VarImp = model$VariableImportance
@@ -263,38 +287,41 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   list(ROC = ROC, VarImp = VarImp)
 }
 
-modelPipe.inner = function(k, folds, seed.a){
+modelPipe.inner = function(k, folds, seed.a, VarImp = NULL, subset.n = NULL){
   
   mainTrain = allData[-folds[[k]], ]
   
   set.seed(seed.a)  
   innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.75)
-
-      train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
-      train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
-      test = bake(train.param, new_data = mainTrain[-innerFolds[[1]],])
-      
-      frameswithPCA = addPCA_variables(traindata = train, testdata = test)
-      
-      train = frameswithPCA$train
-      test = frameswithPCA$test
-      
-      rm(train.param, frameswithPCA)
-      
-      frameswithKNN = addKNN_variables(traindata = train, testdata = test, include_PCA = TRUE, distances = FALSE)
-      
-      train = frameswithKNN$train
-      test = frameswithKNN$test
-      
-      rm(frameswithKNN)
-      
-      #NEW: Subset top twenty variables from VarImportance List, found after 70 iterations of RFE
-      
-      train = train %>% select(., ResultProper, VarImportance.List$Variable[1:20])
-      test = test %>% select(., ResultProper, VarImportance.List$Variable[1:20])
-      
-      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
- 
+  
+  train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
+  train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
+  test = bake(train.param, new_data = mainTrain[-innerFolds[[1]],])
+  
+  frameswithPCA = addPCA_variables(traindata = train, testdata = test, standardize = FALSE)
+  
+  train = frameswithPCA$train
+  test = frameswithPCA$test
+  
+  rm(train.param, frameswithPCA)
+  
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, include_PCA = TRUE, distances = FALSE)
+  
+  train = frameswithKNN$train
+  test = frameswithKNN$test
+  
+  rm(frameswithKNN)
+  
+  #....Subset selection....#
+  if(!is.null(VarImp) && !is.null(subset.n)){
+    
+    train = train %>% select(., ResultProper, VarImp$Variable[1:subset.n])
+    test = test %>% select(., ResultProper, VarImp$Variable[1:subset.n])
+    
+  }
+  
+  results = randomGridSearch(iterations = 70, innerTrainX = train, innerTestX = test, seed = seed.a)
+  
   
   list(alpha = results$alpha, lambda = results$lambda)
   
@@ -314,9 +341,24 @@ processVarImp = function(varImpRaw){
   final
 }
 
+RFE = function(VarImp, subset.n){
+  
+  VarImp.p = VarImp %>% arrange(., -Importance) %>% select(., Variable)
+  
+  bestParam.RFE = bind_rows(lapply(1:length(allFolds), FUN = modelPipe.inner, folds = allFolds, seed.a = seeds[p], VarImp = VarImp.p, subset.n = subset.n))
+  finalResults.RFE = mapply(FUN = modelPipe.outer, j = 1:length(allFolds), lambda.final = bestParam.RFE$lambda, alpha.final = bestParam.RFE$alpha, 
+                            MoreArgs = list(folds = allFolds, VarImp = VarImp.p, subset.n = subset.n), SIMPLIFY = FALSE)
+  
+  ROC = mean(unlist(lapply(finalResults.RFE, function(x){unlist(x$ROC)})))
+  
+}
+
+
+
 set.seed(40689)
-seeds = sample(1:1000000000, 150, replace = FALSE)
+seeds = sample(1:1000000000, 70, replace = FALSE)
 ROC.status = rep(as.numeric(NA), length(seeds))
+subset.sizes = c(20, 30, 40, 70)
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
 registerDoParallel(cluster)
@@ -335,27 +377,25 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
     
   VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))))
   
+  ##Function call to then take subsets of the above list.....
+  
+  RFE.selection = unlist(mapply(FUN = RFE, subset.n = subset.sizes, MoreArgs = list(VarImp = VarImp), SIMPLIFY = FALSE)) %>%
+                  c(ROC, .) %>%
+                  bind_cols(Subset.Size = c("All", subset.sizes), AUROC = .)
+    
   writeLines(paste("REPEAT:", p, "...", "Running Average AUROC:", mean(ROC.status, na.rm = TRUE), sep = " "))
-  list(ROC = ROC, VarImp = VarImp)
+  list(ROC = ROC, VarImp = VarImp, RFE.results = RFE.selection)
 
 }
 
 stopCluster(cluster)
 rm(cluster)
 
-finalROC = unlist(results[c(seq(1, length(results), 2))])
-finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(bind_cols,.)) 
+finalROC = unlist(results[c(seq(1, length(results), 3))])
+finalROC.RFE = results[c(seq(3, length(results), 3))] %>% reduce(left_join, by = "Subset.Size")
+finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),3))] %>% Reduce(bind_cols,.)) 
 
 paste("Final AUROC: ", mean(finalROC), " with a 95% confidence interval given by ", "[", mean(finalROC) - qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), ", ", 
       mean(finalROC) + qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), "]", sep = "")
 
-
-finalVarImp %>% arrange(., -Importance)
-
-#..............................................Graphing the AUROC scores.........................#
-
-graphingParameters = tibble(ROC = finalROC)
-
-ggplot(data = graphingParameters, aes(graphingParameters$ROC), colour = "Hist") +
-  geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "150 Repeats of Nested Cross Validation", x = "AUROC", subtitle = "Bins = 10, Width = 0.01")
+finalROC.RFE.processed = finalROC.RFE %>% select_if(., is.numeric) %>% transmute(Overall.AUROC = rowMeans(.)) %>% bind_cols(Subset.Size = c("All", subset.sizes),.)
