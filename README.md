@@ -52,6 +52,8 @@ Data Pulled From:
 
 http://corsica.hockey/ <br>
 http://www.puckon.net/ <br>
+http://moneypuck.com/ <br>
+https://evolving-hockey.com/ <br>
 http://www.espn.com/ <br>
 https://www.nhl.com/ <br>
 https://www.oddsportal.com/ <br>
