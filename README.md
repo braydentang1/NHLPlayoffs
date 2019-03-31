@@ -50,7 +50,7 @@ Credits:
 -----
 Data Pulled From:
 
-http://corsica.hockey/ <br>
+https://www.corsicahockey.com/ <br>
 http://www.puckon.net/ <br>
 http://moneypuck.com/ <br>
 https://evolving-hockey.com/ <br>
