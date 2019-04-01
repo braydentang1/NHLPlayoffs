@@ -13119,13 +13119,11 @@ div#notebook {
 <p><h1> <center> Predicting the NHL Playoffs Using a Bagged Elastic Net Regression </center></h1> <br></p>
 <p>This is straight up a bootstrap aggregated elastic net GLM that has objective function:</p>
 $$log(L(p)) - \lambda\left[\frac{{1-\alpha}}{2} \sum_{j = 1}^p B_{j}^2 + \alpha \sum_{j = 1}^p \lvert B_{j}\rvert \right]$$<p><br></p>
-<p>where $log(L(p))$ is the loglikelihood function of the binomial distribution (in this case of a binary classification) and  $B_{j}$  are the fitted coefficients for each feature. We tune over values of $\lambda$ and $\alpha$ to get the best out of sample AUROC. Note that $log[L(p)] = \sum_{i=1}^n [y_{i} * log(p_{i}) + (1-y_{i}) * log(1-p_{i})]$ but $p_{i} = \frac{exp(-X_{i}B)}{1 + exp(-X_{i}B)}$ which is clearly not trivial to solve.</p>
+<p>where $log(L(p))$ is the loglikelihood function of the binomial distribution (in this case of a binary classification) and  $B_{j}$  are the fitted coefficients for each feature. We tune over values of $\lambda$ and $\alpha$ to get the best out of sample AUROC. Note that $log[L(p)] = \sum_{i=1}^n [y_{i} * log(p_{i}) + (1-y_{i}) * log(1-p_{i})]$ but $p_{i} = \frac{exp(-X_{i}B)}{1 + exp(-X_{i}B)}$ which is clearly not trivial to maximize with respect to B.</p>
 <p>I chose this model mostly because I wanted a framework that had embedded feature selection while still representing predictions as a linear combination of features. The sample size is low, so a "simple" linear function is probably the best we can get right now. From the loss function, the model explicitly controls for both collinearity in predictors (large amounts in this problem) through the ridge $\sum_{j = 1}^p B_{j}^2$ and noisy predictors through the LASSO  $\sum_{j = 1}^p \lvert B_{j}\rvert$ . $\alpha$ controls the mixing amount of the two penalties and $\lambda$ controls the entire contribution of penalty from both the ridge and LASSO. It should be clear that the model penalizes large coefficients, a symptom of bad collinearity or perfect separation in any linear regression while also allowing for the coefficient of a predictor to be exactly zero if the predictor is not useful in maximizing out of sample performance measures. A model that maximizes the log likelihood is not necessarily the best model if it is overfit; in some ways this is similar to the overall idea of Akaike's Information Criterion for finding a parsimonious model but the penalty term is very different. One easy way to interpret this model is as follows: if the loglikelihood function does not increase enough (or at all) to warrent a relatively "large"  $B_{j}$, then the influence the variable has on the predictions from the model is lowered by shrinking the variable's corresponding coefficient (in magnitude). In some cases, if the variable is completely non-predictive than the coefficient for that variable is shrunk to zero, meaning that the variable is straight up not included in the model anymore. Furthermore, coefficients that are arbitrarily (and not meaningfully) large due to collinearity/perfect separation are shrunk to smaller values to decrease their arbitrary large influence on predictions, reducing the variance of out of sample predictions (and therefore improving out of sample predictive performance).</p>
-<p>The model is the best out of all models tried giving an AUROC of about 0.675 using about 140 features as input (though many aren't actually used in final predictions). It predicts slightly better than the bagged gradient boosted GLM that I tried. This means that in general, if we were to randomly pick a true winner and a true loser from the dataset 1000 times, the bagged elastic net model would be expected to rank the true winner as having a higher probability of being a winner over the true loser about 675 out of 1000 times. Not bad for how hard NHL games are to predict; the best game to game NHL models I've seen evaluate around 0.6709 log loss; that is, on average a probability of about 0.511 is being predicted for a true winner/true loser to be an actual winner/loser which is clearly not a very confident prediction. This is better than simply randomly guessing (AUROC = 0.5, or Log Loss of 0.6931 = ln2) or defaulting to selecting the higher seed in the playoffs (should give an AUROC of around 0.57 ish in that case).</p>
+<p>The model is the best out of all models tried giving an AUROC of about 0.72 using about 140 features as input (though many aren't actually used in final predictions). It predicts slightly better than the bagged gradient boosted GLM that I tried. This means that in general, if we were to randomly pick a true winner and a true loser from the dataset 100 times, the bagged elastic net model would be expected to rank the true winner as having a higher probability of being a winner over the true loser about 72 times. Not bad for how hard NHL games are to predict.</p>
 <p>The script takes kind of a while to run since we are doing 150 repeats. Be warned that this script is multithreaded; so your CPU will be pinned if you run it.</p>
-<p><h3><center>Reported Validation Scores (150 Repeats of Nested Cross Validation): </center></h3>
-Final AUROC: 0.67512012012012 <br>
-A 95% CI for the AUROC is: [0.672597256743428, 0.677642983496813] <br></p>
+<h3><center>Reported Validation Scores (150 Repeats of Nested Cross Validation): </center></h3><p>Final AUROC: 0.719420849420849 with a 95% confidence interval given by [0.714794800947121, 0.724046897894578]'</p>
 
 </div>
 </div>
@@ -13147,20 +13145,20 @@ A 95% CI for the AUROC is: [0.672597256743428, 0.677642983496813] <br></p>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="c1">#Dependencies</span>
 
-<span class="nf">require</span><span class="p">(</span><span class="n">glmnet</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">caret</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">pROC</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">recipes</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span>
-<span class="nf">require</span><span class="p">(</span><span class="n">fastknn</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">glmnet</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">caret</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">pROC</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">tidyverse</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">recipes</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">doParallel</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">foreach</span><span class="p">)</span>
+<span class="nf">library</span><span class="p">(</span><span class="n">fastknn</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13177,20 +13175,17 @@ A 95% CI for the AUROC is: [0.672597256743428, 0.677642983496813] <br></p>
 
 
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>Loading required package: glmnet
-Loading required package: Matrix
+<pre>Loading required package: Matrix
 Warning message:
 &#34;package &#39;Matrix&#39; was built under R version 3.5.2&#34;Loading required package: foreach
 Loaded glmnet 2.0-16
 
-Loading required package: caret
 Warning message:
 &#34;package &#39;caret&#39; was built under R version 3.5.2&#34;Loading required package: lattice
 Warning message:
 &#34;package &#39;lattice&#39; was built under R version 3.5.2&#34;Loading required package: ggplot2
 Warning message:
-&#34;package &#39;ggplot2&#39; was built under R version 3.5.1&#34;Loading required package: pROC
-Warning message:
+&#34;package &#39;ggplot2&#39; was built under R version 3.5.1&#34;Warning message:
 &#34;package &#39;pROC&#39; was built under R version 3.5.2&#34;Type &#39;citation(&#34;pROC&#34;)&#39; for a citation.
 
 Attaching package: &#39;pROC&#39;
@@ -13203,13 +13198,12 @@ The following objects are masked from &#39;package:stats&#39;:
 
     cov, smooth, var
 
-Loading required package: tidyverse
 Warning message:
 &#34;package &#39;tidyverse&#39; was built under R version 3.5.2&#34;-- Attaching packages --------------------------------------- tidyverse 1.2.1 --
-v tibble  1.4.2     v purrr   0.2.5
+v tibble  2.0.1     v purrr   0.2.5
 v tidyr   0.8.2     v dplyr   0.7.8
 v readr   1.3.1     v stringr 1.3.1
-v tibble  1.4.2     v forcats 0.3.0
+v tibble  2.0.1     v forcats 0.3.0
 Warning message:
 &#34;package &#39;tibble&#39; was built under R version 3.5.2&#34;Warning message:
 &#34;package &#39;tidyr&#39; was built under R version 3.5.2&#34;Warning message:
@@ -13223,7 +13217,6 @@ x dplyr::filter()     masks stats::filter()
 x dplyr::lag()        masks stats::lag()
 x purrr::lift()       masks caret::lift()
 x purrr::when()       masks foreach::when()
-Loading required package: recipes
 Warning message:
 &#34;package &#39;recipes&#39; was built under R version 3.5.2&#34;
 Attaching package: &#39;recipes&#39;
@@ -13236,13 +13229,10 @@ The following object is masked from &#39;package:stats&#39;:
 
     step
 
-Loading required package: moments
-Loading required package: doParallel
 Warning message:
 &#34;package &#39;doParallel&#39; was built under R version 3.5.2&#34;Loading required package: iterators
 Warning message:
 &#34;package &#39;iterators&#39; was built under R version 3.5.2&#34;Loading required package: parallel
-Loading required package: fastknn
 FastKNN version 0.9.0
 </pre>
 </div>
@@ -13277,20 +13267,21 @@ FastKNN version 0.9.0
     <span class="n">train_temp</span> <span class="o">=</span> <span class="n">train[samples[[g]]</span><span class="p">,</span> <span class="n">]</span>
     <span class="n">a</span> <span class="o">=</span> <span class="n">label_train[samples[[g]]]</span>
     <span class="n">modelX</span> <span class="o">=</span> <span class="nf">glmnet</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">train_temp[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">train_temp</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span><span class="p">),</span> <span class="n">y</span> <span class="o">=</span> <span class="n">a</span><span class="p">,</span> <span class="n">family</span> <span class="o">=</span> <span class="s">&quot;binomial&quot;</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha.a</span><span class="p">,</span> <span class="n">nlambda</span> <span class="o">=</span> <span class="m">120</span><span class="p">,</span> <span class="n">standardize</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+    <span class="n">s_lambda.a</span> <span class="o">=</span> <span class="nf">case_when</span><span class="p">(</span><span class="n">s_lambda.a</span> <span class="o">&gt;</span> <span class="nf">length</span><span class="p">(</span><span class="n">modelX</span><span class="o">$</span><span class="n">lambda</span><span class="p">)</span> <span class="o">~</span> <span class="nf">length</span><span class="p">(</span><span class="n">modelX</span><span class="o">$</span><span class="n">lambda</span><span class="p">),</span> <span class="kc">TRUE</span> <span class="o">~</span> <span class="n">s_lambda.a</span><span class="p">)</span>
     <span class="n">pred[[g]]</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">modelX</span><span class="p">,</span> <span class="n">newx</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">test[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span><span class="p">),</span> <span class="n">type</span> <span class="o">=</span> <span class="s">&quot;response&quot;</span><span class="p">)</span><span class="n">[</span><span class="p">,</span> <span class="n">s_lambda.a]</span>
-    <span class="n">varImp[[g]]</span> <span class="o">=</span> <span class="nf">varImp</span><span class="p">(</span><span class="n">modelX</span><span class="p">,</span> <span class="n">lambda</span> <span class="o">=</span> <span class="n">modelX</span><span class="o">$</span><span class="n">lambda[s_lambda.a]</span><span class="p">)</span>
-    <span class="nf">colnames</span><span class="p">(</span><span class="n">varImp[[g]]</span><span class="p">)</span><span class="n">[1]</span> <span class="o">=</span> <span class="nf">paste</span><span class="p">(</span><span class="s">&quot;Overall:&quot;</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">varImp[[g]]</span> <span class="o">=</span> <span class="n">tibble</span><span class="o">::</span><span class="nf">rownames_to_column</span><span class="p">(</span><span class="nf">varImp</span><span class="p">(</span><span class="n">modelX</span><span class="p">,</span> <span class="n">lambda</span> <span class="o">=</span> <span class="n">modelX</span><span class="o">$</span><span class="n">lambda[s_lambda.a]</span><span class="p">),</span> <span class="n">var</span> <span class="o">=</span> <span class="s">&quot;Variable&quot;</span><span class="p">)</span>
+    <span class="nf">colnames</span><span class="p">(</span><span class="n">varImp[[g]]</span><span class="p">)</span><span class="n">[2]</span> <span class="o">=</span> <span class="nf">paste</span><span class="p">(</span><span class="s">&quot;Overall:&quot;</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
     <span class="nf">remove</span><span class="p">(</span><span class="n">modelX</span><span class="p">,</span> <span class="n">train_temp</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
   <span class="p">}</span>
   
-  <span class="n">pred</span> <span class="o">=</span> <span class="n">pred</span> <span class="o">%&gt;%</span> <span class="nf">Reduce</span><span class="p">(</span><span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="nf">cbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">),</span><span class="n">.)</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">()</span> <span class="o">%&gt;%</span>
-    <span class="nf">mutate</span><span class="p">(</span><span class="n">Predicted</span> <span class="o">=</span> <span class="nf">rowMeans</span><span class="p">(</span><span class="n">.)</span><span class="p">)</span>
+  <span class="n">pred</span> <span class="o">=</span> <span class="nf">bind_cols</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="nf">transmute</span><span class="p">(</span><span class="n">Predicted</span> <span class="o">=</span> <span class="nf">rowMeans</span><span class="p">(</span><span class="n">.)</span><span class="p">)</span>
   
-  <span class="n">varImp</span> <span class="o">=</span> <span class="n">varImp</span> <span class="o">%&gt;%</span> <span class="nf">Reduce</span><span class="p">(</span><span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="nf">cbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">),</span><span class="n">.)</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">()</span> <span class="o">%&gt;%</span>
-    <span class="nf">mutate</span><span class="p">(</span><span class="n">VariableImportance</span> <span class="o">=</span> <span class="nf">rowMeans</span><span class="p">(</span><span class="n">.)</span><span class="p">)</span>
+  <span class="n">varImp</span> <span class="o">=</span> <span class="n">varImp</span> <span class="o">%&gt;%</span> <span class="nf">Reduce</span><span class="p">(</span><span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> <span class="nf">left_join</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span> <span class="n">by</span> <span class="o">=</span> <span class="s">&quot;Variable&quot;</span><span class="p">),</span> <span class="n">.)</span> 
   
-                             
-  <span class="n">varImp</span> <span class="o">=</span> <span class="n">tibble</span><span class="o">::</span><span class="nf">rownames_to_column</span><span class="p">(</span><span class="nf">cbind.data.frame</span><span class="p">(</span><span class="n">meanImportance</span> <span class="o">=</span> <span class="n">varImp</span><span class="o">$</span><span class="n">VariableImportance</span><span class="p">),</span> <span class="n">var</span> <span class="o">=</span> <span class="s">&quot;Variable&quot;</span><span class="p">)</span>
+  <span class="n">means</span> <span class="o">=</span> <span class="n">varImp</span> <span class="o">%&gt;%</span> <span class="nf">select_if</span><span class="p">(</span><span class="n">is.numeric</span><span class="p">)</span> <span class="o">%&gt;%</span> <span class="nf">transmute</span><span class="p">(</span><span class="n">VariableImportance</span> <span class="o">=</span> <span class="nf">rowMeans</span><span class="p">(</span><span class="n">.)</span><span class="p">)</span>
+  
+  <span class="n">varImp</span> <span class="o">=</span> <span class="nf">tibble</span><span class="p">(</span><span class="n">Variable</span> <span class="o">=</span> <span class="n">varImp</span><span class="o">$</span><span class="n">Variable</span><span class="p">,</span> <span class="n">meanImportance</span> <span class="o">=</span> <span class="n">means</span><span class="o">$</span><span class="n">VariableImportance</span><span class="p">)</span>
   
   <span class="nf">list</span><span class="p">(</span><span class="n">Predictions</span> <span class="o">=</span> <span class="n">pred</span><span class="o">$</span><span class="n">Predicted</span><span class="p">,</span> <span class="n">VariableImportance</span> <span class="o">=</span> <span class="n">varImp</span><span class="p">)</span>
 <span class="p">}</span>
@@ -13351,16 +13342,32 @@ FastKNN version 0.9.0
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="c1">#..................................PCA Function....................................#</span>
+<span class="c1">#I tried to center and scale these variables after they were mistakenly left uncentered and unscaled (recall: the model has a loss function that is a function of the </span>
+<span class="c1">#magnitude of the parameters themselves, hence, it is vital we center and scale variables to be unitless so that the magnitude of such variables are not unfairly penalized.</span>
+<span class="c1">#However....the validation results were quite different than before, roughly a drop of 0.03-0.04 in AUROC which is quite significant.)</span>
 
-<span class="n">addPCA_variables</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">testdata</span><span class="p">){</span>
+<span class="n">addPCA_variables</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">testdata</span><span class="p">,</span> <span class="n">standardize</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">){</span>
     
     <span class="n">traindata_tmp</span> <span class="o">=</span> <span class="n">traindata[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">traindata</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">select_if</span><span class="p">(</span><span class="n">.,</span> <span class="n">is.numeric</span><span class="p">)</span>
     <span class="n">testdata_tmp</span> <span class="o">=</span> <span class="n">testdata[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">testdata</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">select_if</span><span class="p">(</span><span class="n">.,</span> <span class="n">is.numeric</span><span class="p">)</span>
     
     <span class="n">pca_parameters</span> <span class="o">=</span> <span class="nf">prcomp</span><span class="p">(</span><span class="n">traindata_tmp</span><span class="p">,</span> <span class="n">center</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span> <span class="n">scale.</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
-    <span class="n">pca_newdata</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">pca_parameters</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">testdata_tmp</span><span class="p">)</span><span class="n">[</span><span class="p">,</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="n">]</span>
-    <span class="n">pca_traindata</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">pca_parameters</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">traindata_tmp</span><span class="p">)</span><span class="n">[</span><span class="p">,</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="n">]</span>
-    <span class="nf">list</span><span class="p">(</span><span class="n">train</span> <span class="o">=</span> <span class="nf">cbind</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">pca_traindata</span><span class="p">),</span> <span class="n">test</span> <span class="o">=</span> <span class="nf">cbind</span><span class="p">(</span><span class="n">testdata</span><span class="p">,</span> <span class="n">pca_newdata</span><span class="p">))</span>
+    <span class="n">pca_traindata</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">pca_parameters</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">traindata_tmp</span><span class="p">)</span><span class="n">[</span><span class="p">,</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="n">.)</span> 
+    
+    <span class="nf">if</span><span class="p">(</span><span class="n">standardize</span> <span class="o">==</span> <span class="kc">TRUE</span><span class="p">){</span>
+      
+      <span class="n">pca_train.params</span> <span class="o">=</span> <span class="n">caret</span><span class="o">::</span><span class="nf">preProcess</span><span class="p">(</span><span class="n">pca_traindata</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;center&quot;</span><span class="p">,</span> <span class="s">&quot;scale&quot;</span><span class="p">))</span>
+      <span class="n">pca_traindata</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">pca_train.params</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">pca_traindata</span><span class="p">)</span>
+      <span class="n">pca_newdata</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">pca_parameters</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">testdata_tmp</span><span class="p">)</span><span class="n">[</span><span class="p">,</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="n">.)</span> <span class="o">%&gt;%</span> <span class="nf">predict</span><span class="p">(</span><span class="n">pca_train.params</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">.)</span>
+      
+    <span class="p">}</span><span class="n">else</span><span class="p">{</span>
+      
+     <span class="n">pca_newdata</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">pca_parameters</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">testdata_tmp</span><span class="p">)</span><span class="n">[</span><span class="p">,</span><span class="m">1</span><span class="o">:</span><span class="m">5</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="n">.)</span> 
+
+    <span class="p">}</span>
+    
+
+    <span class="nf">list</span><span class="p">(</span><span class="n">train</span> <span class="o">=</span> <span class="nf">bind_cols</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">pca_traindata</span><span class="p">),</span> <span class="n">test</span> <span class="o">=</span> <span class="nf">bind_cols</span><span class="p">(</span><span class="n">testdata</span><span class="p">,</span> <span class="n">pca_newdata</span><span class="p">))</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -13383,12 +13390,18 @@ FastKNN version 0.9.0
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="c1">#..................................kNN Function....................................#</span>
+<span class="c1">#Distances = cumulative distance from observation to the first, second, third, etc. nearest neighbour for each class label. </span>
+<span class="c1">#So for example, knn1 = distance from observation to first nearest neighbour that has label &quot;W&quot;. knn2 = distance from observation</span>
+<span class="c1">#to second nearest neighbour that has label &quot;W&quot;. knn3 = distance from observation to first nearest neighbour that has label &quot;L&quot;, </span>
+<span class="c1">#and knn3 = distance from observation to second nearest neighbour that has label &quot;L&quot;.</span>
 
-<span class="n">addKNN_variables</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">testdata</span><span class="p">,</span> <span class="n">include_PCA</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">){</span>
+<span class="c1">#Probabilities = calculates the proportion of winners out of the k most closest neighbours to an observation</span>
+
+<span class="n">addKNN_variables</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">testdata</span><span class="p">,</span> <span class="n">include_PCA</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">,</span> <span class="n">distances</span> <span class="o">=</span> <span class="kc">TRUE</span><span class="p">){</span>
     
-    <span class="n">y</span> <span class="o">=</span> <span class="n">traindata</span><span class="o">$</span><span class="n">ResultProper</span>
-    <span class="n">traindata</span> <span class="o">=</span> <span class="n">traindata[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">traindata</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span>
-    <span class="n">testdata</span> <span class="o">=</span> <span class="n">testdata[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">testdata</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span>
+  <span class="c1">#Selects variables that are top performing....</span>
+    <span class="n">traindata_tmp</span> <span class="o">=</span> <span class="n">traindata[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">traindata</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="n">H2H</span><span class="p">,</span> <span class="n">WeightedGPS</span><span class="p">,</span> <span class="n">Q2Record</span><span class="p">,</span> <span class="n">PowerPlayOppurtunities</span><span class="p">,</span> <span class="n">PenaltyKillPercentage</span><span class="p">,</span> <span class="n">VegasOpeningOdds</span><span class="p">,</span> <span class="s">&quot;TOI% QoT_mean&quot;</span><span class="p">)</span>
+    <span class="n">testdata_tmp</span> <span class="o">=</span> <span class="n">testdata[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">testdata</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="n">H2H</span><span class="p">,</span> <span class="n">WeightedGPS</span><span class="p">,</span> <span class="n">Q2Record</span><span class="p">,</span> <span class="n">PowerPlayOppurtunities</span><span class="p">,</span> <span class="n">PenaltyKillPercentage</span><span class="p">,</span> <span class="n">VegasOpeningOdds</span><span class="p">,</span> <span class="s">&quot;TOI% QoT_mean&quot;</span><span class="p">)</span>
 
     <span class="nf">if</span><span class="p">(</span><span class="n">include_PCA</span> <span class="o">==</span> <span class="kc">TRUE</span><span class="p">){</span>
         
@@ -13402,10 +13415,32 @@ FastKNN version 0.9.0
     
     <span class="p">}</span>
     
-    <span class="n">newframeswithKNN</span> <span class="o">=</span> <span class="n">fastknn</span><span class="o">::</span><span class="nf">knnExtract</span><span class="p">(</span><span class="n">xtr</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">traindata_tmp</span><span class="p">),</span> <span class="n">ytr</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span> <span class="n">xte</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">testdata_tmp</span><span class="p">),</span> <span class="n">k</span> <span class="o">=</span> <span class="m">1</span><span class="p">)</span>
-    <span class="n">KNN_train</span> <span class="o">=</span> <span class="n">newframeswithKNN</span><span class="o">$</span><span class="n">new.tr</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="n">.)</span> <span class="o">%&gt;%</span> <span class="nf">transmute_all</span><span class="p">(</span><span class="n">.,</span> <span class="n">.funs</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="nf">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">na.rm</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">))</span> <span class="o">/</span> <span class="nf">sd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">na.rm</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">))</span>
-    <span class="n">KNN_test</span> <span class="o">=</span> <span class="n">newframeswithKNN</span><span class="o">$</span><span class="n">new.te</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="n">.)</span> <span class="o">%&gt;%</span> <span class="nf">transmute_all</span><span class="p">(</span><span class="n">.,</span> <span class="n">.funs</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="nf">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">na.rm</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">))</span> <span class="o">/</span> <span class="nf">sd</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">na.rm</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">))</span> 
-    <span class="nf">list</span><span class="p">(</span><span class="n">train</span> <span class="o">=</span> <span class="nf">cbind</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">KNN_train</span><span class="p">),</span> <span class="n">test</span> <span class="o">=</span> <span class="nf">cbind</span><span class="p">(</span><span class="n">testdata</span><span class="p">,</span> <span class="n">KNN_test</span><span class="p">))</span>
+    <span class="nf">if </span><span class="p">(</span><span class="n">distances</span> <span class="o">==</span> <span class="kc">TRUE</span><span class="p">){</span>
+    
+    <span class="n">newframeswithKNN</span> <span class="o">=</span> <span class="n">fastknn</span><span class="o">::</span><span class="nf">knnExtract</span><span class="p">(</span><span class="n">xtr</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">traindata_tmp</span><span class="p">),</span> <span class="n">ytr</span> <span class="o">=</span> <span class="n">traindata</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">xte</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">testdata_tmp</span><span class="p">),</span> <span class="n">k</span> <span class="o">=</span> <span class="m">1</span><span class="p">,</span> <span class="n">normalize</span> <span class="o">=</span> <span class="kc">NULL</span><span class="p">)</span>
+    <span class="n">KNN_train</span> <span class="o">=</span> <span class="n">newframeswithKNN</span><span class="o">$</span><span class="n">new.tr</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="n">.)</span> 
+    
+    <span class="n">KNN_train.params</span> <span class="o">=</span> <span class="n">caret</span><span class="o">::</span><span class="nf">preProcess</span><span class="p">(</span><span class="n">KNN_train</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;center&quot;</span><span class="p">,</span> <span class="s">&quot;scale&quot;</span><span class="p">))</span>
+    <span class="n">KNN_train</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">KNN_train.params</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">KNN_train</span><span class="p">)</span>
+    
+    <span class="n">KNN_test</span> <span class="o">=</span> <span class="n">newframeswithKNN</span><span class="o">$</span><span class="n">new.te</span> <span class="o">%&gt;%</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="n">.)</span> <span class="o">%&gt;%</span> <span class="nf">predict</span><span class="p">(</span><span class="n">KNN_train.params</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">.)</span>
+    
+    <span class="nf">list</span><span class="p">(</span><span class="n">train</span> <span class="o">=</span> <span class="nf">bind_cols</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">KNN_train</span><span class="p">),</span> <span class="n">test</span> <span class="o">=</span> <span class="nf">bind_cols</span><span class="p">(</span><span class="n">testdata</span><span class="p">,</span> <span class="n">KNN_test</span><span class="p">))</span>
+    
+    <span class="p">}</span><span class="n">else</span><span class="p">{</span>
+      
+    <span class="n">KNN_train</span>  <span class="o">=</span> <span class="nf">tibble</span><span class="p">(</span><span class="n">knn_W</span> <span class="o">=</span> <span class="nf">fastknn</span><span class="p">(</span><span class="n">xtr</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">traindata_tmp</span><span class="p">),</span> <span class="n">ytr</span> <span class="o">=</span> <span class="n">traindata</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">xte</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">traindata_tmp</span><span class="p">),</span> <span class="n">k</span> <span class="o">=</span> <span class="m">5</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s">&quot;vote&quot;</span><span class="p">,</span> <span class="n">normalize</span> <span class="o">=</span> <span class="kc">NULL</span><span class="p">)</span><span class="o">$</span><span class="n">prob[</span><span class="p">,</span><span class="m">2</span><span class="n">]</span><span class="p">)</span> 
+    
+    <span class="n">KNN_train.params</span> <span class="o">=</span> <span class="n">caret</span><span class="o">::</span><span class="nf">preProcess</span><span class="p">(</span><span class="n">KNN_train</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;center&quot;</span><span class="p">,</span> <span class="s">&quot;scale&quot;</span><span class="p">))</span>
+    <span class="n">KNN_train</span> <span class="o">=</span> <span class="nf">predict</span><span class="p">(</span><span class="n">KNN_train.params</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">KNN_train</span><span class="p">)</span>
+    
+    <span class="n">KNN_test</span> <span class="o">=</span> <span class="nf">tibble</span><span class="p">(</span><span class="n">knn_W</span> <span class="o">=</span> <span class="nf">fastknn</span><span class="p">(</span><span class="n">xtr</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">traindata_tmp</span><span class="p">),</span> <span class="n">ytr</span> <span class="o">=</span> <span class="n">traindata</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">xte</span> <span class="o">=</span> <span class="nf">data.matrix</span><span class="p">(</span><span class="n">testdata_tmp</span><span class="p">),</span> <span class="n">k</span> <span class="o">=</span> <span class="m">5</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s">&quot;vote&quot;</span><span class="p">,</span> <span class="n">normalize</span> <span class="o">=</span> <span class="kc">NULL</span><span class="p">)</span><span class="o">$</span><span class="n">prob[</span><span class="p">,</span><span class="m">2</span><span class="n">]</span><span class="p">)</span> <span class="o">%&gt;%</span>
+      <span class="nf">predict</span><span class="p">(</span><span class="n">KNN_train.params</span><span class="p">,</span> <span class="n">newdata</span> <span class="o">=</span> <span class="n">.)</span>
+    
+    <span class="nf">list</span><span class="p">(</span><span class="n">train</span> <span class="o">=</span> <span class="nf">bind_cols</span><span class="p">(</span><span class="n">traindata</span><span class="p">,</span> <span class="n">KNN_train</span><span class="p">),</span> <span class="n">test</span> <span class="o">=</span> <span class="nf">bind_cols</span><span class="p">(</span><span class="n">testdata</span><span class="p">,</span> <span class="n">KNN_test</span><span class="p">))</span>
+      
+    <span class="p">}</span>
+    
 <span class="p">}</span>
 </pre></div>
 
@@ -13442,7 +13477,12 @@ FastKNN version 0.9.0
               <span class="nf">bind_cols</span><span class="p">(</span><span class="nf">read_csv</span><span class="p">(</span><span class="s">&quot;C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
               <span class="nf">bind_cols</span><span class="p">(</span><span class="nf">read_csv</span><span class="p">(</span><span class="s">&quot;C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
               <span class="nf">bind_cols</span><span class="p">(</span><span class="nf">read_csv</span><span class="p">(</span><span class="s">&quot;C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
+              <span class="nf">bind_cols</span><span class="p">(</span><span class="nf">read_csv</span><span class="p">(</span><span class="s">&quot;C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
               <span class="nf">mutate</span><span class="p">(</span><span class="n">ResultProper</span> <span class="o">=</span> <span class="nf">as.factor</span><span class="p">(</span><span class="n">ResultProper</span><span class="p">))</span>
+
+<span class="c1">#...................................Read in Variable Importance List After RFE....................#</span>
+
+<span class="n">VarImportance.List</span> <span class="o">=</span> <span class="nf">read_csv</span><span class="p">(</span><span class="s">&quot;C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Model Output/finalVarImp.March28th.csv&quot;</span><span class="p">)</span> <span class="o">%&gt;%</span> <span class="n">.[</span><span class="p">,</span><span class="m">1</span><span class="n">]</span>
 </pre></div>
 
     </div>
@@ -13527,7 +13567,8 @@ cols(
 Parsed with column specification:
 cols(
   ESPNPower = col_double(),
-  RPI = col_double()
+  RPI = col_double(),
+  PenaltyKill_PostAllStar = col_double()
 )
 Parsed with column specification:
 cols(
@@ -13565,6 +13606,22 @@ Parsed with column specification:
 cols(
   VegasOpeningOdds = col_double()
 )
+Parsed with column specification:
+cols(
+  GAR.TOI_max = col_double(),
+  GAR.TOI_mean = col_double(),
+  GAR.TOI_median = col_double(),
+  GAR.TOI_sd = col_double(),
+  WAR.TOI_max = col_double(),
+  WAR.TOI_mean = col_double(),
+  WAR.TOI_median = col_double(),
+  WAR.TOI_sd = col_double()
+)
+Parsed with column specification:
+cols(
+  Variable = col_character(),
+  Importance = col_double()
+)
 </pre>
 </div>
 </div>
@@ -13580,36 +13637,29 @@ cols(
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="c1">#...................................Engineering of some features..................#</span>
 
-<span class="n">allData</span> <span class="o">=</span> <span class="n">allData</span> <span class="o">%&gt;%</span> <span class="nf">mutate</span><span class="p">(</span><span class="n">Round</span> <span class="o">=</span> <span class="nf">as.factor</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">4</span><span class="p">),</span><span class="m">13</span><span class="p">)))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_GoalstoGoalsAgainst</span> <span class="o">=</span> <span class="n">GoalsFor</span><span class="o">/</span><span class="n">GoalsAgainst</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_HitstoBlocks</span> <span class="o">=</span> <span class="n">HitsatES</span><span class="o">/</span><span class="n">BlocksatES</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">logofPoints</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">Points</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">Points</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">sqrtofPoints</span> <span class="o">=</span> <span class="nf">abs</span><span class="p">(</span><span class="n">Points</span><span class="p">)</span><span class="n">^0.5</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">PenaltyMinstoPowerPlay</span> <span class="o">=</span> <span class="n">PenaltyMinsPG</span><span class="o">*</span><span class="m">60</span><span class="o">*</span><span class="m">82</span> <span class="o">/</span><span class="n">PowerPlayPercentage</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_SRStoPoints</span> <span class="o">=</span> <span class="n">SRS</span><span class="o">/</span><span class="n">Points</span><span class="p">)</span> <span class="o">%&gt;%</span>
+<span class="n">allData</span> <span class="o">=</span> <span class="n">allData</span> <span class="o">%&gt;%</span> 
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">Round</span> <span class="o">=</span> <span class="nf">as.factor</span><span class="p">(</span><span class="nf">rep</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">1</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">2</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">3</span><span class="p">,</span><span class="m">4</span><span class="p">),</span><span class="m">13</span><span class="p">)))</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">PenaltyMinstoPowerPlaylog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">PenaltyMinsPG</span><span class="o">*</span><span class="m">60</span><span class="o">*</span><span class="m">82</span> <span class="o">/</span><span class="n">PowerPlayPercentage</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">PenaltyMinsPG</span><span class="o">*</span><span class="m">60</span><span class="o">*</span><span class="m">82</span> <span class="o">/</span><span class="n">PowerPlayPercentage</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_SRStoPoints</span> <span class="o">=</span> <span class="p">(</span><span class="n">SRS</span><span class="o">/</span><span class="n">Points</span><span class="p">)</span><span class="n">^1</span><span class="o">/</span><span class="m">3</span><span class="p">)</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">AverageGoalDiff_PerGame</span> <span class="o">=</span> <span class="n">GoalsFor</span><span class="o">/</span><span class="m">82</span><span class="p">)</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">AveragePenaltyDiff_PerGame</span> <span class="o">=</span> <span class="n">PenaltyMinsPG</span><span class="o">/</span><span class="m">82</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">logofSOG</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">SOG</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">SOG</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">sqrtofRPI</span> <span class="o">=</span> <span class="nf">abs</span><span class="p">(</span><span class="n">RPI</span><span class="p">)</span><span class="n">^0.5</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">PowerPlaytoPenaltyKill</span> <span class="o">=</span> <span class="n">PowerPlayPercentage</span><span class="o">/</span><span class="n">PenaltyKillPercentage</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">PowerPlaytoPenaltyKill</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">PowerPlaytoPenaltyKill</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">PowerPlaytoPenaltyKill</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">SCFtoGoalsAgainst</span> <span class="o">=</span> <span class="n">SCF</span><span class="o">/</span><span class="n">GoalsAgainst</span><span class="p">)</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">PowerPlaytoPenaltyKill</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">PowerPlayPercentage</span><span class="o">/</span><span class="n">PenaltyKillPercentage</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">PowerPlayPercentage</span><span class="o">/</span><span class="n">PenaltyKillPercentage</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">PPO_x_PenaltyKill</span> <span class="o">=</span> <span class="n">PowerPlayOppurtunities</span> <span class="o">*</span> <span class="n">PenaltyKillPercentage</span><span class="p">)</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">PointsPercentage</span> <span class="o">=</span> <span class="n">Points</span><span class="o">/</span><span class="m">164</span><span class="p">)</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">GS_max_log</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">GS_mean</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">GS_mean</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">CA_Per60Team_log</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">CA_Per60Team</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">CA_Per60Team</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_GoalstoGoalsAgainstlog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">Ratio_of_GoalstoGoalsAgainst</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">Ratio_of_GoalstoGoalsAgainst</span><span class="p">)</span> <span class="m">+1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_HitstoBlockslog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">Ratio_of_HitstoBlocks</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">Ratio_of_HitstoBlocks</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">SCFtoGoalsAgainstlog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">SCFtoGoalsAgainst</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">SCFtoGoalsAgainst</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">PointsPercentagesqrt</span> <span class="o">=</span> <span class="nf">abs</span><span class="p">(</span><span class="n">PointsPercentage</span><span class="p">)</span><span class="n">^0.5</span><span class="p">)</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_GoalstoGoalsAgainstlog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">GoalsFor</span><span class="o">/</span><span class="n">GoalsAgainst</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">GoalsFor</span><span class="o">/</span><span class="n">GoalsAgainst</span><span class="p">)</span> <span class="m">+1</span><span class="p">))</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">Ratio_of_HitstoBlockslog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">HitsatES</span><span class="o">/</span><span class="n">BlocksatES</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">HitsatES</span><span class="o">/</span><span class="n">BlocksatES</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="n">SCFtoGoalsAgainstlog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">SCF</span><span class="o">/</span><span class="n">GoalsAgainst</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">SCF</span><span class="o">/</span><span class="n">GoalsAgainst</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">CorsiDifftoSOSlog</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">((</span><span class="n">CF_Per60Team</span> <span class="o">-</span> <span class="n">CA_Per60Team</span><span class="p">)</span><span class="o">/</span><span class="n">SOS</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">((</span><span class="n">CF_Per60Team</span> <span class="o">-</span> <span class="n">CA_Per60Team</span><span class="p">)</span><span class="o">/</span><span class="n">SOS</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">xGDifftoSOS</span> <span class="o">=</span> <span class="p">(</span><span class="n">xGF.60</span> <span class="o">-</span> <span class="n">xGA.60</span><span class="p">)</span><span class="o">/</span><span class="n">SOS</span><span class="p">)</span> <span class="o">%&gt;%</span> 
             <span class="nf">mutate</span><span class="p">(</span><span class="n">GStoSOS</span> <span class="o">=</span> <span class="n">GS_mean</span> <span class="o">/</span> <span class="n">SOS</span><span class="p">)</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate</span><span class="p">(</span><span class="n">SRStoSOS</span> <span class="o">=</span> <span class="n">SRS</span><span class="o">/</span><span class="n">SOS</span><span class="p">)</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="s">&quot;CF% QoT_min&quot;</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">allData</span><span class="o">$</span><span class="s">&quot;CF% QoT_min&quot;</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">allData</span><span class="o">$</span><span class="s">&quot;CF% QoT_min&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="n">ZSR_min</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">ZSR_min</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">ZSR_min</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
-            <span class="nf">mutate</span><span class="p">(</span><span class="s">&quot;Rel CF%_min&quot;</span> <span class="o">=</span> <span class="nf">sign</span><span class="p">(</span><span class="n">allData</span><span class="o">$</span><span class="s">&quot;Rel CF%_min&quot;</span><span class="p">)</span> <span class="o">*</span> <span class="nf">log</span><span class="p">(</span><span class="nf">abs</span><span class="p">(</span><span class="n">allData</span><span class="o">$</span><span class="s">&quot;Rel CF%_min&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="m">1</span><span class="p">))</span> <span class="o">%&gt;%</span>
+            <span class="nf">mutate</span><span class="p">(</span><span class="s">&quot;ixGF/60_max.TO.Rel CF%_max&quot;</span> <span class="o">=</span> <span class="n">allData</span><span class="o">$</span><span class="s">&#39;Rel CF%_max&#39;</span> <span class="o">/</span> <span class="n">allData</span><span class="o">$</span><span class="s">&#39;ixGF/60_max&#39;</span><span class="p">)</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate_if</span><span class="p">(</span><span class="n">is.numeric</span><span class="p">,</span> <span class="nf">funs</span><span class="p">(</span><span class="nf">ifelse</span><span class="p">(</span><span class="nf">is.nan</span><span class="p">(</span><span class="n">.)</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span><span class="n">.)</span><span class="p">))</span> <span class="o">%&gt;%</span>
             <span class="nf">mutate_if</span><span class="p">(</span><span class="n">is.numeric</span><span class="p">,</span> <span class="nf">funs</span><span class="p">(</span><span class="nf">ifelse</span><span class="p">(</span><span class="nf">is.infinite</span><span class="p">(</span><span class="n">.)</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span><span class="n">.)</span><span class="p">))</span>
+
+<span class="nf">options</span><span class="p">(</span><span class="n">repr.matrix.max.rows</span><span class="o">=</span><span class="m">600</span><span class="p">,</span> <span class="n">repr.matrix.max.cols</span><span class="o">=</span><span class="m">200</span><span class="p">,</span> <span class="n">scipen</span> <span class="o">=</span> <span class="m">999</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13622,9 +13672,7 @@ cols(
 <div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span><span class="nf">options</span><span class="p">(</span><span class="n">repr.matrix.max.rows</span><span class="o">=</span><span class="m">600</span><span class="p">,</span> <span class="n">repr.matrix.max.cols</span><span class="o">=</span><span class="m">200</span><span class="p">,</span> <span class="n">scipen</span> <span class="o">=</span> <span class="m">999</span><span class="p">)</span>
-
-<span class="c1">#...................................Check skewness and kurtosis..................#</span>
+<div class=" highlight hl-r"><pre><span></span><span class="c1">#...................................Check skewness and kurtosis..................#</span>
 
 <span class="n">kurt</span> <span class="o">=</span> <span class="n">allData</span> <span class="o">%&gt;%</span> <span class="nf">select_if</span><span class="p">(</span><span class="n">.,</span> <span class="n">is.numeric</span><span class="p">)</span> <span class="o">%&gt;%</span> <span class="nf">summarize_all</span><span class="p">(</span><span class="n">.,</span> <span class="nf">funs</span><span class="p">(</span><span class="n">moments</span><span class="o">::</span><span class="nf">kurtosis</span><span class="p">(</span><span class="n">.,</span> <span class="n">na.rm</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">)))</span> <span class="o">%&gt;%</span>
                                          <span class="nf">gather</span><span class="p">(</span><span class="n">.,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">Kurtosis</span><span class="p">)</span>
@@ -13634,7 +13682,7 @@ cols(
 <span class="nf">rm</span><span class="p">(</span><span class="n">kurt</span><span class="p">)</span>
 <span class="n">allData</span> <span class="o">%&gt;%</span> <span class="nf">select_if</span><span class="p">(</span><span class="n">.,</span> <span class="n">is.numeric</span><span class="p">)</span> <span class="o">%&gt;%</span> <span class="nf">summarize_all</span><span class="p">(</span><span class="n">.,</span> <span class="nf">funs</span><span class="p">(</span><span class="n">moments</span><span class="o">::</span><span class="nf">skewness</span><span class="p">(</span><span class="n">.,</span> <span class="n">na.rm</span><span class="o">=</span><span class="kc">TRUE</span><span class="p">)))</span> <span class="o">%&gt;%</span>
                                           <span class="nf">gather</span><span class="p">(</span><span class="n">.,</span> <span class="n">Variable</span><span class="p">,</span> <span class="n">Skew</span><span class="p">)</span> <span class="o">%&gt;%</span>
-                                          <span class="nf">filter</span><span class="p">(</span><span class="n">.,</span> <span class="n">Skew</span> <span class="o">&gt;=</span> <span class="m">1</span><span class="p">)</span>
+                                          <span class="nf">filter</span><span class="p">(</span><span class="n">.,</span> <span class="nf">abs</span><span class="p">(</span><span class="n">Skew</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="m">1</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13655,143 +13703,133 @@ cols(
 <table>
 <thead><tr><th scope=col>Variable</th><th scope=col>Skewness</th><th scope=col>Kurtosis</th></tr></thead>
 <tbody>
-	<tr><td>PlayerPoints                   </td><td>  0.074724288                  </td><td>  3.069980                     </td></tr>
-	<tr><td>WeightedGoalieSavePercntage    </td><td>  0.078557224                  </td><td>  3.243056                     </td></tr>
-	<tr><td>WeightedGPS                    </td><td>  0.428811589                  </td><td>  3.260166                     </td></tr>
-	<tr><td>H2H                            </td><td>  0.026571103                  </td><td>  2.527590                     </td></tr>
-	<tr><td>Q1Record                       </td><td>  0.125765210                  </td><td>  3.121404                     </td></tr>
-	<tr><td>Q2Record                       </td><td>  0.318525130                  </td><td>  2.894463                     </td></tr>
-	<tr><td>Q3Record                       </td><td>  0.027757159                  </td><td>  2.942516                     </td></tr>
-	<tr><td>Q4Record                       </td><td>  0.029090232                  </td><td>  2.952298                     </td></tr>
-	<tr><td>SDRecord                       </td><td>  0.088293186                  </td><td>  2.651121                     </td></tr>
-	<tr><td>AverageAge                     </td><td>  0.556504000                  </td><td>  3.689177                     </td></tr>
-	<tr><td>GoalDiff                       </td><td>  0.418407807                  </td><td>  3.695245                     </td></tr>
-	<tr><td>GoalsAgainst                   </td><td> -0.046931334                  </td><td>  2.582675                     </td></tr>
-	<tr><td>GoalsFor                       </td><td>  0.085054517                  </td><td>  3.117031                     </td></tr>
-	<tr><td>OTL                            </td><td>  0.156785261                  </td><td>  3.277432                     </td></tr>
-	<tr><td>PenaltyKillPercentage          </td><td> -0.188572511                  </td><td>  3.226560                     </td></tr>
-	<tr><td>PenaltyMinsPG                  </td><td> -0.171549803                  </td><td>  2.913121                     </td></tr>
-	<tr><td>Points                         </td><td>  0.585507199                  </td><td>  2.910725                     </td></tr>
-	<tr><td>PointsPercentageofMax          </td><td>  0.856266873                  </td><td>  3.596768                     </td></tr>
-	<tr><td>PowerPlayGoals                 </td><td>  0.378969749                  </td><td>  3.227353                     </td></tr>
-	<tr><td>PowerPlayOppurtunities         </td><td>  0.063110603                  </td><td>  2.991227                     </td></tr>
-	<tr><td>PowerPlayPercentage            </td><td>  0.556191131                  </td><td>  3.385643                     </td></tr>
-	<tr><td>RegularSeasonWinPercentage     </td><td>  0.626878813                  </td><td>  3.812490                     </td></tr>
-	<tr><td>ShotPercentage                 </td><td>  0.098533507                  </td><td>  3.451081                     </td></tr>
-	<tr><td>SOG                            </td><td>  0.230625949                  </td><td>  2.759456                     </td></tr>
-	<tr><td>SOS                            </td><td> -0.126879291                  </td><td> 10.708532                     </td></tr>
-	<tr><td>SRS                            </td><td>  0.453492207                  </td><td>  3.634586                     </td></tr>
-	<tr><td>CF._Team                       </td><td>  0.408822934                  </td><td>  3.392702                     </td></tr>
-	<tr><td>CF_Per60Team                   </td><td>  0.107049116                  </td><td>  2.578260                     </td></tr>
-	<tr><td>CA_Per60Team                   </td><td> -0.144528653                  </td><td>  3.253535                     </td></tr>
-	<tr><td>xGF.60                         </td><td>  0.012802001                  </td><td>  2.687057                     </td></tr>
-	<tr><td>xGA.60                         </td><td>  0.183659405                  </td><td>  2.505799                     </td></tr>
-	<tr><td>PDO                            </td><td> -0.020204700                  </td><td>  2.657953                     </td></tr>
-	<tr><td>PenaltiesTaken                 </td><td> -0.314092173                  </td><td>  3.415704                     </td></tr>
-	<tr><td>PenaltiesDrawn                 </td><td>  0.445764994                  </td><td>  5.385613                     </td></tr>
-	<tr><td>iCF/60_mean                    </td><td>  0.093018920                  </td><td>  3.792815                     </td></tr>
-	<tr><td>P1_mean                        </td><td>  0.263834408                  </td><td>  4.253992                     </td></tr>
-	<tr><td>P1/60_mean                     </td><td> -0.388392319                  </td><td>  4.579091                     </td></tr>
-	<tr><td>GS_mean                        </td><td> -0.099060450                  </td><td>  3.081628                     </td></tr>
-	<tr><td>GS/60_mean                     </td><td>  0.223453858                  </td><td>  3.243078                     </td></tr>
-	<tr><td>CF_mean                        </td><td>  0.386343743                  </td><td>  3.591110                     </td></tr>
-	<tr><td>Rel CF%_mean                   </td><td>  0.271635701                  </td><td>  3.141113                     </td></tr>
-	<tr><td>ixGF/60_mean                   </td><td>  0.397896676                  </td><td>  3.784875                     </td></tr>
-	<tr><td>ZSR_mean                       </td><td>  0.134641993                  </td><td>  2.966905                     </td></tr>
-	<tr><td>CF% QoT_mean                   </td><td> -0.043813377                  </td><td>  2.981328                     </td></tr>
-	<tr><td>CF% QoC_mean                   </td><td> -0.610471669                  </td><td>  9.587036                     </td></tr>
-	<tr><td>TOI% QoT_mean                  </td><td>  0.231707696                  </td><td>  3.557837                     </td></tr>
-	<tr><td>TOI% QoC_mean                  </td><td>  1.019527917                  </td><td> 14.615026                     </td></tr>
-	<tr><td>iCF/60_sd                      </td><td>  0.119834761                  </td><td>  2.726000                     </td></tr>
-	<tr><td>P1_sd                          </td><td>  1.335248787                  </td><td>  8.890927                     </td></tr>
-	<tr><td>P1/60_sd                       </td><td> -0.850634898                  </td><td>  8.092116                     </td></tr>
-	<tr><td>GS_sd                          </td><td>  0.610381613                  </td><td>  3.549951                     </td></tr>
-	<tr><td>GS/60_sd                       </td><td>  0.125950355                  </td><td>  2.872001                     </td></tr>
-	<tr><td>CF_sd                          </td><td> -0.015081844                  </td><td>  3.774553                     </td></tr>
-	<tr><td>Rel CF%_sd                     </td><td>  0.305204849                  </td><td>  3.145536                     </td></tr>
-	<tr><td>ixGF/60_sd                     </td><td> -0.418784713                  </td><td>  4.615603                     </td></tr>
-	<tr><td>ZSR_sd                         </td><td> -0.092908130                  </td><td>  2.599583                     </td></tr>
-	<tr><td>CF% QoT_sd                     </td><td> -0.088766158                  </td><td>  2.358585                     </td></tr>
-	<tr><td>CF% QoC_sd                     </td><td> -0.222852124                  </td><td>  2.649155                     </td></tr>
-	<tr><td>TOI% QoT_sd                    </td><td> -0.618450563                  </td><td> 13.934777                     </td></tr>
-	<tr><td>TOI% QoC_sd                    </td><td>  0.002278249                  </td><td>  2.790893                     </td></tr>
-	<tr><td>iCF/60_min                     </td><td>  0.104401244                  </td><td>  2.531938                     </td></tr>
-	<tr><td>P1_min                         </td><td> -0.036884441                  </td><td>  9.807863                     </td></tr>
-	<tr><td>P1/60_min                      </td><td>  1.834728283                  </td><td> 13.801182                     </td></tr>
-	<tr><td>GS_min                         </td><td>  0.319049868                  </td><td>  3.434974                     </td></tr>
-	<tr><td>GS/60_min                      </td><td>  1.908930015                  </td><td> 28.458567                     </td></tr>
-	<tr><td>CF_min                         </td><td>  2.074625759                  </td><td> 16.375289                     </td></tr>
-	<tr><td>Rel CF%_min                    </td><td> -0.439696166                  </td><td>  1.695145                     </td></tr>
-	<tr><td>ixGF/60_min                    </td><td>  0.087493486                  </td><td>  2.612551                     </td></tr>
-	<tr><td>ZSR_min                        </td><td> -0.974986340                  </td><td> 20.517313                     </td></tr>
-	<tr><td>CF% QoT_min                    </td><td> -0.327254580                  </td><td>  1.916591                     </td></tr>
-	<tr><td>CF% QoC_min                    </td><td>  0.266070344                  </td><td>  3.603498                     </td></tr>
-	<tr><td>TOI% QoT_min                   </td><td>  0.372134848                  </td><td>  2.990803                     </td></tr>
-	<tr><td>TOI% QoC_min                   </td><td>  0.240197188                  </td><td>  3.555510                     </td></tr>
-	<tr><td>iCF/60_max                     </td><td> -0.145974081                  </td><td>  3.306694                     </td></tr>
-	<tr><td>P1_max                         </td><td>  0.631270937                  </td><td>  7.584155                     </td></tr>
-	<tr><td>P1/60_max                      </td><td>  0.379498466                  </td><td>  3.280659                     </td></tr>
-	<tr><td>GS_max                         </td><td>  0.962951844                  </td><td>  9.166419                     </td></tr>
-	<tr><td>GS/60_max                      </td><td> -0.349469374                  </td><td>  4.416284                     </td></tr>
-	<tr><td>CF_max                         </td><td> -0.020008850                  </td><td>  3.071225                     </td></tr>
-	<tr><td>Rel CF%_max                    </td><td>  0.139161515                  </td><td>  2.624798                     </td></tr>
-	<tr><td>ixGF/60_max                    </td><td>  0.089769190                  </td><td>  2.880332                     </td></tr>
-	<tr><td>ZSR_max                        </td><td> -0.145965827                  </td><td>  3.343392                     </td></tr>
-	<tr><td>CF% QoT_max                    </td><td> -0.078690144                  </td><td>  2.808516                     </td></tr>
-	<tr><td>CF% QoC_max                    </td><td>  0.193412270                  </td><td>  3.625972                     </td></tr>
-	<tr><td>TOI% QoT_max                   </td><td>  0.063061876                  </td><td>  2.579527                     </td></tr>
-	<tr><td>TOI% QoC_max                   </td><td> -0.326645986                  </td><td>  3.680554                     </td></tr>
-	<tr><td>ELORating                      </td><td>  0.159499220                  </td><td>  2.995820                     </td></tr>
-	<tr><td>ELORating_Q4                   </td><td> -0.010486698                  </td><td>  2.381335                     </td></tr>
-	<tr><td>ESPNPower                      </td><td> -0.142081839                  </td><td>  3.589738                     </td></tr>
-	<tr><td>RPI                            </td><td>  0.729664246                  </td><td>  3.588232                     </td></tr>
-	<tr><td>Fenwick                        </td><td>  0.241087176                  </td><td>  3.154505                     </td></tr>
-	<tr><td>Fenwick_Last20                 </td><td>  0.182480036                  </td><td>  2.647710                     </td></tr>
-	<tr><td>Corsi_Last20                   </td><td>  0.018564333                  </td><td>  2.594489                     </td></tr>
-	<tr><td>SOG_Last20                     </td><td>  0.171799121                  </td><td>  2.683428                     </td></tr>
-	<tr><td>GoalsPercentage_Last20         </td><td>  0.118226988                  </td><td>  2.537634                     </td></tr>
-	<tr><td>MissesPercentage_Last20        </td><td> -0.061736986                  </td><td>  2.686083                     </td></tr>
-	<tr><td>BlocksPercentage_Last20        </td><td>  0.121823002                  </td><td>  2.458443                     </td></tr>
-	<tr><td>HitsPercentage_Last20          </td><td>  0.215439706                  </td><td>  2.708460                     </td></tr>
-	<tr><td>BlocksatES                     </td><td> -0.271099171                  </td><td>  3.312672                     </td></tr>
-	<tr><td>FaceoffWinPercentage           </td><td>  0.166658926                  </td><td>  3.179462                     </td></tr>
-	<tr><td>GiveAways                      </td><td> -0.320243291                  </td><td>  3.802604                     </td></tr>
-	<tr><td>HitsatES                       </td><td> -0.093853027                  </td><td>  2.844212                     </td></tr>
-	<tr><td>OT_Losses_Lead1P               </td><td> -0.236294322                  </td><td>  3.712963                     </td></tr>
-	<tr><td>OT_Losses_Lead2P               </td><td> -0.063069993                  </td><td>  3.521482                     </td></tr>
-	<tr><td>TakeAways                      </td><td>  0.080334956                  </td><td>  3.099935                     </td></tr>
-	<tr><td>WinPercent_Lead1P              </td><td> -0.049444818                  </td><td>  2.733582                     </td></tr>
-	<tr><td>WinPercent_Lead2P              </td><td> -0.393555923                  </td><td>  4.761513                     </td></tr>
-	<tr><td>WinPercent_Trail1P             </td><td>  0.310046897                  </td><td>  2.582917                     </td></tr>
-	<tr><td>WinPercent_Trail2P             </td><td>  0.069181817                  </td><td>  2.757564                     </td></tr>
-	<tr><td>HDCA                           </td><td>  0.151883827                  </td><td>  2.871981                     </td></tr>
-	<tr><td>HighDangerSC_Percent           </td><td> -0.057300517                  </td><td>  2.409172                     </td></tr>
-	<tr><td>SCA                            </td><td> -0.163711088                  </td><td>  3.011903                     </td></tr>
-	<tr><td>SCF                            </td><td>  0.123216286                  </td><td>  2.771462                     </td></tr>
-	<tr><td>VegasOpeningOdds               </td><td> -0.317766400                  </td><td>  2.893060                     </td></tr>
-	<tr><td>Ratio_of_GoalstoGoalsAgainst   </td><td> -2.241944892                  </td><td> 27.613069                     </td></tr>
-	<tr><td>Ratio_of_HitstoBlocks          </td><td>-10.756640899                  </td><td>134.944072                     </td></tr>
-	<tr><td>logofPoints                    </td><td> -1.451956138                  </td><td>  5.713183                     </td></tr>
-	<tr><td>sqrtofPoints                   </td><td> -0.008744192                  </td><td>  2.411157                     </td></tr>
-	<tr><td>PenaltyMinstoPowerPlay         </td><td> -9.409781081                  </td><td> 93.005804                     </td></tr>
-	<tr><td>Ratio_of_SRStoPoints           </td><td> -1.708211967                  </td><td> 13.181592                     </td></tr>
-	<tr><td>AverageGoalDiff_PerGame        </td><td>  0.085054517                  </td><td>  3.117031                     </td></tr>
-	<tr><td>AveragePenaltyDiff_PerGame     </td><td> -0.171549803                  </td><td>  2.913121                     </td></tr>
-	<tr><td>logofSOG                       </td><td> -0.228437387                  </td><td>  1.199227                     </td></tr>
-	<tr><td>sqrtofRPI                      </td><td>  0.298113597                  </td><td>  2.444218                     </td></tr>
-	<tr><td>PowerPlaytoPenaltyKill         </td><td>  0.781193206                  </td><td>  6.128709                     </td></tr>
-	<tr><td>SCFtoGoalsAgainst              </td><td> -1.826860139                  </td><td> 21.582443                     </td></tr>
-	<tr><td>PointsPercentage               </td><td>  0.585507199                  </td><td>  2.910725                     </td></tr>
-	<tr><td>GS_max_log                     </td><td> -0.133190615                  </td><td>  2.450576                     </td></tr>
-	<tr><td>CA_Per60Team_log               </td><td>  0.084022341                  </td><td>  1.657965                     </td></tr>
-	<tr><td>Ratio_of_GoalstoGoalsAgainstlog</td><td> -0.426578387                  </td><td>  3.846190                     </td></tr>
-	<tr><td>Ratio_of_HitstoBlockslog       </td><td> -0.444206645                  </td><td>  4.057965                     </td></tr>
-	<tr><td>SCFtoGoalsAgainstlog           </td><td> -0.240740680                  </td><td>  8.976629                     </td></tr>
-	<tr><td>PointsPercentagesqrt           </td><td> -0.008744192                  </td><td>  2.411157                     </td></tr>
-	<tr><td>CorsiDifftoSOSlog              </td><td>  0.010020446                  </td><td>  1.355266                     </td></tr>
-	<tr><td>xGDifftoSOS                    </td><td>  0.176336603                  </td><td>  5.061931                     </td></tr>
-	<tr><td>GStoSOS                        </td><td>  0.337677717                  </td><td>  6.886966                     </td></tr>
-	<tr><td>SRStoSOS                       </td><td> -0.204223538                  </td><td>  8.671597                     </td></tr>
+	<tr><td>PlayerPoints                   </td><td> 0.099260397                   </td><td> 2.923301                      </td></tr>
+	<tr><td>WeightedGoalieSavePercntage    </td><td> 0.078557224                   </td><td> 3.243056                      </td></tr>
+	<tr><td>WeightedGPS                    </td><td> 0.428811589                   </td><td> 3.260166                      </td></tr>
+	<tr><td>H2H                            </td><td> 0.026571103                   </td><td> 2.527590                      </td></tr>
+	<tr><td>Q1Record                       </td><td> 0.125765210                   </td><td> 3.121404                      </td></tr>
+	<tr><td>Q2Record                       </td><td> 0.318525130                   </td><td> 2.894463                      </td></tr>
+	<tr><td>Q3Record                       </td><td> 0.027757159                   </td><td> 2.942516                      </td></tr>
+	<tr><td>Q4Record                       </td><td> 0.029090232                   </td><td> 2.952298                      </td></tr>
+	<tr><td>SDRecord                       </td><td> 0.088293186                   </td><td> 2.651121                      </td></tr>
+	<tr><td>AverageAge                     </td><td> 0.556504000                   </td><td> 3.689177                      </td></tr>
+	<tr><td>GoalDiff                       </td><td> 0.477173073                   </td><td> 3.535104                      </td></tr>
+	<tr><td>GoalsAgainst                   </td><td>-0.009440142                   </td><td> 2.475304                      </td></tr>
+	<tr><td>GoalsFor                       </td><td> 0.123146516                   </td><td> 2.944124                      </td></tr>
+	<tr><td>OTL                            </td><td>-0.078623538                   </td><td> 3.509051                      </td></tr>
+	<tr><td>PenaltyKillPercentage          </td><td>-0.188572511                   </td><td> 3.226560                      </td></tr>
+	<tr><td>PenaltyMinsPG                  </td><td>-0.171549803                   </td><td> 2.913121                      </td></tr>
+	<tr><td>Points                         </td><td> 0.860110521                   </td><td> 3.603224                      </td></tr>
+	<tr><td>PointsPercentageofMax          </td><td> 0.856266873                   </td><td> 3.596768                      </td></tr>
+	<tr><td>PowerPlayGoals                 </td><td> 0.457706660                   </td><td> 3.175743                      </td></tr>
+	<tr><td>PowerPlayOppurtunities         </td><td> 0.021623687                   </td><td> 3.153266                      </td></tr>
+	<tr><td>PowerPlayPercentage            </td><td> 0.556191131                   </td><td> 3.385643                      </td></tr>
+	<tr><td>RegularSeasonWinPercentage     </td><td> 0.626878813                   </td><td> 3.812490                      </td></tr>
+	<tr><td>ShotPercentage                 </td><td> 0.098533507                   </td><td> 3.451081                      </td></tr>
+	<tr><td>SOG                            </td><td> 0.224090920                   </td><td> 2.642748                      </td></tr>
+	<tr><td>SOS                            </td><td>-0.126879291                   </td><td>10.708532                      </td></tr>
+	<tr><td>SRS                            </td><td> 0.453492207                   </td><td> 3.634586                      </td></tr>
+	<tr><td>CF._Team                       </td><td> 0.408822934                   </td><td> 3.392702                      </td></tr>
+	<tr><td>CF_Per60Team                   </td><td> 0.107049116                   </td><td> 2.578260                      </td></tr>
+	<tr><td>CA_Per60Team                   </td><td>-0.144528653                   </td><td> 3.253535                      </td></tr>
+	<tr><td>xGF.60                         </td><td> 0.012802001                   </td><td> 2.687057                      </td></tr>
+	<tr><td>xGA.60                         </td><td> 0.183659405                   </td><td> 2.505799                      </td></tr>
+	<tr><td>PDO                            </td><td>-0.020204700                   </td><td> 2.657953                      </td></tr>
+	<tr><td>PenaltiesTaken                 </td><td>-0.314953144                   </td><td> 3.294250                      </td></tr>
+	<tr><td>PenaltiesDrawn                 </td><td> 0.382475023                   </td><td> 5.063951                      </td></tr>
+	<tr><td>CF% QoC_max                    </td><td> 0.093018920                   </td><td> 3.792815                      </td></tr>
+	<tr><td>CF% QoC_mean                   </td><td> 0.263834408                   </td><td> 4.253992                      </td></tr>
+	<tr><td>CF% QoC_sd                     </td><td>-0.099060450                   </td><td> 3.081628                      </td></tr>
+	<tr><td>CF% QoT_max                    </td><td> 0.223453858                   </td><td> 3.243078                      </td></tr>
+	<tr><td>CF% QoT_mean                   </td><td> 0.386343743                   </td><td> 3.591110                      </td></tr>
+	<tr><td>CF% QoT_sd                     </td><td> 0.397896676                   </td><td> 3.784875                      </td></tr>
+	<tr><td>CF_max                         </td><td> 0.760411214                   </td><td> 6.429164                      </td></tr>
+	<tr><td>CF_mean                        </td><td>-0.064137167                   </td><td> 2.503933                      </td></tr>
+	<tr><td>CF_sd                          </td><td>-0.116729803                   </td><td> 2.882218                      </td></tr>
+	<tr><td>GS/60_max                      </td><td> 1.019527917                   </td><td>14.615026                      </td></tr>
+	<tr><td>GS/60_mean                     </td><td> 0.119834761                   </td><td> 2.726000                      </td></tr>
+	<tr><td>GS/60_sd                       </td><td>-0.850634898                   </td><td> 8.092116                      </td></tr>
+	<tr><td>GS_max                         </td><td> 0.610381613                   </td><td> 3.549951                      </td></tr>
+	<tr><td>GS_mean                        </td><td> 0.125950355                   </td><td> 2.872001                      </td></tr>
+	<tr><td>GS_sd                          </td><td> 0.305204849                   </td><td> 3.145536                      </td></tr>
+	<tr><td>iCF/60_max                     </td><td>-0.418784713                   </td><td> 4.615603                      </td></tr>
+	<tr><td>iCF/60_mean                    </td><td>-0.092908130                   </td><td> 2.599583                      </td></tr>
+	<tr><td>iCF/60_sd                      </td><td>-0.222852124                   </td><td> 2.649155                      </td></tr>
+	<tr><td>ixGF/60_max                    </td><td>-0.618450563                   </td><td>13.934777                      </td></tr>
+	<tr><td>ixGF/60_mean                   </td><td> 0.002278249                   </td><td> 2.790893                      </td></tr>
+	<tr><td>ixGF/60_sd                     </td><td>-0.036884441                   </td><td> 9.807863                      </td></tr>
+	<tr><td>P1/60_max                      </td><td> 1.834728283                   </td><td>13.801182                      </td></tr>
+	<tr><td>P1/60_mean                     </td><td> 0.319049868                   </td><td> 3.434974                      </td></tr>
+	<tr><td>P1/60_sd                       </td><td> 2.074625759                   </td><td>16.375289                      </td></tr>
+	<tr><td>P1_max                         </td><td> 1.835277766                   </td><td>13.806096                      </td></tr>
+	<tr><td>P1_mean                        </td><td> 0.319404614                   </td><td> 3.437124                      </td></tr>
+	<tr><td>P1_sd                          </td><td> 2.076483373                   </td><td>16.385023                      </td></tr>
+	<tr><td>Rel CF%_max                    </td><td> 0.266070344                   </td><td> 3.603498                      </td></tr>
+	<tr><td>Rel CF%_mean                   </td><td> 0.372134848                   </td><td> 2.990803                      </td></tr>
+	<tr><td>Rel CF%_sd                     </td><td>-0.145974081                   </td><td> 3.306694                      </td></tr>
+	<tr><td>TOI% QoC_max                   </td><td> 0.631270937                   </td><td> 7.584155                      </td></tr>
+	<tr><td>TOI% QoC_mean                  </td><td> 0.379498466                   </td><td> 3.280659                      </td></tr>
+	<tr><td>TOI% QoC_sd                    </td><td>-0.349469374                   </td><td> 4.416284                      </td></tr>
+	<tr><td>TOI% QoT_max                   </td><td>-0.020008850                   </td><td> 3.071225                      </td></tr>
+	<tr><td>TOI% QoT_mean                  </td><td> 0.139161515                   </td><td> 2.624798                      </td></tr>
+	<tr><td>TOI% QoT_sd                    </td><td>-0.145965827                   </td><td> 3.343392                      </td></tr>
+	<tr><td>ZSR_max                        </td><td>-0.078690144                   </td><td> 2.808516                      </td></tr>
+	<tr><td>ZSR_mean                       </td><td> 0.193412270                   </td><td> 3.625972                      </td></tr>
+	<tr><td>ZSR_sd                         </td><td>-0.326645986                   </td><td> 3.680554                      </td></tr>
+	<tr><td>ELORating                      </td><td> 0.159499220                   </td><td> 2.995820                      </td></tr>
+	<tr><td>ELORating_Q4                   </td><td>-0.010486698                   </td><td> 2.381335                      </td></tr>
+	<tr><td>ESPNPower                      </td><td>-0.142081839                   </td><td> 3.589738                      </td></tr>
+	<tr><td>RPI                            </td><td> 0.729664246                   </td><td> 3.588232                      </td></tr>
+	<tr><td>PenaltyKill_PostAllStar        </td><td>-0.101015881                   </td><td> 4.039827                      </td></tr>
+	<tr><td>Fenwick                        </td><td> 0.241087176                   </td><td> 3.154505                      </td></tr>
+	<tr><td>Fenwick_Last20                 </td><td> 0.182480036                   </td><td> 2.647710                      </td></tr>
+	<tr><td>Corsi_Last20                   </td><td> 0.018564333                   </td><td> 2.594489                      </td></tr>
+	<tr><td>SOG_Last20                     </td><td> 0.171799121                   </td><td> 2.683428                      </td></tr>
+	<tr><td>GoalsPercentage_Last20         </td><td> 0.118226988                   </td><td> 2.537634                      </td></tr>
+	<tr><td>MissesPercentage_Last20        </td><td>-0.061736986                   </td><td> 2.686083                      </td></tr>
+	<tr><td>BlocksPercentage_Last20        </td><td> 0.121823002                   </td><td> 2.458443                      </td></tr>
+	<tr><td>HitsPercentage_Last20          </td><td> 0.215439706                   </td><td> 2.708460                      </td></tr>
+	<tr><td>BlocksatES                     </td><td>-0.274395513                   </td><td> 3.165116                      </td></tr>
+	<tr><td>FaceoffWinPercentage           </td><td> 0.166658926                   </td><td> 3.179462                      </td></tr>
+	<tr><td>GiveAways                      </td><td>-0.294166830                   </td><td> 3.598926                      </td></tr>
+	<tr><td>HitsatES                       </td><td>-0.157519964                   </td><td> 2.800718                      </td></tr>
+	<tr><td>OT_Losses_Lead1P               </td><td>-0.171233683                   </td><td> 3.521281                      </td></tr>
+	<tr><td>OT_Losses_Lead2P               </td><td>-0.018406396                   </td><td> 3.617484                      </td></tr>
+	<tr><td>TakeAways                      </td><td> 0.261987607                   </td><td> 3.239181                      </td></tr>
+	<tr><td>WinPercent_Lead1P              </td><td>-0.049444818                   </td><td> 2.733582                      </td></tr>
+	<tr><td>WinPercent_Lead2P              </td><td>-0.393555923                   </td><td> 4.761513                      </td></tr>
+	<tr><td>WinPercent_Trail1P             </td><td> 0.310046897                   </td><td> 2.582917                      </td></tr>
+	<tr><td>WinPercent_Trail2P             </td><td> 0.069181817                   </td><td> 2.757564                      </td></tr>
+	<tr><td>HDCA                           </td><td> 0.137151886                   </td><td> 2.526975                      </td></tr>
+	<tr><td>HighDangerSC_Percent           </td><td>-0.057300517                   </td><td> 2.409172                      </td></tr>
+	<tr><td>SCA                            </td><td>-0.124323507                   </td><td> 2.589527                      </td></tr>
+	<tr><td>SCF                            </td><td> 0.123216286                   </td><td> 2.771462                      </td></tr>
+	<tr><td>VegasOpeningOdds               </td><td>-0.317766400                   </td><td> 2.893060                      </td></tr>
+	<tr><td>GAR.TOI_max                    </td><td> 0.295283268                   </td><td> 3.663005                      </td></tr>
+	<tr><td>GAR.TOI_mean                   </td><td> 0.085914157                   </td><td> 2.279449                      </td></tr>
+	<tr><td>GAR.TOI_median                 </td><td> 1.079971264                   </td><td> 5.363733                      </td></tr>
+	<tr><td>GAR.TOI_sd                     </td><td> 0.269981455                   </td><td> 3.459471                      </td></tr>
+	<tr><td>WAR.TOI_max                    </td><td> 0.290194506                   </td><td> 3.720019                      </td></tr>
+	<tr><td>WAR.TOI_mean                   </td><td> 0.049793775                   </td><td> 2.252359                      </td></tr>
+	<tr><td>WAR.TOI_median                 </td><td> 1.007050193                   </td><td> 5.085185                      </td></tr>
+	<tr><td>WAR.TOI_sd                     </td><td> 0.279913866                   </td><td> 3.505642                      </td></tr>
+	<tr><td>PenaltyMinstoPowerPlaylog      </td><td> 0.105728196                   </td><td> 1.163455                      </td></tr>
+	<tr><td>Ratio_of_SRStoPoints           </td><td>-1.701058537                   </td><td>13.534647                      </td></tr>
+	<tr><td>AverageGoalDiff_PerGame        </td><td> 0.123146516                   </td><td> 2.944124                      </td></tr>
+	<tr><td>AveragePenaltyDiff_PerGame     </td><td>-0.171549803                   </td><td> 2.913121                      </td></tr>
+	<tr><td>PowerPlaytoPenaltyKill         </td><td> 0.781193206                   </td><td> 6.128709                      </td></tr>
+	<tr><td>PPO_x_PenaltyKill              </td><td>-2.498577584                   </td><td>14.372834                      </td></tr>
+	<tr><td>PointsPercentage               </td><td> 0.860110521                   </td><td> 3.603224                      </td></tr>
+	<tr><td>GS_max_log                     </td><td>-0.224290602                   </td><td> 1.593532                      </td></tr>
+	<tr><td>CA_Per60Team_log               </td><td> 0.084022341                   </td><td> 1.657965                      </td></tr>
+	<tr><td>Ratio_of_GoalstoGoalsAgainstlog</td><td>-0.426578387                   </td><td> 3.846190                      </td></tr>
+	<tr><td>Ratio_of_HitstoBlockslog       </td><td>-0.444206645                   </td><td> 4.057965                      </td></tr>
+	<tr><td>SCFtoGoalsAgainstlog           </td><td> 0.176404754                   </td><td> 1.763205                      </td></tr>
+	<tr><td>CorsiDifftoSOSlog              </td><td> 0.010020446                   </td><td> 1.355266                      </td></tr>
+	<tr><td>xGDifftoSOS                    </td><td> 0.176336603                   </td><td> 5.061931                      </td></tr>
+	<tr><td>GStoSOS                        </td><td>-0.444710637                   </td><td> 7.613528                      </td></tr>
+	<tr><td>SRStoSOS                       </td><td>-0.204223538                   </td><td> 8.671597                      </td></tr>
+	<tr><td>ixGF/60_max.TO.Rel CF%_max     </td><td>-1.862721805                   </td><td>35.425756                      </td></tr>
 </tbody>
 </table>
 
@@ -13809,11 +13847,16 @@ cols(
 <table>
 <thead><tr><th scope=col>Variable</th><th scope=col>Skew</th></tr></thead>
 <tbody>
-	<tr><td>TOI% QoC_mean</td><td>1.019528     </td></tr>
-	<tr><td>P1_sd        </td><td>1.335249     </td></tr>
-	<tr><td>P1/60_min    </td><td>1.834728     </td></tr>
-	<tr><td>GS/60_min    </td><td>1.908930     </td></tr>
-	<tr><td>CF_min       </td><td>2.074626     </td></tr>
+	<tr><td>GS/60_max                 </td><td> 1.019528                 </td></tr>
+	<tr><td>P1/60_max                 </td><td> 1.834728                 </td></tr>
+	<tr><td>P1/60_sd                  </td><td> 2.074626                 </td></tr>
+	<tr><td>P1_max                    </td><td> 1.835278                 </td></tr>
+	<tr><td>P1_sd                     </td><td> 2.076483                 </td></tr>
+	<tr><td>GAR.TOI_median            </td><td> 1.079971                 </td></tr>
+	<tr><td>WAR.TOI_median            </td><td> 1.007050                 </td></tr>
+	<tr><td>Ratio_of_SRStoPoints      </td><td>-1.701059                 </td></tr>
+	<tr><td>PPO_x_PenaltyKill         </td><td>-2.498578                 </td></tr>
+	<tr><td>ixGF/60_max.TO.Rel CF%_max</td><td>-1.862722                 </td></tr>
 </tbody>
 </table>
 
@@ -13844,18 +13887,19 @@ cols(
 <span class="n">preProcess.recipe</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">trainX</span><span class="p">){</span>
   
   <span class="n">mainRecipe</span> <span class="o">=</span> <span class="nf">recipe</span><span class="p">(</span><span class="n">ResultProper</span> <span class="o">~</span><span class="n">.,</span> <span class="n">data</span><span class="o">=</span><span class="n">trainX</span><span class="p">)</span> <span class="o">%&gt;%</span>
-    <span class="nf">step_zv</span><span class="p">(</span><span class="nf">all_numeric</span><span class="p">())</span> <span class="o">%&gt;%</span>
-    <span class="nf">step_center</span><span class="p">(</span><span class="nf">all_numeric</span><span class="p">())</span> <span class="o">%&gt;%</span>
-    <span class="nf">step_scale</span><span class="p">(</span><span class="nf">all_numeric</span><span class="p">())</span> <span class="o">%&gt;%</span>
     <span class="nf">step_dummy</span><span class="p">(</span><span class="nf">all_predictors</span><span class="p">(),</span> <span class="o">-</span><span class="nf">all_numeric</span><span class="p">())</span> <span class="o">%&gt;%</span>
     <span class="nf">step_zv</span><span class="p">(</span><span class="nf">all_predictors</span><span class="p">())</span> <span class="o">%&gt;%</span>
-    <span class="nf">step_knnimpute</span><span class="p">(</span><span class="n">neighbors</span> <span class="o">=</span> <span class="m">15</span><span class="p">,</span> <span class="nf">all_numeric</span><span class="p">(),</span> <span class="nf">all_predictors</span><span class="p">())</span> <span class="o">%&gt;%</span>
     <span class="nf">step_interact</span><span class="p">(</span><span class="n">terms</span> <span class="o">=</span> <span class="o">~</span> <span class="n">SRS</span><span class="o">:</span><span class="n">Fenwick</span><span class="o">:</span><span class="n">ELORating</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="nf">step_interact</span><span class="p">(</span><span class="n">terms</span> <span class="o">=</span> <span class="o">~</span> <span class="n">H2H</span><span class="o">:</span><span class="n">VegasOpeningOdds</span><span class="p">)</span> <span class="o">%&gt;%</span>
     <span class="nf">step_interact</span><span class="p">(</span><span class="n">terms</span> <span class="o">=</span> <span class="o">~</span> <span class="n">RegularSeasonWinPercentage</span><span class="o">:</span><span class="nf">contains</span><span class="p">(</span><span class="s">&quot;Points&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
     <span class="nf">step_interact</span><span class="p">(</span><span class="n">terms</span> <span class="o">=</span> <span class="o">~</span> <span class="n">FaceoffWinPercentage</span><span class="o">:</span><span class="n">ShotPercentage</span><span class="p">)</span> <span class="o">%&gt;%</span>
     <span class="nf">step_interact</span><span class="p">(</span><span class="n">terms</span> <span class="o">=</span> <span class="o">~</span> <span class="nf">contains</span><span class="p">(</span><span class="s">&quot;Round&quot;</span><span class="p">)</span><span class="o">:</span><span class="n">VegasOpeningOdds</span><span class="p">)</span> <span class="o">%&gt;%</span>
-    <span class="nf">step_interact</span><span class="p">(</span><span class="n">terms</span> <span class="o">=</span> <span class="o">~</span> <span class="n">SDRecord</span><span class="o">:</span><span class="n">SOS</span><span class="p">)</span> 
-  
+    <span class="nf">step_interact</span><span class="p">(</span><span class="n">terms</span> <span class="o">=</span> <span class="o">~</span> <span class="n">SDRecord</span><span class="o">:</span><span class="n">SOS</span><span class="p">)</span> <span class="o">%&gt;%</span>
+    <span class="nf">step_zv</span><span class="p">(</span><span class="nf">all_predictors</span><span class="p">())</span> <span class="o">%&gt;%</span>
+    <span class="nf">step_center</span><span class="p">(</span><span class="nf">all_predictors</span><span class="p">())</span> <span class="o">%&gt;%</span>
+    <span class="nf">step_scale</span><span class="p">(</span><span class="nf">all_predictors</span><span class="p">())</span> <span class="o">%&gt;%</span>
+    <span class="nf">step_knnimpute</span><span class="p">(</span><span class="n">neighbors</span> <span class="o">=</span> <span class="m">15</span><span class="p">,</span> <span class="nf">all_numeric</span><span class="p">(),</span> <span class="nf">all_predictors</span><span class="p">())</span> 
+    
   <span class="n">mainRecipe</span>
 <span class="p">}</span>
 </pre></div>
@@ -13878,27 +13922,28 @@ cols(
 <div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span><span class="n">randomGridSearch</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">innerTrainX</span><span class="p">,</span> <span class="n">innerTestX</span><span class="p">){</span>
+<div class=" highlight hl-r"><pre><span></span><span class="n">randomGridSearch</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">iterations</span><span class="p">,</span> <span class="n">innerTrainX</span><span class="p">,</span> <span class="n">innerTestX</span><span class="p">,</span> <span class="n">seed.a</span><span class="p">){</span>
   
   <span class="n">score</span> <span class="o">=</span> <span class="m">0</span>
   <span class="n">alpha.fin</span> <span class="o">=</span> <span class="nf">numeric</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
   <span class="n">lambda.fin</span> <span class="o">=</span> <span class="nf">integer</span><span class="p">(</span><span class="m">1</span><span class="p">)</span>
+      
+  <span class="nf">set.seed</span><span class="p">(</span><span class="n">seed.a</span><span class="p">)</span>
+  <span class="n">alpha_val</span> <span class="o">=</span> <span class="nf">as.numeric</span><span class="p">(</span><span class="nf">runif</span><span class="p">(</span><span class="n">n</span> <span class="o">=</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">min</span> <span class="o">=</span> <span class="m">0</span><span class="p">,</span> <span class="n">max</span> <span class="o">=</span> <span class="m">1</span><span class="p">))</span>
+  <span class="n">s.lambda_val</span> <span class="o">=</span> <span class="nf">as.integer</span><span class="p">(</span><span class="nf">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">90</span><span class="p">,</span> <span class="n">iterations</span><span class="p">,</span> <span class="n">replace</span> <span class="o">=</span> <span class="kc">TRUE</span><span class="p">))</span>
   
   <span class="nf">for</span><span class="p">(</span><span class="n">m</span> <span class="n">in</span> <span class="m">1</span><span class="o">:</span><span class="n">iterations</span><span class="p">){</span>
     
     <span class="nf">writeLines</span><span class="p">(</span><span class="nf">paste</span><span class="p">(</span><span class="s">&quot;Iteration:&quot;</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="p">))</span>
-    
-    <span class="n">alpha_val</span> <span class="o">=</span> <span class="nf">as.numeric</span><span class="p">(</span><span class="nf">runif</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">1</span><span class="p">))</span>
-    <span class="n">s.lambda_val</span> <span class="o">=</span> <span class="nf">as.integer</span><span class="p">(</span><span class="nf">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">80</span><span class="p">,</span> <span class="m">1</span><span class="p">))</span>
-    
+     
     <span class="n">modelX</span> <span class="o">=</span> <span class="nf">baggedModel</span><span class="p">(</span><span class="n">train</span> <span class="o">=</span> <span class="n">innerTrainX[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">innerTrainX</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">innerTestX</span><span class="p">,</span> 
-                       <span class="n">label_train</span> <span class="o">=</span> <span class="n">innerTrainX</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">alpha.a</span> <span class="o">=</span> <span class="n">alpha_val</span><span class="p">,</span> <span class="n">s_lambda.a</span> <span class="o">=</span> <span class="n">s.lambda_val</span><span class="p">)</span>
+                       <span class="n">label_train</span> <span class="o">=</span> <span class="n">innerTrainX</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">alpha.a</span> <span class="o">=</span> <span class="n">alpha_val[m]</span><span class="p">,</span> <span class="n">s_lambda.a</span> <span class="o">=</span> <span class="n">s.lambda_val[m]</span><span class="p">)</span>
   
     <span class="n">score.new</span> <span class="o">=</span> <span class="nf">roc</span><span class="p">(</span><span class="n">response</span> <span class="o">=</span> <span class="n">innerTestX</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">predictor</span> <span class="o">=</span> <span class="n">modelX</span><span class="o">$</span><span class="n">Predictions</span><span class="p">,</span> <span class="n">levels</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;L&quot;</span><span class="p">,</span> <span class="s">&quot;W&quot;</span><span class="p">))</span><span class="o">$</span><span class="n">auc</span>
     
     <span class="nf">if</span><span class="p">(</span><span class="n">score.new</span> <span class="o">&gt;</span> <span class="n">score</span><span class="p">){</span>
-      <span class="n">alpha.fin</span> <span class="o">=</span> <span class="n">alpha_val</span>
-      <span class="n">lambda.fin</span> <span class="o">=</span> <span class="n">s.lambda_val</span>
+      <span class="n">alpha.fin</span> <span class="o">=</span> <span class="n">alpha_val[m]</span>
+      <span class="n">lambda.fin</span> <span class="o">=</span> <span class="n">s.lambda_val[m]</span>
       <span class="n">score</span> <span class="o">=</span> <span class="n">score.new</span>
     <span class="p">}</span>
   <span class="p">}</span>
@@ -13936,7 +13981,11 @@ cols(
   <span class="n">test</span> <span class="o">=</span> <span class="n">frameswithPCA</span><span class="o">$</span><span class="n">test</span>
   
   <span class="nf">rm</span><span class="p">(</span><span class="n">train.param</span><span class="p">,</span> <span class="n">frameswithPCA</span><span class="p">)</span>
-  <span class="nf">gc</span><span class="p">()</span>
+    
+<span class="c1">#NEW: Subset top 25 variables from VarImportance List, found after 80 iterations of RFE</span>
+  
+  <span class="n">train</span> <span class="o">=</span> <span class="n">train</span> <span class="o">%&gt;%</span> <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="n">ResultProper</span><span class="p">,</span> <span class="n">VarImportance.List</span><span class="o">$</span><span class="n">Variable[1</span><span class="o">:</span><span class="m">25</span><span class="n">]</span><span class="p">)</span>
+  <span class="n">test</span> <span class="o">=</span> <span class="n">test</span> <span class="o">%&gt;%</span> <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="n">ResultProper</span><span class="p">,</span> <span class="n">VarImportance.List</span><span class="o">$</span><span class="n">Variable[1</span><span class="o">:</span><span class="m">25</span><span class="n">]</span><span class="p">)</span>
   
   <span class="n">model</span> <span class="o">=</span> <span class="nf">baggedModel</span><span class="p">(</span><span class="n">train</span> <span class="o">=</span> <span class="n">train[</span><span class="p">,</span> <span class="o">!</span><span class="nf">names</span><span class="p">(</span><span class="n">train</span><span class="p">)</span> <span class="o">%in%</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;ResultProper&quot;</span><span class="p">)</span><span class="n">]</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span> <span class="n">label_train</span> <span class="o">=</span> <span class="n">train</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> 
                                              <span class="n">alpha.a</span> <span class="o">=</span> <span class="n">alpha.final</span><span class="p">,</span> <span class="n">s_lambda.a</span> <span class="o">=</span> <span class="n">lambda.final</span><span class="p">)</span>
@@ -13966,11 +14015,12 @@ cols(
 <div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span><span class="n">modelPipe.inner</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">folds</span><span class="p">){</span>
+<div class=" highlight hl-r"><pre><span></span><span class="n">modelPipe.inner</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">folds</span><span class="p">,</span> <span class="n">seed.a</span><span class="p">){</span>
   
   <span class="n">mainTrain</span> <span class="o">=</span> <span class="n">allData[</span><span class="o">-</span><span class="n">folds[[k]]</span><span class="p">,</span> <span class="n">]</span>
   
-  <span class="n">innerFolds</span> <span class="o">=</span> <span class="nf">createDataPartition</span><span class="p">(</span><span class="n">y</span> <span class="o">=</span> <span class="n">mainTrain</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="m">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="m">0.8</span><span class="p">)</span>
+  <span class="nf">set.seed</span><span class="p">(</span><span class="n">seed.a</span><span class="p">)</span>  
+  <span class="n">innerFolds</span> <span class="o">=</span> <span class="nf">createDataPartition</span><span class="p">(</span><span class="n">y</span> <span class="o">=</span> <span class="n">mainTrain</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="m">1</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="m">0.75</span><span class="p">)</span>
 
       <span class="n">train.param</span> <span class="o">=</span> <span class="nf">prep</span><span class="p">(</span><span class="nf">preProcess.recipe</span><span class="p">(</span><span class="n">trainX</span> <span class="o">=</span> <span class="n">mainTrain[innerFolds[[1]]</span><span class="p">,</span><span class="n">]</span><span class="p">),</span> <span class="n">training</span> <span class="o">=</span> <span class="n">mainTrain[innerFolds[[1]]</span><span class="p">,</span><span class="n">]</span><span class="p">)</span>
       <span class="n">train</span> <span class="o">=</span> <span class="nf">bake</span><span class="p">(</span><span class="n">train.param</span><span class="p">,</span> <span class="n">new_data</span> <span class="o">=</span> <span class="n">mainTrain[innerFolds[[1]]</span><span class="p">,</span><span class="n">]</span><span class="p">)</span>
@@ -13982,8 +14032,13 @@ cols(
       <span class="n">test</span> <span class="o">=</span> <span class="n">frameswithPCA</span><span class="o">$</span><span class="n">test</span>
       
       <span class="nf">rm</span><span class="p">(</span><span class="n">train.param</span><span class="p">,</span> <span class="n">frameswithPCA</span><span class="p">)</span>
+     
+<span class="c1">#NEW: Subset top 25 variables from VarImportance List, found after 80 iterations of RFE</span>
+    
+      <span class="n">train</span> <span class="o">=</span> <span class="n">train</span> <span class="o">%&gt;%</span> <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="n">ResultProper</span><span class="p">,</span> <span class="n">VarImportance.List</span><span class="o">$</span><span class="n">Variable[1</span><span class="o">:</span><span class="m">25</span><span class="n">]</span><span class="p">)</span>
+      <span class="n">test</span> <span class="o">=</span> <span class="n">test</span> <span class="o">%&gt;%</span> <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="n">ResultProper</span><span class="p">,</span> <span class="n">VarImportance.List</span><span class="o">$</span><span class="n">Variable[1</span><span class="o">:</span><span class="m">25</span><span class="n">]</span><span class="p">)</span>
       
-      <span class="n">results</span> <span class="o">=</span> <span class="nf">randomGridSearch</span><span class="p">(</span><span class="n">iterations</span> <span class="o">=</span> <span class="m">130</span><span class="p">,</span> <span class="n">innerTrainX</span> <span class="o">=</span> <span class="n">train</span><span class="p">,</span> <span class="n">innerTestX</span> <span class="o">=</span> <span class="n">test</span><span class="p">)</span>
+      <span class="n">results</span> <span class="o">=</span> <span class="nf">randomGridSearch</span><span class="p">(</span><span class="n">iterations</span> <span class="o">=</span> <span class="m">125</span><span class="p">,</span> <span class="n">innerTrainX</span> <span class="o">=</span> <span class="n">train</span><span class="p">,</span> <span class="n">innerTestX</span> <span class="o">=</span> <span class="n">test</span><span class="p">,</span> <span class="n">seed</span> <span class="o">=</span> <span class="n">seed.a</span><span class="p">)</span>
  
   
   <span class="nf">list</span><span class="p">(</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">results</span><span class="o">$</span><span class="n">alpha</span><span class="p">,</span> <span class="n">lambda</span> <span class="o">=</span> <span class="n">results</span><span class="o">$</span><span class="n">lambda</span><span class="p">)</span>
@@ -14009,26 +14064,17 @@ cols(
 <div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span><span class="n">processVarImp</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">varImpRaw</span><span class="p">,</span> <span class="n">final</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">){</span>
+<div class=" highlight hl-r"><pre><span></span><span class="n">processVarImp</span> <span class="o">=</span> <span class="nf">function</span><span class="p">(</span><span class="n">varImpRaw</span><span class="p">){</span>
   
   <span class="n">varImpNames</span> <span class="o">=</span> <span class="n">varImpRaw</span> <span class="o">%&gt;%</span> 
     <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="nf">contains</span><span class="p">(</span><span class="s">&quot;Variable&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
     <span class="n">.[</span><span class="p">,</span><span class="m">1</span><span class="n">]</span>
   
-  <span class="nf">if</span><span class="p">(</span><span class="n">final</span> <span class="o">==</span> <span class="kc">FALSE</span><span class="p">){</span>
-  
-  <span class="n">final</span> <span class="o">=</span> <span class="n">varImpRaw</span> <span class="o">%&gt;%</span> 
-                        <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="nf">contains</span><span class="p">(</span><span class="s">&quot;meanImportance&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
-                        <span class="nf">transmute</span><span class="p">(</span><span class="n">Importance</span> <span class="o">=</span> <span class="nf">rowMeans</span><span class="p">(</span><span class="n">.)</span><span class="p">)</span> <span class="o">%&gt;%</span>
-                        <span class="nf">bind_cols</span><span class="p">(</span><span class="n">varImpNames</span><span class="p">,</span> <span class="n">.)</span>
-  <span class="p">}</span><span class="n">else</span><span class="p">{</span>
-    
   <span class="n">final</span> <span class="o">=</span> <span class="n">varImpRaw</span> <span class="o">%&gt;%</span> 
                         <span class="nf">select</span><span class="p">(</span><span class="n">.,</span> <span class="nf">contains</span><span class="p">(</span><span class="s">&quot;Importance&quot;</span><span class="p">))</span> <span class="o">%&gt;%</span>
                         <span class="nf">transmute</span><span class="p">(</span><span class="n">Importance</span> <span class="o">=</span> <span class="nf">rowMeans</span><span class="p">(</span><span class="n">.)</span><span class="p">)</span> <span class="o">%&gt;%</span>
                         <span class="nf">bind_cols</span><span class="p">(</span><span class="n">varImpNames</span><span class="p">,</span> <span class="n">.)</span>
-  <span class="p">}</span>
-  
+
   <span class="n">final</span>
 <span class="p">}</span>
 </pre></div>
@@ -14053,8 +14099,9 @@ cols(
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="nf">set.seed</span><span class="p">(</span><span class="m">40689</span><span class="p">)</span>
 <span class="n">seeds</span> <span class="o">=</span> <span class="nf">sample</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="m">1000000000</span><span class="p">,</span> <span class="m">150</span><span class="p">,</span> <span class="n">replace</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+<span class="n">ROC.status</span> <span class="o">=</span> <span class="nf">rep</span><span class="p">(</span><span class="nf">as.numeric</span><span class="p">(</span><span class="kc">NA</span><span class="p">),</span> <span class="nf">length</span><span class="p">(</span><span class="n">seeds</span><span class="p">))</span>
 
-<span class="n">cluster</span> <span class="o">=</span> <span class="nf">makeCluster</span><span class="p">(</span><span class="nf">detectCores</span><span class="p">())</span>
+<span class="n">cluster</span> <span class="o">=</span> <span class="nf">makeCluster</span><span class="p">(</span><span class="nf">detectCores</span><span class="p">(),</span> <span class="n">outfile</span> <span class="o">=</span> <span class="s">&quot;messages.txt&quot;</span><span class="p">)</span>
 <span class="nf">registerDoParallel</span><span class="p">(</span><span class="n">cluster</span><span class="p">)</span>
 
 <span class="n">results</span> <span class="o">=</span> <span class="nf">foreach</span><span class="p">(</span><span class="n">p</span> <span class="o">=</span> <span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">seeds</span><span class="p">),</span> <span class="n">.combine</span> <span class="o">=</span> <span class="s">&quot;c&quot;</span><span class="p">,</span> <span class="n">.packages</span> <span class="o">=</span> <span class="nf">c</span><span class="p">(</span><span class="s">&quot;tidyverse&quot;</span><span class="p">,</span> <span class="s">&quot;glmnet&quot;</span><span class="p">,</span> <span class="s">&quot;caret&quot;</span><span class="p">,</span> <span class="s">&quot;pROC&quot;</span><span class="p">,</span> <span class="s">&quot;recipes&quot;</span><span class="p">,</span> <span class="s">&quot;fastknn&quot;</span><span class="p">))</span> <span class="o">%dopar%</span> <span class="p">{</span>
@@ -14062,15 +14109,16 @@ cols(
   <span class="nf">set.seed</span><span class="p">(</span><span class="n">seeds[p]</span><span class="p">)</span>
   <span class="n">allFolds</span> <span class="o">=</span> <span class="n">caret</span><span class="o">::</span><span class="nf">createFolds</span><span class="p">(</span><span class="n">y</span> <span class="o">=</span> <span class="n">allData</span><span class="o">$</span><span class="n">ResultProper</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="m">3</span><span class="p">)</span>
   
-  <span class="n">bestParam</span> <span class="o">=</span> <span class="nf">bind_rows</span><span class="p">(</span><span class="nf">lapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">allFolds</span><span class="p">),</span> <span class="n">FUN</span> <span class="o">=</span> <span class="n">modelPipe.inner</span><span class="p">,</span> <span class="n">folds</span> <span class="o">=</span> <span class="n">allFolds</span><span class="p">))</span> 
+  <span class="n">bestParam</span> <span class="o">=</span> <span class="nf">bind_rows</span><span class="p">(</span><span class="nf">lapply</span><span class="p">(</span><span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">allFolds</span><span class="p">),</span> <span class="n">FUN</span> <span class="o">=</span> <span class="n">modelPipe.inner</span><span class="p">,</span> <span class="n">folds</span> <span class="o">=</span> <span class="n">allFolds</span><span class="p">,</span> <span class="n">seed.a</span> <span class="o">=</span> <span class="n">seeds[p]</span><span class="p">))</span> 
   <span class="n">finalResults</span> <span class="o">=</span> <span class="nf">mapply</span><span class="p">(</span><span class="n">FUN</span> <span class="o">=</span> <span class="n">modelPipe.outer</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="m">1</span><span class="o">:</span><span class="nf">length</span><span class="p">(</span><span class="n">allFolds</span><span class="p">),</span> <span class="n">lambda.final</span> <span class="o">=</span> <span class="n">bestParam</span><span class="o">$</span><span class="n">lambda</span><span class="p">,</span> <span class="n">alpha.final</span> <span class="o">=</span> <span class="n">bestParam</span><span class="o">$</span><span class="n">alpha</span><span class="p">,</span> 
                       <span class="n">MoreArgs</span> <span class="o">=</span> <span class="nf">list</span><span class="p">(</span><span class="n">folds</span> <span class="o">=</span> <span class="n">allFolds</span><span class="p">),</span> <span class="n">SIMPLIFY</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
 
   <span class="n">ROC</span> <span class="o">=</span> <span class="nf">mean</span><span class="p">(</span><span class="nf">unlist</span><span class="p">(</span><span class="nf">lapply</span><span class="p">(</span><span class="n">finalResults</span><span class="p">,</span> <span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">){</span><span class="nf">unlist</span><span class="p">(</span><span class="n">x</span><span class="o">$</span><span class="n">ROC</span><span class="p">)})))</span>
-
-  <span class="n">VarImp</span> <span class="o">=</span> <span class="nf">processVarImp</span><span class="p">(</span><span class="n">varImpRaw</span> <span class="o">=</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="nf">bind_cols</span><span class="p">(</span><span class="nf">lapply</span><span class="p">(</span><span class="n">finalResults</span><span class="p">,</span> <span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">){(</span><span class="n">x</span><span class="o">$</span><span class="n">VarImp</span><span class="p">)}))),</span> <span class="n">final</span> <span class="o">=</span> <span class="kc">FALSE</span><span class="p">)</span>
+  <span class="n">ROC.status[p]</span> <span class="o">=</span> <span class="n">ROC</span>
+    
+  <span class="n">VarImp</span> <span class="o">=</span> <span class="nf">processVarImp</span><span class="p">(</span><span class="n">varImpRaw</span> <span class="o">=</span> <span class="nf">as_tibble</span><span class="p">(</span><span class="nf">bind_cols</span><span class="p">(</span><span class="nf">lapply</span><span class="p">(</span><span class="n">finalResults</span><span class="p">,</span> <span class="nf">function</span><span class="p">(</span><span class="n">x</span><span class="p">){(</span><span class="n">x</span><span class="o">$</span><span class="n">VarImp</span><span class="p">)}))))</span>
   
-  <span class="nf">write_csv</span><span class="p">(</span><span class="nf">tibble</span><span class="p">(</span><span class="n">ROC</span> <span class="o">=</span> <span class="n">ROC</span><span class="p">),</span> <span class="nf">paste</span><span class="p">(</span><span class="s">&quot;Iteration_&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="s">&quot;.csv&quot;</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">))</span>
+  <span class="nf">writeLines</span><span class="p">(</span><span class="nf">paste</span><span class="p">(</span><span class="s">&quot;REPEAT:&quot;</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="s">&quot;...&quot;</span><span class="p">,</span> <span class="s">&quot;Running Average AUROC:&quot;</span><span class="p">,</span> <span class="nf">mean</span><span class="p">(</span><span class="n">ROC.status</span><span class="p">,</span> <span class="n">na.rm</span> <span class="o">=</span> <span class="kc">TRUE</span><span class="p">),</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="p">))</span>
   <span class="nf">list</span><span class="p">(</span><span class="n">ROC</span> <span class="o">=</span> <span class="n">ROC</span><span class="p">,</span> <span class="n">VarImp</span> <span class="o">=</span> <span class="n">VarImp</span><span class="p">)</span>
 
 <span class="p">}</span>
@@ -14098,7 +14146,7 @@ cols(
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="n">finalROC</span> <span class="o">=</span> <span class="nf">unlist</span><span class="p">(</span><span class="n">results</span><span class="nf">[c</span><span class="p">(</span><span class="nf">seq</span><span class="p">(</span><span class="m">1</span><span class="p">,</span> <span class="nf">length</span><span class="p">(</span><span class="n">results</span><span class="p">),</span> <span class="m">2</span><span class="p">))</span><span class="n">]</span><span class="p">)</span>
-<span class="n">finalVarImp</span> <span class="o">=</span> <span class="nf">processVarImp</span><span class="p">(</span><span class="n">varImpRaw</span> <span class="o">=</span> <span class="n">results</span><span class="nf">[c</span><span class="p">(</span><span class="nf">seq</span><span class="p">(</span><span class="m">2</span><span class="p">,</span> <span class="nf">length</span><span class="p">(</span><span class="n">results</span><span class="p">),</span><span class="m">2</span><span class="p">))</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">Reduce</span><span class="p">(</span><span class="n">bind_cols</span><span class="p">,</span><span class="n">.)</span><span class="p">,</span> <span class="n">final</span> <span class="o">=</span> <span class="kc">TRUE</span><span class="p">)</span> 
+<span class="n">finalVarImp</span> <span class="o">=</span> <span class="nf">processVarImp</span><span class="p">(</span><span class="n">varImpRaw</span> <span class="o">=</span> <span class="n">results</span><span class="nf">[c</span><span class="p">(</span><span class="nf">seq</span><span class="p">(</span><span class="m">2</span><span class="p">,</span> <span class="nf">length</span><span class="p">(</span><span class="n">results</span><span class="p">),</span><span class="m">2</span><span class="p">))</span><span class="n">]</span> <span class="o">%&gt;%</span> <span class="nf">Reduce</span><span class="p">(</span><span class="n">bind_cols</span><span class="p">,</span><span class="n">.)</span><span class="p">)</span> 
 
 <span class="nf">paste</span><span class="p">(</span><span class="s">&quot;Final AUROC: &quot;</span><span class="p">,</span> <span class="nf">mean</span><span class="p">(</span><span class="n">finalROC</span><span class="p">),</span> <span class="s">&quot; with a 95% confidence interval given by &quot;</span><span class="p">,</span> <span class="s">&quot;[&quot;</span><span class="p">,</span> <span class="nf">mean</span><span class="p">(</span><span class="n">finalROC</span><span class="p">)</span> <span class="o">-</span> <span class="nf">qnorm</span><span class="p">(</span><span class="m">0.975</span><span class="p">)</span><span class="o">*</span><span class="nf">sd</span><span class="p">(</span><span class="n">finalROC</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">finalROC</span><span class="p">)</span><span class="n">^0.5</span><span class="p">),</span> <span class="s">&quot;, &quot;</span><span class="p">,</span> 
       <span class="nf">mean</span><span class="p">(</span><span class="n">finalROC</span><span class="p">)</span> <span class="o">+</span> <span class="nf">qnorm</span><span class="p">(</span><span class="m">0.975</span><span class="p">)</span><span class="o">*</span><span class="nf">sd</span><span class="p">(</span><span class="n">finalROC</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">finalROC</span><span class="p">)</span><span class="n">^0.5</span><span class="p">),</span> <span class="s">&quot;]&quot;</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
@@ -14119,7 +14167,7 @@ cols(
 
 
 <div class="output_html rendered_html output_subarea ">
-'Final AUROC: 0.677237237237237 with a 95% confidence interval given by [0.674899584021158, 0.679574890453316]'
+'Final AUROC: 0.719420849420849 with a 95% confidence interval given by [0.714794800947121, 0.724046897894578]'
 </div>
 
 </div>
@@ -14154,168 +14202,269 @@ cols(
 <table>
 <thead><tr><th scope=col>Variable</th><th scope=col>Importance</th></tr></thead>
 <tbody>
-	<tr><td>PC1                                               </td><td>0.047248021020                                    </td></tr>
-	<tr><td>ixGF/60_max                                       </td><td>0.013365092849                                    </td></tr>
-	<tr><td>Rel CF%_max                                       </td><td>0.008846126935                                    </td></tr>
-	<tr><td>PC4                                               </td><td>0.008357225103                                    </td></tr>
-	<tr><td>H2H                                               </td><td>0.005559800025                                    </td></tr>
-	<tr><td>PenaltyKillPercentage                             </td><td>0.004779822085                                    </td></tr>
-	<tr><td>PowerPlayOppurtunities                            </td><td>0.004742171874                                    </td></tr>
-	<tr><td>PC2                                               </td><td>0.004485562734                                    </td></tr>
-	<tr><td>logofSOG                                          </td><td>0.004335569005                                    </td></tr>
-	<tr><td>SOG_Last20                                        </td><td>0.003943328588                                    </td></tr>
-	<tr><td>VegasOpeningOdds                                  </td><td>0.003934697321                                    </td></tr>
-	<tr><td>PC5                                               </td><td>0.003848564979                                    </td></tr>
-	<tr><td>SRS_x_Fenwick_x_ELORating                         </td><td>0.003773068871                                    </td></tr>
-	<tr><td>WeightedGPS                                       </td><td>0.003721990839                                    </td></tr>
-	<tr><td>PC3                                               </td><td>0.003647056970                                    </td></tr>
-	<tr><td>FaceoffWinPercentage                              </td><td>0.003518682142                                    </td></tr>
-	<tr><td>Q2Record                                          </td><td>0.003379659672                                    </td></tr>
-	<tr><td>Corsi_Last20                                      </td><td>0.003295182682                                    </td></tr>
-	<tr><td>PenaltyMinstoPowerPlay                            </td><td>0.003026908399                                    </td></tr>
-	<tr><td>Fenwick_Last20                                    </td><td>0.002689163813                                    </td></tr>
-	<tr><td>OT_Losses_Lead1P                                  </td><td>0.002609032081                                    </td></tr>
-	<tr><td>CorsiDifftoSOSlog                                 </td><td>0.002371213005                                    </td></tr>
-	<tr><td>SOS                                               </td><td>0.002225730871                                    </td></tr>
-	<tr><td>Q1Record                                          </td><td>0.002126572114                                    </td></tr>
-	<tr><td>CF% QoT_max                                       </td><td>0.002077495000                                    </td></tr>
-	<tr><td>P1_max                                            </td><td>0.001890953024                                    </td></tr>
-	<tr><td>CF% QoC_max                                       </td><td>0.001859664256                                    </td></tr>
-	<tr><td>WinPercent_Trail2P                                </td><td>0.001835228988                                    </td></tr>
-	<tr><td>SRStoSOS                                          </td><td>0.001751736551                                    </td></tr>
-	<tr><td>Q3Record                                          </td><td>0.001741192206                                    </td></tr>
-	<tr><td>GoalsPercentage_Last20                            </td><td>0.001655039947                                    </td></tr>
-	<tr><td>PowerPlaytoPenaltyKill                            </td><td>0.001628250861                                    </td></tr>
-	<tr><td>CF% QoC_mean                                      </td><td>0.001579171412                                    </td></tr>
-	<tr><td>AverageAge                                        </td><td>0.001551971480                                    </td></tr>
-	<tr><td>Ratio_of_HitstoBlockslog                          </td><td>0.001473403555                                    </td></tr>
-	<tr><td>Ratio_of_GoalstoGoalsAgainst                      </td><td>0.001397860188                                    </td></tr>
-	<tr><td>SDRecord_x_SOS                                    </td><td>0.001319348786                                    </td></tr>
-	<tr><td>ZSR_min                                           </td><td>0.001316447207                                    </td></tr>
-	<tr><td>TakeAways                                         </td><td>0.001280471538                                    </td></tr>
-	<tr><td>SCFtoGoalsAgainstlog                              </td><td>0.001210507476                                    </td></tr>
-	<tr><td>GiveAways                                         </td><td>0.001190549885                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_PlayerPoints         </td><td>0.001145213070                                    </td></tr>
-	<tr><td>SDRecord                                          </td><td>0.001124437943                                    </td></tr>
-	<tr><td>SCFtoGoalsAgainst                                 </td><td>0.001124436752                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_Ratio_of_SRStoPoints </td><td>0.001010461980                                    </td></tr>
-	<tr><td>FaceoffWinPercentage_x_ShotPercentage             </td><td>0.000996712917                                    </td></tr>
-	<tr><td>WinPercent_Lead2P                                 </td><td>0.000991966994                                    </td></tr>
-	<tr><td>ixGF/60_sd                                        </td><td>0.000990322586                                    </td></tr>
-	<tr><td>PenaltiesDrawn                                    </td><td>0.000983439998                                    </td></tr>
-	<tr><td>OTL                                               </td><td>0.000974002386                                    </td></tr>
-	<tr><td>OT_Losses_Lead2P                                  </td><td>0.000966131396                                    </td></tr>
-	<tr><td>GS_max                                            </td><td>0.000945436452                                    </td></tr>
-	<tr><td>GStoSOS                                           </td><td>0.000938921483                                    </td></tr>
-	<tr><td>TOI% QoT_max                                      </td><td>0.000915104840                                    </td></tr>
-	<tr><td>Q4Record                                          </td><td>0.000908464219                                    </td></tr>
-	<tr><td>HitsPercentage_Last20                             </td><td>0.000895103355                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_logofPoints          </td><td>0.000879091410                                    </td></tr>
-	<tr><td>Ratio_of_GoalstoGoalsAgainstlog                   </td><td>0.000874356527                                    </td></tr>
-	<tr><td>BlocksPercentage_Last20                           </td><td>0.000852772378                                    </td></tr>
-	<tr><td>ESPNPower                                         </td><td>0.000810665043                                    </td></tr>
-	<tr><td>WinPercent_Lead1P                                 </td><td>0.000798760971                                    </td></tr>
-	<tr><td>TOI% QoC_min                                      </td><td>0.000776829303                                    </td></tr>
-	<tr><td>P1/60_max                                         </td><td>0.000768856280                                    </td></tr>
-	<tr><td>PowerPlayPercentage                               </td><td>0.000763030140                                    </td></tr>
-	<tr><td>BlocksatES                                        </td><td>0.000738986204                                    </td></tr>
-	<tr><td>xGDifftoSOS                                       </td><td>0.000731087352                                    </td></tr>
-	<tr><td>ZSR_max                                           </td><td>0.000723405352                                    </td></tr>
-	<tr><td>TOI% QoC_mean                                     </td><td>0.000710113421                                    </td></tr>
-	<tr><td>sqrtofRPI                                         </td><td>0.000710047204                                    </td></tr>
-	<tr><td>WinPercent_Trail1P                                </td><td>0.000694353844                                    </td></tr>
-	<tr><td>CF% QoC_min                                       </td><td>0.000694322959                                    </td></tr>
-	<tr><td>GS_min                                            </td><td>0.000691361778                                    </td></tr>
-	<tr><td>PDO                                               </td><td>0.000677650798                                    </td></tr>
-	<tr><td>Ratio_of_SRStoPoints                              </td><td>0.000672583156                                    </td></tr>
-	<tr><td>P1_mean                                           </td><td>0.000662109737                                    </td></tr>
-	<tr><td>HitsatES                                          </td><td>0.000611066624                                    </td></tr>
-	<tr><td>Rel CF%_min                                       </td><td>0.000605534377                                    </td></tr>
-	<tr><td>iCF/60_mean                                       </td><td>0.000603425621                                    </td></tr>
-	<tr><td>TOI% QoT_mean                                     </td><td>0.000593090694                                    </td></tr>
-	<tr><td>PenaltyMinsPG                                     </td><td>0.000582393117                                    </td></tr>
-	<tr><td>CF% QoC_sd                                        </td><td>0.000548262538                                    </td></tr>
-	<tr><td>PowerPlayGoals                                    </td><td>0.000522970222                                    </td></tr>
-	<tr><td>CF% QoT_min                                       </td><td>0.000516241630                                    </td></tr>
-	<tr><td>AveragePenaltyDiff_PerGame                        </td><td>0.000508366912                                    </td></tr>
-	<tr><td>P1/60_mean                                        </td><td>0.000495136103                                    </td></tr>
-	<tr><td>GS_sd                                             </td><td>0.000472891239                                    </td></tr>
-	<tr><td>GS/60_min                                         </td><td>0.000468146786                                    </td></tr>
-	<tr><td>TOI% QoC_max                                      </td><td>0.000457989567                                    </td></tr>
-	<tr><td>TOI% QoT_min                                      </td><td>0.000449514402                                    </td></tr>
-	<tr><td>ELORating_Q4                                      </td><td>0.000444910307                                    </td></tr>
-	<tr><td>SCA                                               </td><td>0.000444682337                                    </td></tr>
-	<tr><td>PenaltiesTaken                                    </td><td>0.000439036214                                    </td></tr>
-	<tr><td>iCF/60_max                                        </td><td>0.000436557126                                    </td></tr>
-	<tr><td>HDCA                                              </td><td>0.000423647844                                    </td></tr>
-	<tr><td>SRS                                               </td><td>0.000421857819                                    </td></tr>
-	<tr><td>GS_mean                                           </td><td>0.000421273353                                    </td></tr>
-	<tr><td>ixGF/60_mean                                      </td><td>0.000405871911                                    </td></tr>
-	<tr><td>P1/60_min                                         </td><td>0.000402804481                                    </td></tr>
-	<tr><td>ZSR_mean                                          </td><td>0.000401328263                                    </td></tr>
-	<tr><td>HighDangerSC_Percent                              </td><td>0.000385620693                                    </td></tr>
-	<tr><td>Ratio_of_HitstoBlocks                             </td><td>0.000383256079                                    </td></tr>
-	<tr><td>CF_sd                                             </td><td>0.000371992900                                    </td></tr>
-	<tr><td>GS/60_max                                         </td><td>0.000368194440                                    </td></tr>
-	<tr><td>Round_X2_x_VegasOpeningOdds                       </td><td>0.000356906145                                    </td></tr>
-	<tr><td>CA_Per60Team_log                                  </td><td>0.000348612418                                    </td></tr>
-	<tr><td>MissesPercentage_Last20                           </td><td>0.000342775391                                    </td></tr>
-	<tr><td>P1_min                                            </td><td>0.000339420565                                    </td></tr>
-	<tr><td>P1_sd                                             </td><td>0.000333838964                                    </td></tr>
-	<tr><td>CF% QoT_sd                                        </td><td>0.000314388685                                    </td></tr>
-	<tr><td>GS_max_log                                        </td><td>0.000294188127                                    </td></tr>
-	<tr><td>TOI% QoT_sd                                       </td><td>0.000289267911                                    </td></tr>
-	<tr><td>iCF/60_min                                        </td><td>0.000282158294                                    </td></tr>
-	<tr><td>CF_max                                            </td><td>0.000273494012                                    </td></tr>
-	<tr><td>ELORating                                         </td><td>0.000268296734                                    </td></tr>
-	<tr><td>P1/60_sd                                          </td><td>0.000260371131                                    </td></tr>
-	<tr><td>GoalsAgainst                                      </td><td>0.000247526297                                    </td></tr>
-	<tr><td>PlayerPoints                                      </td><td>0.000214544506                                    </td></tr>
-	<tr><td>logofPoints                                       </td><td>0.000208164417                                    </td></tr>
-	<tr><td>xGF.60                                            </td><td>0.000198174188                                    </td></tr>
-	<tr><td>TOI% QoC_sd                                       </td><td>0.000195462758                                    </td></tr>
-	<tr><td>RPI                                               </td><td>0.000177180337                                    </td></tr>
-	<tr><td>WeightedGoalieSavePercntage                       </td><td>0.000166421366                                    </td></tr>
-	<tr><td>Round_X3_x_VegasOpeningOdds                       </td><td>0.000154347097                                    </td></tr>
-	<tr><td>CF_min                                            </td><td>0.000148181591                                    </td></tr>
-	<tr><td>CF_Per60Team                                      </td><td>0.000137973891                                    </td></tr>
-	<tr><td>xGA.60                                            </td><td>0.000115692938                                    </td></tr>
-	<tr><td>Rel CF%_mean                                      </td><td>0.000114653062                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_PointsPercentageofMax</td><td>0.000110807252                                    </td></tr>
-	<tr><td>ZSR_sd                                            </td><td>0.000083772210                                    </td></tr>
-	<tr><td>Rel CF%_sd                                        </td><td>0.000083217691                                    </td></tr>
-	<tr><td>CF% QoT_mean                                      </td><td>0.000078798171                                    </td></tr>
-	<tr><td>SOG                                               </td><td>0.000076693109                                    </td></tr>
-	<tr><td>Round_X3                                          </td><td>0.000068800639                                    </td></tr>
-	<tr><td>SCF                                               </td><td>0.000066555984                                    </td></tr>
-	<tr><td>Fenwick                                           </td><td>0.000062296124                                    </td></tr>
-	<tr><td>ixGF/60_min                                       </td><td>0.000062224857                                    </td></tr>
-	<tr><td>ShotPercentage                                    </td><td>0.000061992437                                    </td></tr>
-	<tr><td>GoalDiff                                          </td><td>0.000060093188                                    </td></tr>
-	<tr><td>CF_mean                                           </td><td>0.000052469378                                    </td></tr>
-	<tr><td>GoalsFor                                          </td><td>0.000042240070                                    </td></tr>
-	<tr><td>AverageGoalDiff_PerGame                           </td><td>0.000040133344                                    </td></tr>
-	<tr><td>CA_Per60Team                                      </td><td>0.000034166491                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_sqrtofPoints         </td><td>0.000028961337                                    </td></tr>
-	<tr><td>GS/60_mean                                        </td><td>0.000027782486                                    </td></tr>
-	<tr><td>Round_X2                                          </td><td>0.000027413697                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_PointsPercentagesqrt </td><td>0.000024083412                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_Points               </td><td>0.000016347415                                    </td></tr>
-	<tr><td>iCF/60_sd                                         </td><td>0.000009656445                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage_x_PointsPercentage     </td><td>0.000007122731                                    </td></tr>
-	<tr><td>Points                                            </td><td>0.000000000000                                    </td></tr>
-	<tr><td>PointsPercentageofMax                             </td><td>0.000000000000                                    </td></tr>
-	<tr><td>RegularSeasonWinPercentage                        </td><td>0.000000000000                                    </td></tr>
-	<tr><td>CF._Team                                          </td><td>0.000000000000                                    </td></tr>
-	<tr><td>GS/60_sd                                          </td><td>0.000000000000                                    </td></tr>
-	<tr><td>sqrtofPoints                                      </td><td>0.000000000000                                    </td></tr>
-	<tr><td>PointsPercentage                                  </td><td>0.000000000000                                    </td></tr>
-	<tr><td>PointsPercentagesqrt                              </td><td>0.000000000000                                    </td></tr>
-	<tr><td>Round_X4                                          </td><td>0.000000000000                                    </td></tr>
-	<tr><td>Round_X4_x_VegasOpeningOdds                       </td><td>0.000000000000                                    </td></tr>
+	<tr><td>TOI% QoT_mean            </td><td>0.4465994                </td></tr>
+	<tr><td>ZSR_mean                 </td><td>0.3005169                </td></tr>
+	<tr><td>H2H                      </td><td>0.2982842                </td></tr>
+	<tr><td>SRS_x_Fenwick_x_ELORating</td><td>0.2744548                </td></tr>
+	<tr><td>SOG_Last20               </td><td>0.2744143                </td></tr>
+	<tr><td>OT_Losses_Lead1P         </td><td>0.2610372                </td></tr>
+	<tr><td>PenaltyKillPercentage    </td><td>0.2578650                </td></tr>
+	<tr><td>Corsi_Last20             </td><td>0.2572356                </td></tr>
+	<tr><td>VegasOpeningOdds         </td><td>0.2533034                </td></tr>
+	<tr><td>Fenwick_Last20           </td><td>0.2403281                </td></tr>
+	<tr><td>TOI% QoC_max             </td><td>0.2277864                </td></tr>
+	<tr><td>ZSR_max                  </td><td>0.2254266                </td></tr>
+	<tr><td>SOS                      </td><td>0.2150462                </td></tr>
+	<tr><td>CorsiDifftoSOSlog        </td><td>0.2141862                </td></tr>
+	<tr><td>PPO_x_PenaltyKill        </td><td>0.2044551                </td></tr>
+	<tr><td>PowerPlayOppurtunities   </td><td>0.2031938                </td></tr>
+	<tr><td>TOI% QoT_sd              </td><td>0.2021300                </td></tr>
+	<tr><td>FaceoffWinPercentage     </td><td>0.1994422                </td></tr>
+	<tr><td>SRStoSOS                 </td><td>0.1975579                </td></tr>
+	<tr><td>Q2Record                 </td><td>0.1949382                </td></tr>
+	<tr><td>WeightedGPS              </td><td>0.1787394                </td></tr>
+	<tr><td>Round_X3                 </td><td>0.1758653                </td></tr>
+	<tr><td>Q3Record                 </td><td>0.1529851                </td></tr>
+	<tr><td>PC1                      </td><td>0.1283529                </td></tr>
+	<tr><td>PC3                      </td><td>0.1097695                </td></tr>
 </tbody>
 </table>
 
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-r"><pre><span></span><span class="c1">#..............................................Graphing the AUROC scores.........................#</span>
+
+<span class="n">graphingParameters</span> <span class="o">=</span> <span class="nf">tibble</span><span class="p">(</span><span class="n">ROC</span> <span class="o">=</span> <span class="n">finalROC</span><span class="p">)</span>
+
+<span class="nf">ggplot</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">graphingParameters</span><span class="p">,</span> <span class="nf">aes</span><span class="p">(</span><span class="n">graphingParameters</span><span class="o">$</span><span class="n">ROC</span><span class="p">),</span> <span class="n">colour</span> <span class="o">=</span> <span class="s">&quot;Hist&quot;</span><span class="p">)</span> <span class="o">+</span>
+  <span class="nf">geom_histogram</span><span class="p">(</span><span class="n">bins</span> <span class="o">=</span> <span class="m">10</span><span class="p">,</span> <span class="n">binwidth</span> <span class="o">=</span> <span class="m">0.01</span><span class="p">,</span> <span class="n">colour</span> <span class="o">=</span> <span class="s">&quot;green&quot;</span><span class="p">,</span> <span class="n">fill</span> <span class="o">=</span> <span class="s">&quot;darkgrey&quot;</span><span class="p">)</span> <span class="o">+</span>
+  <span class="nf">labs</span><span class="p">(</span><span class="n">title</span> <span class="o">=</span> <span class="s">&quot;150 Repeats of Nested Cross Validation&quot;</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="s">&quot;AUROC&quot;</span><span class="p">,</span> <span class="n">subtitle</span> <span class="o">=</span> <span class="s">&quot;Bins = 10, Width = 0.01&quot;</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+
+</div>
+
+<div class="output_area">
+
+    <div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAMAAADKOT/pAAAAPFBMVEUAAAAA/wAzMzNNTU1o
+aGh8fHyMjIyampqnp6epqamysrK9vb3Hx8fQ0NDZ2dnh4eHp6enr6+vw8PD///80ssI+AAAA
+CXBIWXMAABJ0AAASdAHeZh94AAAgAElEQVR4nO2da0PiTLMAs0+4vSrogf//X09uA5NAnLF7
+EjozVR921W2LAF1yUdnqBgBqqncfAEAOEBJAAggJIAGEBJAAQgJIACEBJICQABJASAAJICSA
+BBASQAJ0IX0Mn36terp3Lvuq2p/90xjYna6SE7keo4Ya/+MEv+5vSbzjz/o6NMd+OM8N/0Zd
+/dzf/qnqpxMZndD0WPvj++0cgB1UV9PZXctnL6RL/+aHdxp3aklJUavULvv+8Rn1/S2J1/+X
+73o49v3c9C98VKf72yf/IrlFhNS/T0jbQHM1fbrboGZJHl+wd+3NwZd//bu3m5uq0+3vRK1S
+VX3771TH8OdGhfTd3Bhdbt2xHyIOY4J/K+TfOr08+dchwTaQX1nf+2rnrutddb+pufRfeE/3
+e1feRnxP7t1EHmJcSKN3DkNX6pB21efw1r4S3Lt7fNJ5epNGSFkhv7Kq5uZluK6vj4cnTUHd
+Cn9XR29y8tbjUVTzgc/6/ojKf3R1airdX27DHcPW2DwKqo8X7wi+j3XzkW838zgrVeWO6Plh
+213zuC/qnep5X9Uf3gGfH7dD3+3NaWPedR96nPboyKYH+fj8Q5/U/Wz5d+38U52e72HEO73m
+I6e62oketMFSyENqr1W3CNXpo7lqu9ug/XNb01ukr37vT90/fdzf9j9+Gx6ZnO8LNTz08m4W
+ztV4xg+pudv5+ThpT/zQuE/xT/XUvXl8qA6Tm6H2tq4d9U7bP7Lng6yH2+prf9YfZ8sLyT/V
+p/Pdj/in14Q2ORF4P7q7D8PGnSo/jdE/+W9e6m7iu/uK+73vt6Vu8jvX7c2Y//GP7g7iR3d3
+qP/07qFXs/X3PptHLx/X27U57Z/xyfXv7LonNvrbMk/safpP8f/xu3u6rzmau6yuxk+PNEt8
+nZ62p3w6yOai6e8afnZnfXq2hsN7nOrz+XYjj9NrLrPL7XoQPfsBS5EkpH5/foY0Rv/Uv+no
+rvtTv5zX9l5PNTwCr0/jjw8PujrJzLNXp+GZi+Oo3/tp9/ctuw+PT3By8P4/Dlt/raf3Rb3P
+uTyd9osvGQ++h6h23T3e6dkaDu9xqjPne3J65+6AeQhliSQhDVz8TX0R0q7/4ry7d9X80/Bl
+9bAbf7zh+/yx9xbq0DxE+PKf99oNDf50q/r8RPKxcvc9fbGncbd0j390z5kcfgnp+bQ95dNB
+tqPdk373G6nR2RoOb3Sqk/M9jHinNxwDIZkiZUijb41Mv043X3DP7l0vpGG/dtX44+1TEO7N
+3vRTey2OTsAbGp/g7v5vD7GncYvqHc0g2d9lu6e7ds+n7SmfDrK9n9feMh6HJzEnZ2t06PuX
+53t87ryjJCRTJA/JfTX37sIPT44Nd4tGn+RC2lfjj382dwNPXz+jLTof2w27f1czFFL3fMPz
+vz00z3cZn78IHP2H9D+vQxod2eQg3V2wqg9yerZGh9f+/Xy+CWkbpA1p99vT3x/DDzbU3vdO
+3bPD7V07/+P9HaKnDr6Pj+9Ehe7adc83dG/5Yk/TT42Opv887+GH9/T3T71/fdduemT+Qd76
+G6Ov4dKYni3//F37O5fT881du22QJKThua1L+1B4+Ibsh/el3F3lu36djv1f39X+/pX62j7Z
+MP54++Z57sam5TQs58yTDZ3pODxaeoi9iX7K/8fh27ifnqx231j+qb2nUsanPT2y8cG0D492
+oxvj8zgk/1Sfz3f35+j0CMkiSUI6VYdr9xRyW8XwI0L101T7JO53/9ep+xm2/unvc/fU73X8
+8e4HCobnoftn9vpnBk/eLUQz3j8l/H2bqe3YP9gYi++a3uv/42f3ZPxX5cku/Y8IXZvHLoeH
+eXTanvLpIFsatbs0xmdr0Pmn+ny+uzdHp0dIFklz167/DmH/NO53//bX81Sz2N09obP/XafD
+45uL3sc/3TMAl/55tfv3OuvHc2L+Nylfh3St71/hndjT9F7/H4fz8eHL3Kn0cdwfr3mn7Smf
+D/LW3jjfHzT5Z+txA+Sd6vP5Hp2D+3dyp+cY3k2ix0ifu+rlD/qMp5ovzl1rP+2PuLifPGi+
+zA4/auN9vH32qj5euoco37vuC/ql++kbf0X9H9N5ff/P/eysJ35oBq//j7evyY8INVzbZ6Or
+43ls9k/bO7Lng+x/x8Q99+edLe95A+9Un863u5s6+hGhp3MM7+bN1wbbAHlASAAJICSABBAS
+QAJYZIAEEBJAAggJIAGEBJAAQgJIACEBJICQABJASAAJICSABIhDGn6u/9i/luHfPvfUz7c/
+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
+KbE3x90NjxASISX25ri74RFCIqTE3hx3NzxCSNHp1C2EFCTH3Q2PEFJ8SNwiRZHj7oZHCImQ
+Entz3N3wCCHJOiKkWXLc3fAIIUWHdH+I9F9L7KeVR467Gx5Z8WDefQW/5m+3SDzZECbH3Q2P
+cIv0p+wIKUyOuxseISRCSuzNcXfDI4T0p4YIKUyOuxseIaS/hOQ9c5fmOBJhypvj7oZHCCk2
+pNvoBxsIaZYcdzc8QkjRIY1JcxyJMOXNcXfDI4RESIm9Oe5ueISQCCmxN8fdDY8QEiEl9ua4
+u+ERQiKkxN4cdzc8QkiElNib4+6GRwiJkBJ7c9zd8AghEVJib467Gx4hJEJK7M1xd8MjhERI
+ib057m54hJAIKbE3x90NjxASISX25ri74RFCIqTE3hx3NzxCSISU2Jvj7oZHCImQEntz3N3w
+CCERUmJvjrsbHiEkQkrszXF3wyOEREiJvTnubniEkAgpsTfH3Q2PEBIhJfbmuLvhEUIipMTe
+HHc3PEJIhJTYm+PuhkdWPJgYUm/CACGt6M1xd8Mjxg4m9SYMENKK3lJ319AIIQkx5S11dw2N
+EJIQU95Sd9fQCCEJMeUtdXcNjRCSEFPeUnfX0AghCTHlLXV3DY0QkhBT3lJ319AIIQkx5S11
+dw2NEJIQU95Sd9fQCCEJMeUtdXcNjRCSEFPeUnfX0AghCTHlLXV3DY0QkhBT3lJ319AIIQkx
+5S11dw2NEJIQU95Sd9fQCCEJMeUtdXcNjRCSEFPeUnfX0AghCTHlLXV3DY0QkhBT3lJ319AI
+IQkx5S11dw2NEJIQU95Sd9fQCCEJMeUtdXcNjRCSEFPeUnfX0AghCTHlLXV3DY0QkhBT3lJ3
+19AIIQkx5S11dw2NEJIQU95Sd9fQCCEJMeUtdXcNjRCSEFPeUnfX0AghCTHlLXV3DY0QkhBT
+3lJ319AIIQkx5S11dw2NEJIQU95Sd9fQCCEJMeUtdXcNjRCSEFPeUnfX0AghCTHlLXV3DY0Q
+khBT3lJ319AIIQkx5S11dw2NEJIQU95Sd9fQCCEJMeUtdXcNjRCSEFPeUnfX0MiWQoI5St1d
+QyP/+7f+1c4tUmpvqbtraGRLt0hpjiMRpryl7q6hEUISYspb6u4aGiEkIaa8pe6uoRFCEmLK
+W+ruGhohJCGmvKXurqERQhJiylvq7hoaISQhpryl7q6hEUISYspb6u4aGiEkIaa8pe6uoRFC
+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
+AAAASUVORK5CYII="
+>
 </div>
 
 </div>
