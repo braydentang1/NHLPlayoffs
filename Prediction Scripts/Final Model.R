@@ -84,9 +84,15 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
   mutate(ResultProper = as.factor(ResultProper))
 
+#Will need to bind the 2019 observationson to allData (bind_rows) so that the "Engineering of some features" applies to the new observations as well. 
+
 #...................................Read in Variable Importance List After RFE....................#
 
 VarImportance.List = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Model Output/finalVarImp.March28th.csv") %>% .[,1]
+
+#...................................Read in Final Parameters.......................................#
+
+finalParameters = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/finalParameters.csv")
 
 #...................................Engineering of some features..................#
 
@@ -111,6 +117,12 @@ allData = allData %>%
   mutate("ixGF/60_max.TO.Rel CF%_max" = allData$'Rel CF%_max' / allData$'ixGF/60_max') %>%
   mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
   mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
+
+
+#..................................Separate out the new observations from all prior data........................#
+
+allData = allData %>% filter(., !is.na(ResultProper))
+newdata = allData %>% filter(., is.na(ResultProper))
 
 #.......................Define recipe.............................................#
 
@@ -199,16 +211,28 @@ retune.model = function(data){
     write_csv(finalParameters, "finalParameters.csv")
   }
 
+
 #...........................Prediction Script.................................................................................#
 #Requires new data samples. 
 
-predict.NHL = function(training, newdata, finalParameters){
+predict.NHL = function(training, newdata, finalParameters, recipe.parameters){
+  
+  training = training %>% bake(recipe.parameters, new_data = .) 
+  newdata = newdata %>% bake(recipe.parameters, new_data = .)
+  
+  frameswithPCA = addPCA_variables(traindata = training, testdata = newdata, standardize = FALSE)
+  
+  training = frameswithPCA$train
+  newdata = frameswithPCA$test
   
   baggedModel(train = training, test = newdata, label_train = training$ResultProper, alpha.a = finalParameters$alpha, s_lambda.a = finalParameters$lambda)$Predictions
   
 }
 
+#...........................Global.........................................#
 
+recipe.parameters = allData %>% preProcess.recipe(.) %>% prep(.)
+predictions = predict.NHL(training = allData, newdata = newdata, finalParameters = finalParameters)
 
 
 

@@ -363,7 +363,7 @@ stopCluster(cluster)
 rm(cluster)
 
 finalROC = unlist(results[c(seq(1, length(results), 2))])
-finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(bind_cols,.)) 
+finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 
 
 paste("Final AUROC: ", mean(finalROC), " with a 95% confidence interval given by ", "[", mean(finalROC) - qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), ", ", 
       mean(finalROC) + qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), "]", sep = "")
