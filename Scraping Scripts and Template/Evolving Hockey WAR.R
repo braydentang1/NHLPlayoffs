@@ -25,9 +25,7 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData = function(year){
   
-  data = read_csv(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Evolving Hockey/Player Stats WAR/", year, ".csv", sep = "")) %>%
-            mutate(WAR.TOI = WAR * TOI_all) %>%
-            mutate(GAR.TOI = GAR * TOI_all) 
+  data = read_csv(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Evolving Hockey/Player Stats WAR/", year, ".csv", sep = "")) 
   
   data[data == "S.J"] = "SJS"
   data[data == "L.A"] = "LAK"
@@ -42,10 +40,8 @@ getData = function(year){
   data = data %>%
             mutate(Team = as.factor(Team)) %>%
             left_join(., TOI_byteam, by = "Team") %>%
-            mutate(WAR.TOI = WAR.TOI/TOI_all.y) %>%
-            mutate(GAR.TOI = GAR.TOI/TOI_all.y) %>%
             group_by(Team) %>%
-            summarize_at(funs(mean(., na.rm = TRUE), median(., na.rm = TRUE), max(., na.rm = TRUE), sd(., na.rm = TRUE)), .vars = c("WAR.TOI", "GAR.TOI")) %>%
+            summarize_at(funs(mean(., na.rm = TRUE), median(., na.rm = TRUE), max(., na.rm = TRUE), sd(., na.rm = TRUE)), .vars = c("WAR", "GAR")) %>%
             mutate(Team = as.character(Team))
   
   abc = bind_cols(Year = rep(year, nrow(data)), data)

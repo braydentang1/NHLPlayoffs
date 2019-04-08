@@ -86,10 +86,6 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
 
 #Will need to bind the 2019 observationson to allData (bind_rows) so that the "Engineering of some features" applies to the new observations as well. 
 
-#...................................Read in Variable Importance List After RFE....................#
-
-VarImportance.List = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Model Output/finalVarImp.March28th.csv") %>% .[,1]
-
 #...................................Read in Final Parameters.......................................#
 
 finalParameters = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/finalParameters.csv")
@@ -169,14 +165,15 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
     if(score.new > score){
       alpha.fin = alpha_val[m]
       lambda.fin = s.lambda_val[m]
+      varimp.fin = modelX$VariableImportance
       score = score.new
     }
   }
-  list(alpha = alpha.fin, lambda = lambda.fin)
+  list(alpha = alpha.fin, lambda = lambda.fin, VarImp = varimp.fin)
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(mainTrain, seed.a){
+modelPipe.inner = function(mainTrain, seed.a, VarImp = NULL, subset.n = NULL){
   
   set.seed(seed.a)  
   innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.75)
@@ -192,15 +189,20 @@ modelPipe.inner = function(mainTrain, seed.a){
   
   rm(train.param, frameswithPCA)
   
-  #NEW: Subset top 25 variables from VarImportance List, found after 80 iterations of RFE
+  #....Subset selection....#
+  if(!is.null(VarImp) && !is.null(subset.n)){
+    
+    train = train %>% select(., ResultProper, VarImp$Variable[1:subset.n])
+    test = test %>% select(., ResultProper, VarImp$Variable[1:subset.n])
+    
+  }
   
-  train = train %>% select(., ResultProper, VarImportance.List$Variable[1:25])
-  test = test %>% select(., ResultProper, VarImportance.List$Variable[1:25])
+  #Train the model once just to get variable importance. Then, train the model again but this time 
   
   results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
   
   
-  list(alpha = results$alpha, lambda = results$lambda)
+  list(alpha = results$alpha, lambda = results$lambda, results$VarImp)
   
 }
 
