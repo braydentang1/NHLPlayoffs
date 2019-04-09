@@ -269,16 +269,30 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final, VarImp = NULL, s
   
   rm(train.param, frameswithPCA)
   
-      if(!is.null(VarImp) && !is.null(subset.n)){
-          
-          VarImp.train = VarImp[[j]]
-        
-          VarImp.train = VarImp.train %>% arrange(., -Importance) %>% select(., Variable)    
-        
-          train = train %>% select(., ResultProper, VarImp.train$Variable[1:subset.n])
-          test = test %>% select(., ResultProper, VarImp.train$Variable[1:subset.n])
-          
+  if(!is.null(VarImp) && !is.null(subset.n)){
+    
+    VarImp.train = VarImp[[j]]
+    
+    VarImp.train = VarImp.train %>% arrange(., -Importance) %>% filter(Importance > 0) %>% select(., Variable)    
+    
+    subset.new = case_when(subset.n > nrow(VarImp.train) ~ as.integer(nrow(VarImp.train)),  TRUE ~ as.integer(subset.n))
+    
+    if(subset.new == 1){
+      
+      if(VarImp.train$Variable[1] == "PC1"){
+        var = "TOI% QoT_mean"
+      }else{
+        var = "PC1"
       }
+      
+    }else{
+      var = NULL
+    }
+    
+    train = train %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
+    test = test %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
+    
+  }
       
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
                                              alpha.a = alpha.final, s_lambda.a = lambda.final)
@@ -297,7 +311,7 @@ modelPipe.inner = function(k, folds, seed.a, VarImp = NULL, subset.n = NULL){
   mainTrain = allData[-folds[[k]], ]
   
   set.seed(seed.a)  
-  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.73)
+  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.75)
 
       train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
       train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
@@ -310,22 +324,32 @@ modelPipe.inner = function(k, folds, seed.a, VarImp = NULL, subset.n = NULL){
       
       rm(train.param, frameswithPCA)
       
-      #....Subset selection....#
       if(!is.null(VarImp) && !is.null(subset.n)){
         
-          VarImp.train = VarImp[[k]]
-          
-          VarImp.train = VarImp.train %>% arrange(., -Importance) %>% select(., Variable)        
+        VarImp.train = VarImp[[k]]
         
-          train = train %>% select(., ResultProper, VarImp.train$Variable[1:subset.n])
-          test = test %>% select(., ResultProper, VarImp.train$Variable[1:subset.n])
+        VarImp.train = VarImp.train %>% arrange(., -Importance) %>% filter(Importance > 0) %>% select(., Variable)    
+        
+        subset.new = case_when(subset.n > nrow(VarImp.train) ~ as.integer(nrow(VarImp.train)),  TRUE ~ as.integer(subset.n))
+        
+        if(subset.new == 1){
           
+            if(VarImp.train$Variable[1] == "PC1"){
+              var = "TOI% QoT_mean"
+            }else{
+              var = "PC1"
+            }
+          
+      }else{
+          var = NULL
+        }
+      
+        train = train %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
+        test = test %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
+        
       }
       
       results = randomGridSearch(iterations = 2, innerTrainX = train, innerTestX = test, seed = seed.a)
- 
-  
-  list(alpha = results$alpha, lambda = results$lambda, VarImp = results$VarImp)
   
 }
 
@@ -408,7 +432,7 @@ rm(cluster, ROC.status, ROC.status.RFE)
 finalROC = unlist(results[c(seq(1, length(results), 3))])
 finalROC.RFE = results[c(seq(3, length(results), 3))] %>% reduce(left_join, by = "Subset.Size")
 RFE.data = as.numeric(finalROC.RFE[2, 2:ncol(finalROC.RFE)])
-finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),3))] %>% Reduce(bind_cols,.)) 
+finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),3))] %>% reduce(bind_cols)) 
 
 #...................................Bootstrap the vector finalROC and RFE.data..............................#
 
@@ -418,8 +442,8 @@ mean.custom = function(x, d){
   
 }
 
-bootstrapped.All.CI = boot.ci(boot(data = finalROC, statistic = mean.custom, R = 5000), type = "basic")
-bootstrapped.Sub.25 = boot.ci(boot(data = RFE.data, statistic = mean.custom, R = 5000), type = "basic")
+bootstrapped.All.CI = boot.ci(boot(data = finalROC, statistic = mean.custom, R = 9000), type = "basic")
+bootstrapped.Sub.25 = boot.ci(boot(data = RFE.data, statistic = mean.custom, R = 9000), type = "basic")
 
 #...................................Paste the Results.........................................................#
 
