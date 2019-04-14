@@ -8,6 +8,7 @@ Currently sits at an average AUROC score of 0.65497 with a 95% confidence interv
 Folder Descriptions:
 -----
 1. **All Team Stats:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
+2. **Evolving Hockey:**: .csv files pulled from evolvinghockey. Used in the .R file EvolvingHockey WAR, located in the Scraping Scripts and Template.
 2. **Game Score:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaGameScore. 
 3. **Hockey Reference:** .html renders of various web pages from hockey-reference. This is used to get around webpages that require JavaScript to be run upon opening the webpage in a browser which, to my knowledge, rvest cannot deal with. Used for scraping.
 4. **Modelling:** .R files where the actual modelling scripts can be found. 
