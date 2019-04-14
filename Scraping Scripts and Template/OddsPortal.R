@@ -47,12 +47,12 @@ odds = main %>%
           html_nodes(".odds-nowrp:nth-child(6) :nth-child(1)") %>%
           html_text(.) %>%
           as.numeric(.) %>%
-          tibble(OddsLowestSeed = .)
+          tibble(Odds.LowestSeed = .)
 odds2 = main2 %>%
           html_nodes(".odds-nowrp:nth-child(6) :nth-child(1)") %>%
           html_text(.) %>%
           as.numeric(.) %>%
-          tibble(OddsLowestSeed = .)
+          tibble(Odds.LowestSeed = .)
 
 Odds.Lowest_fin = bind_rows(odds, odds2)
 
@@ -76,7 +76,33 @@ processData = function(year, team.1, team.2, data){
   
   first_game = data[max(which(grepl(paste(c(string1, string2), collapse = "|"), data$Teams))),]
   
-  first_game$Odds.HighestSeed - first_game$OddsLowestSeed
+  first_game$Odds.HighestSeed - first_game$Odds.LowestSeed
+  
+}
+
+getData.current = function(year){
+  
+  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep = ""))
+  
+  teams = page %>% 
+    html_nodes(".table-participant a:nth-child(3)") %>%
+    html_text(.) %>%
+    tibble(Teams = .) 
+  
+  odds = page %>%
+    html_nodes(".table-participant+ .odds-nowrp a") %>%
+    html_text(.) %>%
+    as.numeric(.) %>%
+    tibble(Odds.HighestSeed =.)
+  
+  odds2 = page %>%
+    html_nodes(".odds-nowrp~ .odds-nowrp+ .odds-nowrp a") %>%
+    html_text(.) %>%
+    as.numeric(.) %>%
+    tibble(Odds.LowestSeed =.)
+  
+  combined = bind_cols(tibble(Year = rep(year, nrow(teams))), teams, odds, odds2)
+  
   
 }
 
@@ -90,7 +116,8 @@ template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
 #Note: the function call below sends an error because on OddsPortal the actual odds are missing! But, these values are not important as we only 
 #take the first game odds
 
-allData = bind_rows(lapply(2006:2018, FUN = getData))
+allData = bind_rows(lapply(2006:2018, FUN = getData)) %>%
+          bind_rows(lapply(2019, FUN = getData.current))
 
 template = template %>% 
                 rowwise %>%
@@ -98,3 +125,5 @@ template = template %>%
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[,7], "VegasOddsOpening.csv")
+
+

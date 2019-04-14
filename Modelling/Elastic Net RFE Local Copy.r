@@ -162,7 +162,8 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
               bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
-              mutate(ResultProper = as.factor(ResultProper))
+              mutate(ResultProper = as.factor(ResultProper)) %>%
+              filter(!is.na(ResultProper))
 
 #...................................Engineering of some features..................#
 
@@ -269,28 +270,26 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final, VarImp = NULL, s
   
   rm(train.param, frameswithPCA)
   
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
+  
+  train = frameswithKNN$train
+  test = frameswithKNN$test
+  
   if(!is.null(VarImp) && !is.null(subset.n)){
     
     VarImp.train = VarImp[[j]]
     
-    VarImp.train = VarImp.train %>% arrange(., -Importance) %>% filter(Importance > 0) %>% select(., Variable)    
+    VarImp.train = VarImp.train %>% arrange(., -Importance) %>% filter(Importance > quantile(.$Importance, subset.n)) %>% select(., Variable)    
     
-    subset.new = case_when(subset.n > nrow(VarImp.train) ~ as.integer(nrow(VarImp.train)),  TRUE ~ as.integer(subset.n))
+    train = train %>% select(., ResultProper, VarImp.train$Variable)
+    test = test %>% select(., ResultProper, VarImp.train$Variable)
     
-    if(subset.new == 1){
+    if(ncol(train) == 2){
       
-      if(VarImp.train$Variable[1] == "PC1"){
-        var = "TOI% QoT_mean"
-      }else{
-        var = "PC1"
-      }
+      train = train %>% mutate(Dummy = rep(0, nrow(train)))
+      test = test %>% mutate(Dummy = rep(0, nrow(test)))
       
-    }else{
-      var = NULL
     }
-    
-    train = train %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
-    test = test %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
     
   }
       
@@ -324,32 +323,30 @@ modelPipe.inner = function(k, folds, seed.a, VarImp = NULL, subset.n = NULL){
       
       rm(train.param, frameswithPCA)
       
+      frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
+      
+      train = frameswithKNN$train
+      test = frameswithKNN$test
+      
       if(!is.null(VarImp) && !is.null(subset.n)){
         
         VarImp.train = VarImp[[k]]
         
-        VarImp.train = VarImp.train %>% arrange(., -Importance) %>% filter(Importance > 0) %>% select(., Variable)    
+        VarImp.train = VarImp.train %>% arrange(., -Importance) %>% filter(Importance > quantile(.$Importance, subset.n)) %>% select(., Variable)    
         
-        subset.new = case_when(subset.n > nrow(VarImp.train) ~ as.integer(nrow(VarImp.train)),  TRUE ~ as.integer(subset.n))
+        train = train %>% select(., ResultProper, VarImp.train$Variable)
+        test = test %>% select(., ResultProper, VarImp.train$Variable)
         
-        if(subset.new == 1){
+        if(ncol(train) == 2){
           
-            if(VarImp.train$Variable[1] == "PC1"){
-              var = "TOI% QoT_mean"
-            }else{
-              var = "PC1"
-            }
+          train = train %>% mutate(Dummy = rep(0, nrow(train)))
+          test = test %>% mutate(Dummy = rep(0, nrow(test)))
           
-      }else{
-          var = NULL
         }
-      
-        train = train %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
-        test = test %>% select(., ResultProper, VarImp.train$Variable[1:subset.new], var)
         
       }
       
-      results = randomGridSearch(iterations = 2, innerTrainX = train, innerTestX = test, seed = seed.a)
+      results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
   
 }
 
@@ -388,10 +385,10 @@ RFE = function(VarImp, subset.n){
 #...........................Global.........................................#
 
 set.seed(40689)
-seeds = sample(1:1000000000, 150, replace = FALSE)
+seeds = sample(1:1000000000, 50, replace = FALSE)
 ROC.status = rep(as.numeric(NA), length(seeds))
 ROC.status.RFE = rep(as.numeric(NA), length(seeds))
-subset.sizes = c(25)
+subset.sizes = c(0.7, 0.75, 0.8)
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
 registerDoParallel(cluster)
@@ -411,17 +408,17 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   ROC = mean(unlist(lapply(finalResults, function(x){unlist(x$ROC)})))
   ROC.status[p] = ROC
     
-  VarImp = lapply(bestParam, function(x){x$VarImp}) %>% lapply(., FUN = processVarImp) 
+  VarImp = lapply(finalResults, function(x){x$VarImp}) %>% lapply(., FUN = processVarImp) 
   ##Function call to then take subsets of the above list.....
   
   RFE.selection = unlist(mapply(FUN = RFE, subset.n = subset.sizes, MoreArgs = list(VarImp = VarImp), SIMPLIFY = FALSE)) %>%
                   c(ROC, .) %>%
                   bind_cols(Subset.Size = c("All", subset.sizes), AUROC = .)
   
-  ROC.status.RFE[p] = RFE.selection %>% filter(Subset.Size == 25) %>% .$AUROC
+  ROC.status.RFE[p] = RFE.selection %>% filter(Subset.Size == 0.75) %>% .$AUROC
     
   writeLines(paste("REPEAT:", p, "...", "Running Average AUROC:", mean(ROC.status, na.rm = TRUE), sep = " "))
-  writeLines(paste("Running Average AUROC for Subset 25:", mean(ROC.status.RFE, na.rm = TRUE), sep = " "))
+  writeLines(paste("Running Average AUROC for Top 75th Percentile:", mean(ROC.status.RFE, na.rm = TRUE), sep = " "))
   list(ROC = ROC, VarImp = VarImp, RFE.results = RFE.selection)
 
 }
@@ -450,7 +447,7 @@ bootstrapped.Sub.25 = boot.ci(boot(data = RFE.data, statistic = mean.custom, R =
 paste("Final AUROC: ", round(mean(finalROC),5), " with a 95% confidence interval given by via. Bootstrapping: ", "[", round(bootstrapped.All.CI$basic[1,4],5), ", ", 
       round(bootstrapped.All.CI$basic[1,5],5), "]", sep = "")
 
-paste("Final AUROC for Top 25: ", round(mean(RFE.data),5), " with a 95% confidence interval given by via. Bootstrapping: ", "[", round(bootstrapped.Sub.25$basic[1,4],5), ", ", 
+paste("Final AUROC for Top 75th Percentile: ", round(mean(RFE.data),5), " with a 95% confidence interval given by via. Bootstrapping: ", "[", round(bootstrapped.Sub.25$basic[1,4],5), ", ", 
       round(bootstrapped.Sub.25$basic[1,5],5), "]", sep = "")
 
 finalROC.RFE.processed = finalROC.RFE %>% select_if(., is.numeric) %>% transmute(Overall.AUROC = rowMeans(.)) %>% bind_cols(Subset.Size = c("All", subset.sizes),.)

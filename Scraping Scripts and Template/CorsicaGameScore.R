@@ -62,7 +62,7 @@ getData = function(year){
   bind_cols(data, tibble(Year = rep(year, nrow(data))))
 }
 
-allCombined = bind_rows(lapply(2008:2018, getData)) %>%
+allCombined = bind_rows(lapply(2008:2019, getData)) %>%
                 mutate(Team = ifelse(Team == "L.A", "LAK", Team)) %>%
                 mutate(Team = ifelse(Team == "N.J", "NJD", Team)) %>%
                 mutate(Team = ifelse(Team == "S.J", "SJS", Team)) %>%

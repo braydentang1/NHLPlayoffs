@@ -46,14 +46,14 @@ getData = function(year){
     html_nodes("#stats tbody .right:nth-child(4)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(Wins = .) 
+    tibble(GamesPlayed = .) 
   
   wins = main %>%
     html_nodes("#stats tbody .right:nth-child(5)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(Wins = .) %>%
-    transmute(RegularSeasonWinPercentage = Wins/games_played$Wins)
+    transmute(RegularSeasonWinPercentage = Wins/games_played$GamesPlayed)
   
   otl = main %>%
     html_nodes("#stats tbody .right:nth-child(7)") %>%
@@ -110,21 +110,21 @@ getData = function(year){
     tibble(PenaltyMinsPG = .)
   
   PowerPlayGoals = main %>%
-    html_nodes("tbody .right:nth-child(19)") %>%
+    html_nodes("#stats tbody .right:nth-child(19)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(PowerPlayGoals = .) %>%
     mutate(PowerPlayGoals = case_when(year == 2013 ~ PowerPlayGoals/48, year != 2013 ~ PowerPlayGoals/82))
   
   PowerPlayOppurtunities = main %>%
-    html_nodes("tbody .right:nth-child(20)") %>%
+    html_nodes("#stats tbody .right:nth-child(20)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(PowerPlayOppurtunities = .) %>%
     mutate(PowerPlayOppurtunities = case_when(year == 2013 ~ PowerPlayOppurtunities/48, year != 2013 ~ PowerPlayOppurtunities/82))
   
   PowerPlayPercentage = main %>%
-    html_nodes("tbody .right:nth-child(21)") %>%
+    html_nodes("#stats tbody .right:nth-child(21)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(PowerPlayPercentage =.)
@@ -168,7 +168,7 @@ processData = function(team.1, team.2, highest.seed, year, data){
 
 }
 
-allData = bind_rows(lapply(2006:2018, FUN = getData))
+allData = bind_rows(lapply(2006:2019, FUN = getData))
 
 teams = template %>% transmute(Series = paste(Team1, "vs.", Team2, sep = " "))
 

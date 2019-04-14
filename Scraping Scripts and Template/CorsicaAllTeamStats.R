@@ -30,7 +30,10 @@ getData = function(year){
           mutate_if(is.character, funs(str_replace(., "L.A", "LAK"))) %>%
           mutate_if(is.character, funs(str_replace(., "N.J", "NJD"))) %>%
           mutate_if(is.character, funs(str_replace(., "S.J", "SJS"))) %>%
-          mutate_if(is.character, funs(str_replace(., "T.B", "TBL")))
+          mutate_if(is.character, funs(str_replace(., "T.B", "TBL"))) %>%
+          mutate_if(is.character, funs(str_replace(., "MON", "MTL"))) %>%
+          mutate_if(is.character, funs(str_replace(., "WAS", "WSH"))) %>%
+          mutate_if(is.character, funs(str_replace(., "CAL", "CGY")))
   
   bind_cols(tibble(Year = rep(year, nrow(data))), data)
   
@@ -57,7 +60,7 @@ processData = function(team.1, team.2, highest.seed, year, data){
   
 }
 
-allData = bind_rows(lapply(2008:2018, getData))
+allData = bind_rows(lapply(2008:2019, getData))
 
 final = bind_rows(tibble(CF._Team = rep(NA,30), CF_Per60Team = rep(NA, 30), CA_Per60Team = rep(NA, 30)), mapply(processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData), SIMPLIFY = FALSE))
 

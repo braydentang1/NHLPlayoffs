@@ -9,7 +9,7 @@ setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
   
-  set.seed(40689)
+  set.seed(315852720)
   samples = caret::createResample(y = label_train, times = 15)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
@@ -84,16 +84,14 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
   mutate(ResultProper = as.factor(ResultProper))
 
-#Will need to bind the 2019 observationson to allData (bind_rows) so that the "Engineering of some features" applies to the new observations as well. 
-
-#...................................Read in Final Parameters.......................................#
-
-finalParameters = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/finalParameters.csv")
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
+            filter(Year == 2019) %>%
+            select(Team1, Team2, Highest.Seed)
 
 #...................................Engineering of some features..................#
 
 allData = allData %>% 
-  mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13))) %>%
+  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),rep(1,8)))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
   mutate(AverageGoalDiff_PerGame = GoalsFor/82) %>%
@@ -117,8 +115,9 @@ allData = allData %>%
 
 #..................................Separate out the new observations from all prior data........................#
 
-allData = allData %>% filter(., !is.na(ResultProper))
 newdata = allData %>% filter(., is.na(ResultProper))
+allData = allData %>% filter(., !is.na(ResultProper))
+
 
 #.......................Define recipe.............................................#
 
@@ -173,7 +172,7 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(mainTrain, seed.a, VarImp = NULL, subset.n = NULL){
+modelPipe.inner = function(mainTrain, seed.a){
   
   set.seed(seed.a)  
   innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.75)
@@ -189,17 +188,7 @@ modelPipe.inner = function(mainTrain, seed.a, VarImp = NULL, subset.n = NULL){
   
   rm(train.param, frameswithPCA)
   
-  #....Subset selection....#
-  if(!is.null(VarImp) && !is.null(subset.n)){
-    
-    train = train %>% select(., ResultProper, VarImp$Variable[1:subset.n])
-    test = test %>% select(., ResultProper, VarImp$Variable[1:subset.n])
-    
-  }
-  
-  #Train the model once just to get variable importance. Then, train the model again but this time 
-  
-  results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
+  results = randomGridSearch(iterations = 140, innerTrainX = train, innerTestX = test, seed = seed.a)
   
   
   list(alpha = results$alpha, lambda = results$lambda, results$VarImp)
@@ -209,17 +198,19 @@ modelPipe.inner = function(mainTrain, seed.a, VarImp = NULL, subset.n = NULL){
 #...........................Find the final model parameters.................................................................#
 
 retune.model = function(data){
-    finalParameters = bind_cols(modelPipe.inner(mainTrain = allData, seed.a = 40689))
-    write_csv(finalParameters, "finalParameters.csv")
+    finalParameters = modelPipe.inner(mainTrain = data, seed.a = 315852720) 
   }
 
 
 #...........................Prediction Script.................................................................................#
 #Requires new data samples. 
 
-predict.NHL = function(training, newdata, finalParameters, recipe.parameters){
+predict.NHL = function(training, newdata, finalParameters){
   
-  training = training %>% bake(recipe.parameters, new_data = .) 
+  recipe.parameters = prep(preProcess.recipe(training), training = training)
+  
+  training = bake(recipe.parameters, new_data = training)
+  
   newdata = newdata %>% bake(recipe.parameters, new_data = .)
   
   frameswithPCA = addPCA_variables(traindata = training, testdata = newdata, standardize = FALSE)
@@ -233,8 +224,9 @@ predict.NHL = function(training, newdata, finalParameters, recipe.parameters){
 
 #...........................Global.........................................#
 
-recipe.parameters = allData %>% preProcess.recipe(.) %>% prep(.)
+finalParameters = retune.model(data = allData) 
+
 predictions = predict.NHL(training = allData, newdata = newdata, finalParameters = finalParameters)
 
-
+finalScores = template %>% bind_cols(., Prob.Win.HighestSeed = predictions)
 

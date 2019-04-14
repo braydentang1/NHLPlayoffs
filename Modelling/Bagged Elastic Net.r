@@ -13,6 +13,7 @@ library(moments)
 library(doParallel)
 library(foreach)
 library(fastknn)
+library(boot)
 
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
@@ -162,11 +163,8 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
-  mutate(ResultProper = as.factor(ResultProper))
-
-#...................................Read in Variable Importance List After RFE....................#
-
-VarImportance.List = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Model Output/finalVarImp.March28th.csv") %>% .[,1]
+  mutate(ResultProper = as.factor(ResultProper)) %>%
+  filter(!is.na(ResultProper))
 
 #...................................Engineering of some features..................#
 
@@ -272,10 +270,12 @@ modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   
   rm(train.param, frameswithPCA)
   
-  #NEW: Subset top 25 variables from VarImportance List, found after 80 iterations of RFE
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
   
-  train = train %>% select(., ResultProper, VarImportance.List$Variable[1:25])
-  test = test %>% select(., ResultProper, VarImportance.List$Variable[1:25])
+  train = frameswithKNN$train
+  test = frameswithKNN$test
+  
+  rm(frameswithKNN)
   
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
                       alpha.a = alpha.final, s_lambda.a = lambda.final)
@@ -305,10 +305,12 @@ modelPipe.inner = function(k, folds, seed.a){
   
   rm(train.param, frameswithPCA)
   
-  #NEW: Subset top 25 variables from VarImportance List, found after 80 iterations of RFE
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
   
-  train = train %>% select(., ResultProper, VarImportance.List$Variable[1:25])
-  test = test %>% select(., ResultProper, VarImportance.List$Variable[1:25])
+  train = frameswithKNN$train
+  test = frameswithKNN$test
+  
+  rm(frameswithKNN)
   
   results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
   
@@ -365,9 +367,20 @@ rm(cluster)
 finalROC = unlist(results[c(seq(1, length(results), 2))])
 finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 
 
-paste("Final AUROC: ", mean(finalROC), " with a 95% confidence interval given by ", "[", mean(finalROC) - qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), ", ", 
-      mean(finalROC) + qnorm(0.975)*sd(finalROC)/(length(finalROC)^0.5), "]", sep = "")
+#...................................Bootstrap the vector finalROC and RFE.data..............................#
 
+mean.custom = function(x, d){
+  
+  mean(x[d])
+  
+}
+
+bootstrapped.All.CI = boot.ci(boot(data = finalROC, statistic = mean.custom, R = 9000), type = "basic")
+
+#...................................Paste the Results.........................................................#
+
+paste("Final AUROC: ", round(mean(finalROC),5), " with a 95% confidence interval given by via. Bootstrapping: ", "[", round(bootstrapped.All.CI$basic[1,4],5), ", ", 
+      round(bootstrapped.All.CI$basic[1,5],5), "]", sep = "")
 
 finalVarImp %>% arrange(., -Importance)
 

@@ -150,9 +150,9 @@ processData = function(team.1, team.2, highest.seed, year, data){
   
 }
 
-allData = lapply(2006:2018, FUN = getData_nhl_HitsandBlocks) %>%
+allData = lapply(2006:2019, FUN = getData_nhl_HitsandBlocks) %>%
           bind_rows(.) %>%
-          left_join(., bind_rows(lapply(2006:2018, FUN = getData_nhl_LeadingandTrailing)), by = c("Year", "Team")) 
+          left_join(., bind_rows(lapply(2006:2019, FUN = getData_nhl_LeadingandTrailing)), by = c("Year", "Team")) 
           
 
 final = bind_rows(mapply(processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData),

@@ -61,7 +61,7 @@ processData = function(team.1, team.2, highest.seed, year, data){
   
 }
 
-allData = lapply(seq(2008,2018,1), FUN = getData_nst) %>%
+allData = lapply(seq(2008,2019,1), FUN = getData_nst) %>%
               bind_rows(.)
 
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year,

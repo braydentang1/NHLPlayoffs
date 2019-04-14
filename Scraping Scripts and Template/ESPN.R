@@ -144,7 +144,7 @@ processData = function(team.1, team.2, highest.seed, data, year){
        PenaltyKill_PostAllStar = as.numeric(team_PK[which(c(team.1,team.2) == highest.seed)] - team_PK[which(c(team.1, team.2) != highest.seed)]))
 }
 
-allYears = bind_rows(lapply(seq(2006, 2018,1), FUN = getData_ESPN)) 
+allYears = bind_rows(lapply(seq(2006, 2019,1), FUN = getData_ESPN)) 
 allYears$PenaltyKill_PostAllStar = ifelse(allYears$PenaltyKill_PostAllStar == 0, NA, allYears$PenaltyKill_PostAllStar)
 
 template = template %>% rowwise %>% 

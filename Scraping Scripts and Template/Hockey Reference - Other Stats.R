@@ -39,7 +39,7 @@ grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
 
   teamsCombined = combine(team.1, team.2) %>%
                     tolower(.) %>% 
-                    str_replace_all(., fixed(" "), "-") %>%
+                    str_replace_all(., coll(" "), "-") %>%
                     .[order(.)]
   
   if(conference == "eastern" | conference == "western"){
@@ -205,6 +205,10 @@ getWinner = function(pages, year, highest.seed, team.1, team.2){
   
   mainpage = pages[[year - 2005]]
   
+  if(year == 2019){
+    NA
+  }else{
+  
   allPlayoffTeams = mainpage %>% 
               html_nodes("#all_playoffs td:nth-child(3)") %>%
               html_text(.) %>%
@@ -218,13 +222,15 @@ getWinner = function(pages, year, highest.seed, team.1, team.2){
                      Loser = str_trim(Loser)) 
   
   ifelse(any(allPlayoffTeams$Winner == highest.seed), "W", "L")
-              
+  
+  }
+  
 }
 
-allData = bind_rows(lapply(2006:2018, FUN = getTeamNames)) 
+allData = bind_rows(lapply(2006:2019, FUN = getTeamNames)) 
 
 allTeamPages = mapply(FUN = grabPageandGamesofSpecificTeam, team = allData$Team, year = allData$Year, SIMPLIFY = FALSE)
-allWinners = lapply(2006:2018, function(year){read_html(paste("https://www.hockey-reference.com/playoffs/NHL_",year, ".html", sep = ""))})
+allWinners = lapply(2006:2019, function(year){read_html(paste("https://www.hockey-reference.com/playoffs/NHL_",year, ".html", sep = ""))})
 giveWinners = unlist(mapply(FUN = getWinner, year = template$Year, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, MoreArgs = list(pages = allWinners), SIMPLIFY = FALSE))
 
 rm(allWinners)
