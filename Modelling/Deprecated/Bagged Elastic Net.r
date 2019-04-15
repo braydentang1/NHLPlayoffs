@@ -252,17 +252,16 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
       score = score.new
     }
   }
-  
-  list(alpha = alpha.fin, lambda = lambda.fin, validation.score = score)
+  list(alpha = alpha.fin, lambda = lambda.fin)
 }
 
 #.........................Define outer pipe for the outer cross validation fold...........................................#
 
-modelPipe.outer = function(folds, lambda.final, alpha.final){
+modelPipe.outer = function(j, folds, lambda.final, alpha.final){
   
-  train.param = prep(preProcess.recipe(trainX = allData[folds[[1]],]), training = allData[folds[[1]],])
-  train = bake(train.param, new_data = allData[folds[[1]], ])
-  test = bake(train.param, new_data = allData[-folds[[1]], ])
+  train.param = prep(preProcess.recipe(trainX = allData[-folds[[j]],]), training = allData[-folds[[j]],])
+  train = bake(train.param, new_data = allData[-folds[[j]], ])
+  test = bake(train.param, new_data = allData[folds[[j]], ])
   
   frameswithPCA = addPCA_variables(traindata = train, testdata = test)
   
@@ -288,46 +287,35 @@ modelPipe.outer = function(folds, lambda.final, alpha.final){
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(folds, seed.a){
+modelPipe.inner = function(k, folds, seed.a){
   
-  mainTrain = allData[folds[[1]], ]
+  mainTrain = allData[-folds[[k]], ]
   
   set.seed(seed.a)  
-  innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
-  allParameters = vector("list", length(innerFolds))
+  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.75)
   
-  for(m in 1:length(innerFolds)){
+  train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
+  train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
+  test = bake(train.param, new_data = mainTrain[-innerFolds[[1]],])
   
-    train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
-    train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
-    test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
+  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
   
-    frameswithPCA = addPCA_variables(traindata = train, testdata = test)
+  train = frameswithPCA$train
+  test = frameswithPCA$test
   
-    train = frameswithPCA$train
-    test = frameswithPCA$test
+  rm(train.param, frameswithPCA)
   
-    rm(train.param, frameswithPCA)
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
   
-    frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
+  train = frameswithKNN$train
+  test = frameswithKNN$test
   
-    train = frameswithKNN$train
-    test = frameswithKNN$test
+  rm(frameswithKNN)
   
-    rm(frameswithKNN)
+  results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
   
-    results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
   
-
-    allParameters[[m]] = list(alpha = results$alpha, lambda = results$lambda, validation.score = results$validation.score)
-  
-  }
-  
-  alpha = mean(unlist(lapply(allParameters, FUN = function(x) {x$alpha})))
-  lambda = as.integer(mean(unlist(lapply(allParameters, FUN = function(x) {x$lambda}))))
-  auroc.val = mean(unlist(lapply(allParameters, FUN = function(x) {x$validation.score})))
- 
-  list(alpha = alpha, lambda = lambda, validation.score = auroc.val) 
+  list(alpha = results$alpha, lambda = results$lambda)
   
 }
 
@@ -350,7 +338,6 @@ processVarImp = function(varImpRaw){
 set.seed(40689)
 seeds = sample(1:1000000000, 150, replace = FALSE)
 ROC.status = rep(as.numeric(NA), length(seeds))
-ROC.status.val = rep(as.numeric(NA), length(seeds))
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
 registerDoParallel(cluster)
@@ -358,19 +345,19 @@ registerDoParallel(cluster)
 results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse", "glmnet", "caret", "pROC", "recipes", "fastknn")) %dopar% {
   
   set.seed(seeds[p])
-  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
+  allFolds = caret::createFolds(y = allData$ResultProper, k = 3)
   
-  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p])
-  finalResults = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
+  bestParam = bind_rows(lapply(1:length(allFolds), FUN = modelPipe.inner, folds = allFolds, seed.a = seeds[p])) 
+  finalResults = mapply(FUN = modelPipe.outer, j = 1:length(allFolds), lambda.final = bestParam$lambda, alpha.final = bestParam$alpha, 
+                        MoreArgs = list(folds = allFolds), SIMPLIFY = FALSE)
   
-  ROC.status[p] = finalResults$ROC
-  ROC.status.val[p] = bestParam$validation.score
+  ROC = mean(unlist(lapply(finalResults, function(x){unlist(x$ROC)})))
+  ROC.status[p] = ROC
   
-  VarImp = processVarImp(varImpRaw = as_tibble(finalResults$VarImp))
+  VarImp = processVarImp(varImpRaw = as_tibble(bind_cols(lapply(finalResults, function(x){(x$VarImp)}))))
   
-  writeLines(paste("REPEAT:", p, "...", "Running Average AUROC Test Set:", mean(ROC.status, na.rm = TRUE), sep = " "))
-  writeLines(paste("Running Average AUROC Validation Set:", mean(ROC.status.val, na.rm = TRUE), sep = " "))
-  list(ROC = finalResults$ROC, VarImp = VarImp)
+  writeLines(paste("REPEAT:", p, "...", "Running Average AUROC:", mean(ROC.status, na.rm = TRUE), sep = " "))
+  list(ROC = ROC, VarImp = VarImp)
   
 }
 
