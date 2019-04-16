@@ -385,7 +385,7 @@ mean.custom = function(x, d){
   
 }
 
-bootstrapped.All.CI = boot.ci(boot(data = finalROC, statistic = mean.custom, R = 9000), type = "basic")
+bootstrapped.All.CI = boot.ci(boot(data = finalROC, statistic = mean.custom, R = 10000), type = "basic")
 
 #...................................Paste the Results.........................................................#
 
