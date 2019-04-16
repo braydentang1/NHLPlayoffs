@@ -3,6 +3,8 @@ library(glmnet)
 library(recipes)
 library(caret)
 library(pROC)
+library(foreach)
+library(doParallel)
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
 
@@ -66,6 +68,59 @@ addPCA_variables = function(traindata, testdata, standardize = FALSE){
   list(train = bind_cols(traindata, pca_traindata), test = bind_cols(testdata, pca_newdata))
 }
 
+#..................................kNN Function....................................#
+#Distances = cumulative distance from observation to the first, second, third, etc. nearest neighbour for each class label. 
+#So for example, knn1 = distance from observation to first nearest neighbour that has label "W". knn2 = distance from observation
+#to second nearest neighbour that has label "W". knn3 = distance from observation to first nearest neighbour that has label "L", 
+#and knn3 = distance from observation to second nearest neighbour that has label "L".
+
+#Probabilities = calculates the proportion of winners out of the k most closest neighbours to an observation
+
+addKNN_variables = function(traindata, testdata, include_PCA = FALSE, distances = TRUE){
+  
+  #Selects variables that are top performing....
+  traindata_tmp = traindata[, !names(traindata) %in% c("ResultProper")] %>% select(., H2H, WeightedGPS, Q2Record, PowerPlayOppurtunities, PenaltyKillPercentage, VegasOpeningOdds, "TOI% QoT_mean")
+  testdata_tmp = testdata[, !names(testdata) %in% c("ResultProper")] %>% select(., H2H, WeightedGPS, Q2Record, PowerPlayOppurtunities, PenaltyKillPercentage, VegasOpeningOdds, "TOI% QoT_mean")
+  
+  if(include_PCA == TRUE){
+    
+    traindata_tmp = traindata %>% select_if(., is.numeric)
+    testdata_tmp = testdata %>% select_if(., is.numeric)
+    
+  }else{
+    
+    traindata_tmp = traindata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
+    testdata_tmp = testdata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
+    
+  }
+  
+  if (distances == TRUE){
+    
+    newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 1, normalize = NULL)
+    KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) 
+    
+    KNN_train.params = caret::preProcess(KNN_train, method = c("center", "scale"))
+    KNN_train = predict(KNN_train.params, newdata = KNN_train)
+    
+    KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% predict(KNN_train.params, newdata = .)
+    
+    list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
+    
+  }else{
+    
+    KNN_train  = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(traindata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) 
+    
+    KNN_train.params = caret::preProcess(KNN_train, method = c("center", "scale"))
+    KNN_train = predict(KNN_train.params, newdata = KNN_train)
+    
+    KNN_test = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) %>%
+      predict(KNN_train.params, newdata = .)
+    
+    list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
+    
+  }
+  
+}
 
 #..................................Read data in....................................#
 #Change directories to pull in data from the "Required Data Sets" folder located in the repository.
@@ -168,30 +223,60 @@ randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
       score = score.new
     }
   }
-  list(alpha = alpha.fin, lambda = lambda.fin, VarImp = varimp.fin)
+  list(alpha = alpha.fin, lambda = lambda.fin, VarImp = varimp.fin, val.score = score)
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
 modelPipe.inner = function(mainTrain, seed.a){
   
   set.seed(seed.a)  
-  innerFolds = createDataPartition(y = mainTrain$ResultProper, times = 1, p = 0.75)
+  innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
+
+  cluster = makeCluster(detectCores())
+  registerDoParallel(cluster)
   
-  train.param = prep(preProcess.recipe(trainX = mainTrain[innerFolds[[1]],]), training = mainTrain[innerFolds[[1]],])
-  train = bake(train.param, new_data = mainTrain[innerFolds[[1]],])
-  test = bake(train.param, new_data = mainTrain[-innerFolds[[1]],])
+allParameters = foreach(m = 1:length(innerFolds), .combine = "c", .packages = c("tidyverse", "pROC", "glmnet", "caret", "recipes", "fastknn")) %dopar% {
+    
+    #Load some custom functions
+    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R")
+    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R")
+    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")
+    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
+    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
   
-  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
+    train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
+    train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
+    test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
   
-  train = frameswithPCA$train
-  test = frameswithPCA$test
+    frameswithPCA = addPCA_variables(traindata = train, testdata = test, standardize = FALSE)
   
-  rm(train.param, frameswithPCA)
+    train = frameswithPCA$train
+    test = frameswithPCA$test
   
-  results = randomGridSearch(iterations = 140, innerTrainX = train, innerTestX = test, seed = seed.a)
+    rm(train.param, frameswithPCA)
+    
+    frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
+    
+    train = frameswithKNN$train
+    test = frameswithKNN$test
+    
+    rm(frameswithKNN)
+  
+    results = randomGridSearch(iterations = 2, innerTrainX = train, innerTestX = test, seed = seed.a)
   
   
-  list(alpha = results$alpha, lambda = results$lambda, results$VarImp)
+    list(alpha = results$alpha, lambda = results$lambda, score = results$val.score)
+    
+  }
+  
+  stopCluster(cluster)
+  rm(cluster)
+
+  alpha = mean(unlist(allParameters[seq(from = 1, to = length(allParameters), by = 3)]))
+  lambda = as.integer(mean(unlist(allParameters[seq(from = 2, to = length(allParameters), by = 3)])))
+  val.score = mean(unlist(allParameters[seq(from = 3, to = length(allParameters), by = 3)]))
+
+  list(alpha = alpha, lambda = lambda, val.score = val.score) 
   
 }
 
@@ -217,6 +302,15 @@ predict.NHL = function(training, newdata, finalParameters){
   
   training = frameswithPCA$train
   newdata = frameswithPCA$test
+  
+  rm(frameswithPCA)
+  
+  frameswithKNN = addKNN_variables(traindata = training, testdata = newdata, distances = TRUE)
+  
+  training = frameswithKNN$train
+  newdata = frameswithKNN$test
+  
+  rm(frameswithKNN)
   
   baggedModel(train = training, test = newdata, label_train = training$ResultProper, alpha.a = finalParameters$alpha, s_lambda.a = finalParameters$lambda)$Predictions
   

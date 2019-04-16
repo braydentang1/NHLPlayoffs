@@ -227,33 +227,21 @@ preProcess.recipe = function(trainX){
 
 #........................Define random search function..................................#
 
-randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
+randomGridSearch = function(innerTrainX, innerTestX, grid){
   
-  score = 0
-  alpha.fin = numeric(1)
-  lambda.fin = integer(1)
-  
-  set.seed(seed.a)
-  alpha_val = as.numeric(runif(n = iterations, min = 0, max = 1))
-  s.lambda_val = as.integer(sample(1:90, iterations, replace = TRUE))
-  
-  for(m in 1:iterations){
+  for(m in 1:nrow(grid)){
     
     writeLines(paste("Iteration:", m, sep = " "))
     
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                         label_train = innerTrainX$ResultProper, alpha.a = alpha_val[m], s_lambda.a = s.lambda_val[m])
+                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
     
-    score.new = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
     
-    if(score.new > score){
-      alpha.fin = alpha_val[m]
-      lambda.fin = s.lambda_val[m]
-      score = score.new
-    }
   }
+
+  grid
   
-  list(alpha = alpha.fin, lambda = lambda.fin, validation.score = score)
 }
 
 #.........................Define outer pipe for the outer cross validation fold...........................................#
@@ -288,13 +276,20 @@ modelPipe.outer = function(folds, lambda.final, alpha.final){
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(folds, seed.a){
+modelPipe.inner = function(folds, seed.a, iterations){
   
   mainTrain = allData[folds[[1]], ]
   
   set.seed(seed.a)  
   innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
   allParameters = vector("list", length(innerFolds))
+
+  #Create grid
+  
+  set.seed(seed.a)  
+  grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(1:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
+  
+  results = vector("list", length(grid))
   
   for(m in 1:length(innerFolds)){
   
@@ -316,18 +311,20 @@ modelPipe.inner = function(folds, seed.a){
   
     rm(frameswithKNN)
   
-    results = randomGridSearch(iterations = 125, innerTrainX = train, innerTestX = test, seed = seed.a)
-  
-
-    allParameters[[m]] = list(alpha = results$alpha, lambda = results$lambda, validation.score = results$validation.score)
+    results[[m]] = randomGridSearch(innerTrainX = train, innerTestX = test, grid = grid)
   
   }
   
-  alpha = mean(unlist(lapply(allParameters, FUN = function(x) {x$alpha})))
-  lambda = as.integer(mean(unlist(lapply(allParameters, FUN = function(x) {x$lambda}))))
-  auroc.val = mean(unlist(lapply(allParameters, FUN = function(x) {x$validation.score})))
- 
-  list(alpha = alpha, lambda = lambda, validation.score = auroc.val) 
+  processedResults = results %>% 
+    reduce(left_join, by = c("alpha", "s.lambda_val")) %>% 
+    select(., contains("score")) %>%
+    transmute(Average = rowMeans(.)) %>%
+    bind_cols(grid[,1:2], .)
+  
+  alpha = as.numeric(processedResults[which.max(processedResults$Average), 1])
+  lambda = as.integer(processedResults[which.max(processedResults$Average), 2])
+
+  list(alpha = alpha, lambda = lambda, validation.score = max(processedResults$Average)) 
   
 }
 
@@ -360,7 +357,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   set.seed(seeds[p])
   allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
   
-  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p])
+  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 125)
   finalResults = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
   
   ROC.status[p] = finalResults$ROC
