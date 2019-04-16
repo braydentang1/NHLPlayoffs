@@ -3,6 +3,8 @@ A model that aims to predict the outcome of a NHL playoff series before the firs
 
 Currently sits at an AUROC of 0.65961 with a 95% confidence interval given by via. 10,000 Bootstrap Samples: [0.64838, 0.67099].
 
+![Alt text](https://github.com/braydentang1/NHLPlayoffs/blob/master/Histogram.jpeg)
+
 Folder Descriptions:
 -----
 1. **All Team Stats:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
