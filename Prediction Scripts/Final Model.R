@@ -11,7 +11,7 @@ setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
   
-  set.seed(315852720)
+  set.seed(40689)
   samples = caret::createResample(y = label_train, times = 15)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
@@ -197,37 +197,25 @@ preProcess.recipe = function(trainX){
 
 #........................Define random search function..................................#
 
-randomGridSearch = function(iterations, innerTrainX, innerTestX, seed.a){
+randomGridSearch = function(innerTrainX, innerTestX, grid){
   
-  score = 0
-  alpha.fin = numeric(1)
-  lambda.fin = integer(1)
-  
-  set.seed(seed.a)
-  alpha_val = as.numeric(runif(n = iterations, min = 0, max = 1))
-  s.lambda_val = as.integer(sample(1:90, iterations, replace = TRUE))
-  
-  for(m in 1:iterations){
+  for(m in 1:nrow(grid)){
     
     writeLines(paste("Iteration:", m, sep = " "))
     
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                         label_train = innerTrainX$ResultProper, alpha.a = alpha_val[m], s_lambda.a = s.lambda_val[m])
+                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
     
-    score.new = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
     
-    if(score.new > score){
-      alpha.fin = alpha_val[m]
-      lambda.fin = s.lambda_val[m]
-      varimp.fin = modelX$VariableImportance
-      score = score.new
-    }
   }
-  list(alpha = alpha.fin, lambda = lambda.fin, VarImp = varimp.fin, val.score = score)
+  
+  grid
+  
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(mainTrain, seed.a){
+modelPipe.inner = function(mainTrain, seed.a, iterations){
   
   set.seed(seed.a)  
   innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
@@ -235,7 +223,12 @@ modelPipe.inner = function(mainTrain, seed.a){
   cluster = makeCluster(detectCores())
   registerDoParallel(cluster)
   
-allParameters = foreach(m = 1:length(innerFolds), .combine = "c", .packages = c("tidyverse", "pROC", "glmnet", "caret", "recipes", "fastknn")) %dopar% {
+  #Create grid
+  
+  set.seed(seed.a)  
+  grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
+  
+results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "glmnet", "caret", "recipes", "fastknn")) %dopar% {
     
     #Load some custom functions
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R")
@@ -244,48 +237,43 @@ allParameters = foreach(m = 1:length(innerFolds), .combine = "c", .packages = c(
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
   
-    train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
-    train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
-    test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
+  train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
+  train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
+  test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
   
-    frameswithPCA = addPCA_variables(traindata = train, testdata = test, standardize = FALSE)
+  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
   
-    train = frameswithPCA$train
-    test = frameswithPCA$test
+  train = frameswithPCA$train
+  test = frameswithPCA$test
   
-    rm(train.param, frameswithPCA)
-    
-    frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
-    
-    train = frameswithKNN$train
-    test = frameswithKNN$test
-    
-    rm(frameswithKNN)
+  rm(train.param, frameswithPCA)
   
-    results = randomGridSearch(iterations = 2, innerTrainX = train, innerTestX = test, seed = seed.a)
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
   
+  train = frameswithKNN$train
+  test = frameswithKNN$test
   
-    list(alpha = results$alpha, lambda = results$lambda, score = results$val.score)
-    
+  rm(frameswithKNN)
+  
+  randomGridSearch(innerTrainX = train, innerTestX = test, grid = grid)
+  
   }
   
   stopCluster(cluster)
   rm(cluster)
 
-  alpha = mean(unlist(allParameters[seq(from = 1, to = length(allParameters), by = 3)]))
-  lambda = as.integer(mean(unlist(allParameters[seq(from = 2, to = length(allParameters), by = 3)])))
-  val.score = mean(unlist(allParameters[seq(from = 3, to = length(allParameters), by = 3)]))
+  processedResults = results %>% 
+    reduce(left_join, by = c("alpha", "s.lambda_val")) %>% 
+    select(., contains("score")) %>%
+    transmute(Average = rowMeans(.)) %>%
+    bind_cols(grid[,1:2], .)
 
-  list(alpha = alpha, lambda = lambda, val.score = val.score) 
+  alpha = as.numeric(processedResults[which.max(processedResults$Average), 1])
+  lambda = as.integer(processedResults[which.max(processedResults$Average), 2])
+  
+  list(alpha = alpha, lambda = lambda, validation.score = max(processedResults$Average)) 
   
 }
-
-#...........................Find the final model parameters.................................................................#
-
-retune.model = function(data){
-    finalParameters = modelPipe.inner(mainTrain = data, seed.a = 315852720) 
-  }
-
 
 #...........................Prediction Script.................................................................................#
 #Requires new data samples. 
@@ -318,7 +306,7 @@ predict.NHL = function(training, newdata, finalParameters){
 
 #...........................Global.........................................#
 
-finalParameters = retune.model(data = allData) 
+finalParameters = modelPipe.inner(mainTrain = allData, seed.a = 40689, iterations = 125)
 
 predictions = predict.NHL(training = allData, newdata = newdata, finalParameters = finalParameters)
 

@@ -57,7 +57,7 @@ logLoss = function(scores, label){
   }
   
   tmp = data.frame(scores = scores, target = u)
-  tmp = tmp %>% mutate(scores = ifelse(scores == 1, 0.9999999999999999, ifelse(scores == 0 , 0.0000000000000001, scores))) %>%
+  tmp = tmp %>% mutate(scores = ifelse(scores == 1, 0.9999999999999999999, ifelse(scores == 0 , 0.0000000000000000001, scores))) %>%
     mutate(logLoss = -(target * log(scores) + (1-target) * log(1-scores)))
   
   mean(tmp$logLoss)
@@ -236,7 +236,11 @@ randomGridSearch = function(innerTrainX, innerTestX, grid){
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
                          label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
     
-    grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    #For AUROC
+    #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    
+    #For LogLoss
+    grid[m, 3] = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper)
     
   }
 
@@ -269,10 +273,16 @@ modelPipe.outer = function(folds, lambda.final, alpha.final){
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
                       alpha.a = alpha.final, s_lambda.a = lambda.final)
   
-  ROC = roc(response = test$ResultProper, predictor = model$Predictions, levels = c("L", "W"))$auc
+  #For AUROC
+  #ROC = roc(response = test$ResultProper, predictor = model$Predictions, levels = c("L", "W"))$auc
+  
+  #For Log Loss
+  
+  logloss = logLoss(scores = model$Predictions, label = test$ResultProper)
+  
   VarImp = model$VariableImportance
   
-  list(ROC = ROC, VarImp = VarImp)
+  list(LogLoss = logloss, VarImp = VarImp)
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
@@ -282,12 +292,11 @@ modelPipe.inner = function(folds, seed.a, iterations){
   
   set.seed(seed.a)  
   innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
-  allParameters = vector("list", length(innerFolds))
 
   #Create grid
   
   set.seed(seed.a)  
-  grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(1:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
+  grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
   
   results = vector("list", length(grid))
   
@@ -321,10 +330,10 @@ modelPipe.inner = function(folds, seed.a, iterations){
     transmute(Average = rowMeans(.)) %>%
     bind_cols(grid[,1:2], .)
   
-  alpha = as.numeric(processedResults[which.max(processedResults$Average), 1])
-  lambda = as.integer(processedResults[which.max(processedResults$Average), 2])
+  alpha = as.numeric(processedResults[which.min(processedResults$Average), 1])
+  lambda = as.integer(processedResults[which.min(processedResults$Average), 2])
 
-  list(alpha = alpha, lambda = lambda, validation.score = max(processedResults$Average)) 
+  list(alpha = alpha, lambda = lambda, validation.score = min(processedResults$Average)) 
   
 }
 
@@ -345,9 +354,9 @@ processVarImp = function(varImpRaw){
 
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
-seeds = sample(1:1000000000, 150, replace = FALSE)
-ROC.status = rep(as.numeric(NA), length(seeds))
-ROC.status.val = rep(as.numeric(NA), length(seeds))
+seeds = sample(1:1000000000, 50, replace = FALSE)
+LogLoss.status = rep(as.numeric(NA), length(seeds))
+LogLoss.status.val = rep(as.numeric(NA), length(seeds))
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
 registerDoParallel(cluster)
@@ -360,21 +369,21 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 125)
   finalResults = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
   
-  ROC.status[p] = finalResults$ROC
-  ROC.status.val[p] = bestParam$validation.score
+  LogLoss.status[p] = finalResults$LogLoss
+  LogLoss.status.val[p] = bestParam$validation.score
   
   VarImp = processVarImp(varImpRaw = as_tibble(finalResults$VarImp))
   
-  writeLines(paste("REPEAT:", p, "...", "Running Average AUROC Test Set:", mean(ROC.status, na.rm = TRUE), sep = " "))
-  writeLines(paste("Running Average AUROC Validation Set:", mean(ROC.status.val, na.rm = TRUE), sep = " "))
-  list(ROC = finalResults$ROC, VarImp = VarImp)
+  writeLines(paste("REPEAT:", p, "...", "Running Average Log Loss Test Set:", mean(LogLoss.status, na.rm = TRUE), sep = " "))
+  writeLines(paste("Running Average Log Loss Validation Set:", mean(LogLoss.status.val, na.rm = TRUE), sep = " "))
+  list(LogLoss = finalResults$LogLoss, VarImp = VarImp)
   
 }
 
 stopCluster(cluster)
 rm(cluster)
 
-finalROC = unlist(results[c(seq(1, length(results), 2))])
+finalLogLoss = unlist(results[c(seq(1, length(results), 2))])
 finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 
 
 #...................................Bootstrap the vector finalROC and RFE.data..............................#
@@ -385,19 +394,19 @@ mean.custom = function(x, d){
   
 }
 
-bootstrapped.All.CI = boot.ci(boot(data = finalROC, statistic = mean.custom, R = 10000), type = "basic")
+bootstrapped.All.CI = boot.ci(boot(data = finalLogLoss, statistic = mean.custom, R = 10000), type = "basic")
 
 #...................................Paste the Results.........................................................#
 
-paste("Final AUROC: ", round(mean(finalROC),5), " with a 95% confidence interval given by via. Bootstrapping: ", "[", round(bootstrapped.All.CI$basic[1,4],5), ", ", 
+paste("Final LogLoss: ", round(mean(finalLogLoss),5), " with a 95% confidence interval given by via. Bootstrapping: ", "[", round(bootstrapped.All.CI$basic[1,4],5), ", ", 
       round(bootstrapped.All.CI$basic[1,5],5), "]", sep = "")
 
 finalVarImp %>% arrange(., -Importance)
 
 #..............................................Graphing the AUROC scores.........................#
 
-graphingParameters = tibble(ROC = finalROC)
+graphingParameters = tibble(LogLoss = finalLogLoss)
 
-ggplot(data = graphingParameters, aes(graphingParameters$ROC), colour = "Hist") +
+ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "150 Repeats of Nested Cross Validation", x = "AUROC", subtitle = "Bins = 10, Width = 0.01")
+  labs(title = "150 Repeats of Nested Cross Validation", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
