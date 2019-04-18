@@ -1,7 +1,7 @@
 # NHLPlayoffs
 A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-Currently sits at an AUROC of 0.65961 with a 95% confidence interval given by via. 10,000 Bootstrap Samples: [0.64838, 0.67099].
+Currently sits at log loss of 0.65619 with a 95% confidence interval given by via. 10,000 Bootstrap Samples: [0.64844, 0.66289].
 
 ![Alt text](https://github.com/braydentang1/NHLPlayoffs/blob/master/Histogram.jpeg)
 
