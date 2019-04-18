@@ -68,6 +68,23 @@ addPCA_variables = function(traindata, testdata, standardize = FALSE){
   list(train = bind_cols(traindata, pca_traindata), test = bind_cols(testdata, pca_newdata))
 }
 
+#..................................Log Loss Function....................................#
+
+logLoss = function(scores, label){
+  
+  if (is.factor(label)){
+    u = ifelse(label ==  "W", 1,0)
+  } else{
+    u = label
+  }
+  
+  tmp = data.frame(scores = scores, target = u)
+  tmp = tmp %>% mutate(scores = ifelse(scores == 1, 0.9999999999999999999, ifelse(scores == 0 , 0.0000000000000000001, scores))) %>%
+    mutate(logLoss = -(target * log(scores) + (1-target) * log(1-scores)))
+  
+  mean(tmp$logLoss)
+}
+
 #..................................kNN Function....................................#
 #Distances = cumulative distance from observation to the first, second, third, etc. nearest neighbour for each class label. 
 #So for example, knn1 = distance from observation to first nearest neighbour that has label "W". knn2 = distance from observation
@@ -206,7 +223,11 @@ randomGridSearch = function(innerTrainX, innerTestX, grid){
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
                          label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
     
-    grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    #For AUROC
+    #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    
+    #For LogLoss
+    grid[m, 3] = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper)
     
   }
   
@@ -236,7 +257,8 @@ results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
-  
+    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R")
+    
   train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
   train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
   test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
@@ -268,10 +290,10 @@ results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "
     transmute(Average = rowMeans(.)) %>%
     bind_cols(grid[,1:2], .)
 
-  alpha = as.numeric(processedResults[which.max(processedResults$Average), 1])
-  lambda = as.integer(processedResults[which.max(processedResults$Average), 2])
+  alpha = as.numeric(processedResults[which.min(processedResults$Average), 1])
+  lambda = as.integer(processedResults[which.min(processedResults$Average), 2])
   
-  list(alpha = alpha, lambda = lambda, validation.score = max(processedResults$Average)) 
+  list(alpha = alpha, lambda = lambda, validation.score = min(processedResults$Average)) 
   
 }
 
