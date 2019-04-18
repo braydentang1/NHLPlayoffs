@@ -95,7 +95,7 @@ calculateH2H = function(mainpage, highest.seed, process = FALSE){
     H2Hstats = NA
   }
   
-  ifelse(process == TRUE & any(!is.na(H2Hstats)), H2Hstats$WinRatio[H2Hstats$FullName == highest.seed] - H2Hstats$WinRatio[H2Hstats$FullName != highest.seed],
+  ifelse(process == TRUE & any(!is.na(H2Hstats)), H2Hstats$WinRatio[H2Hstats$FullName == highest.seed],
          ifelse(process == TRUE & any(is.na(H2Hstats)), H2Hstats, H2Hstats))
   
 }
