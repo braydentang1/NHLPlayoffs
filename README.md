@@ -8,7 +8,7 @@ Currently sits at log loss of 0.65619 with a 95% confidence interval given by vi
 Folder Descriptions:
 -----
 1. **All Team Stats:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
-2. **Evolving Hockey:**: .csv files pulled from evolvinghockey. Only the folder that contains GAR/WAR is used. Used in the .R file EvolvingHockey WAR, located in the Scraping Scripts and Template.
+2. **Evolving Hockey:** .csv files pulled from evolvinghockey. Only the folder that contains GAR/WAR is used. Used in the .R file EvolvingHockey WAR, located in the Scraping Scripts and Template.
 3. **Game Score:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaGameScore. 
 4. **Hockey Reference:** .html renders of various web pages from hockey-reference. This is used to get around webpages that require JavaScript to be run upon opening the webpage in a browser which, to my knowledge, rvest cannot deal with. Used for scraping.
 5. **Modelling:** .R files where the actual modelling scripts can be found. 
