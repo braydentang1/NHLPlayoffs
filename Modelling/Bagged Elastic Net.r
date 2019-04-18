@@ -409,4 +409,4 @@ graphingParameters = tibble(LogLoss = finalLogLoss)
 
 ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "150 Repeats of Nested Cross Validation", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
+  labs(title = "50 Repeats of Nested Cross Validation", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
