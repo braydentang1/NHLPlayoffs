@@ -403,7 +403,7 @@ paste("Final LogLoss: ", round(mean(finalLogLoss),5), " with a 95% confidence in
 
 finalVarImp %>% arrange(., -Importance)
 
-#..............................................Graphing the AUROC scores.........................#
+#..............................................Graphing the log loss scores.........................#
 
 graphingParameters = tibble(LogLoss = finalLogLoss)
 
