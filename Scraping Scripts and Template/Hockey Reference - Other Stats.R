@@ -203,6 +203,9 @@ processData = function(team.1, team.2, highest.seed, year, data){
 
 getWinner = function(pages, year, highest.seed, team.1, team.2){
   
+  #Will need to change this later. Just check for "over" in the string; if it is not 
+  #there give NA, if it is; then do what is done in the else statement below.
+  
   mainpage = pages[[year - 2005]]
   
   if(year == 2019){
