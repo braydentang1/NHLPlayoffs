@@ -254,7 +254,7 @@ gc()
 
 allStats = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = final), SIMPLIFY = FALSE)) %>%
            bind_cols(tibble(ResultProper = giveWinners),., giveH2H) %>%
-           bind_cols(bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Team2, year = template$Year, MoreArgs = list(data = RecordsOverTime), SIMPLIFY = FALSE)))
+           bind_cols(bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = RecordsOverTime), SIMPLIFY = FALSE)))
 
 rm(RecordsOverTime, final, giveH2H)
 

@@ -22,7 +22,7 @@ rm(accronyms_pg, accronyms, fullnames)
 getData_ESPN = function(year){
   
   mainpage = read_html(paste("http://www.espn.com/nhl/stats/rpi/_/season/",year, sep=""))
-  secondary.page = read_html(paste("http://www.espn.com/nhl/statistics/team/_/stat/special-teams/sort/powerPlayOpportunities/year/",year,"/split/142", sep = ""))
+  secondary.page = read_html(paste("http://www.espn.com/nhl/statistics/team/_/stat/special-teams/sort/powerPlayPct/year/",year,"/seasontype/2/split/142", sep = ""))
 
   teams = mainpage %>%
     html_nodes("td:nth-child(2)") %>%

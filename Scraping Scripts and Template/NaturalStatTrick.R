@@ -15,8 +15,10 @@ getData_nst = function(year){
     html_text(.) %>%
     .[2:length(.)]
   
+  if(year <= 2009){
+  
   SCF = mainpage %>% 
-          html_nodes("td:nth-child(25)") %>%
+          html_nodes("td:nth-child(23)") %>%
           html_text(.) %>%
           as.numeric(.) 
   
@@ -25,18 +27,49 @@ getData_nst = function(year){
           html_text(.) %>%
           as.numeric(.) 
   
-  HighDangerSC_Percent = mainpage %>%
-          html_nodes("td:nth-child(33)") %>%
+  HDCF = mainpage %>%
+          html_nodes("td:nth-child(31)") %>%
           html_text(.) %>%
           as.numeric(.)
   
   HDCA = mainpage %>% 
-          html_nodes("td:nth-child(35)") %>%
+          html_nodes("td:nth-child(32)") %>%
           html_text(.) %>%
           as.numeric(.)
   
   data = tibble(Year = rep(year, length(teams)), Team = teams, SCF = SCF,
-                SCA = SCA, HighDangerSC_Percent = HighDangerSC_Percent, HDCA = HDCA)
+                SCA = SCA, HDCF = HDCF, HDCA = HDCA)
+  
+  }else{
+    
+    #New columns in 2010 year shift columns.
+    
+    SCF = mainpage %>% 
+      html_nodes("td:nth-child(26)") %>%
+      html_text(.) %>%
+      as.numeric(.) 
+    
+    SCA = mainpage %>%
+      html_nodes("td:nth-child(27)") %>%
+      html_text(.) %>%
+      as.numeric(.) 
+    
+    HDCF = mainpage %>%
+      html_nodes("td:nth-child(34)") %>%
+      html_text(.) %>%
+      as.numeric(.)
+    
+    HDCA = mainpage %>% 
+      html_nodes("td:nth-child(35)") %>%
+      html_text(.) %>%
+      as.numeric(.)
+    
+    data = tibble(Year = rep(year, length(teams)), Team = teams, SCF = SCF,
+                  SCA = SCA, HDCF = HDCF, HDCA = HDCA)
+    
+  }
+  
+  
   
 }
 
