@@ -241,13 +241,13 @@ modelPipe.inner = function(mainTrain, seed.a, iterations){
   set.seed(seed.a)  
   innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
 
-  cluster = makeCluster(detectCores())
-  registerDoParallel(cluster)
-  
   #Create grid
   
   set.seed(seed.a)  
   grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
+  
+  cluster = makeCluster(detectCores())
+  registerDoParallel(cluster)
   
 results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "glmnet", "caret", "recipes", "fastknn")) %dopar% {
     

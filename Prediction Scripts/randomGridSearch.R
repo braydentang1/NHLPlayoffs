@@ -8,7 +8,11 @@ function(innerTrainX, innerTestX, grid){
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
                          label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
     
-    grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    #For AUROC
+    #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
+    
+    #For LogLoss
+    grid[m, 3] = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper)
     
   }
   

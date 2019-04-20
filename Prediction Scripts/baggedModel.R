@@ -1,7 +1,7 @@
 baggedModel <-
 function(train, test, label_train, alpha.a, s_lambda.a){
   
-  set.seed(315852720)
+  set.seed(40689)
   samples = caret::createResample(y = label_train, times = 15)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
