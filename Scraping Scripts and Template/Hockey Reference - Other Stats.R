@@ -207,27 +207,28 @@ getWinner = function(pages, year, highest.seed, team.1, team.2){
   #there give NA, if it is; then do what is done in the else statement below.
   
   mainpage = pages[[year - 2005]]
-  
-  if(year == 2019){
-    NA
-  }else{
-  
+
   allPlayoffTeams = mainpage %>% 
               html_nodes("#all_playoffs td:nth-child(3)") %>%
               html_text(.) %>%
               str_remove(., "[.]") %>%
               .[str_detect(., "over")] %>%
               .[str_detect(., team.1) & str_detect(.,team.2)] %>%
-              str_split_fixed(., "over", n=2) %>%
-              as_tibble(.) %>%
-              set_names(c("Winner", "Loser")) %>%
-              mutate(Winner = str_trim(Winner),
-                     Loser = str_trim(Loser)) 
+              str_split_fixed(., "over", n=2) 
   
-  ifelse(any(allPlayoffTeams$Winner == highest.seed), "W", "L")
-  
+  if(nrow(allPlayoffTeams) == 0){
+    NA
+  } else{
+    
+    allPlayoffTeams = allPlayoffTeams %>% 
+      as_tibble(.) %>%
+      set_names(c("Winner", "Loser")) %>%
+      mutate(Winner = str_trim(Winner),
+             Loser = str_trim(Loser)) 
+    
+    ifelse(any(allPlayoffTeams$Winner == highest.seed), "W", "L")
+    
   }
-  
 }
 
 allData = bind_rows(lapply(2006:2019, FUN = getTeamNames)) 
