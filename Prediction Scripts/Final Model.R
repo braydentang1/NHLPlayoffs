@@ -9,34 +9,54 @@ library(doParallel)
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
 
 #..................................Bagging Function...................................#
-baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
+baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
   
   set.seed(40689)
   samples = caret::createResample(y = label_train, times = 15)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
+  insample.pred = vector("list", length(samples))
   
   for (g in 1:length(samples)){
+    
     train_temp = train[samples[[g]], ]
-    a = label_train[samples[[g]]]
-    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = a, family = "binomial", alpha = alpha.a, nlambda = 120, standardize = FALSE)
+    train.label = label_train[samples[[g]]]
+    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = train.label, family = "binomial", alpha = alpha.a, nlambda = 120, standardize = FALSE)
     s_lambda.a = case_when(s_lambda.a > length(modelX$lambda) ~ length(modelX$lambda), TRUE ~ s_lambda.a)
+    
     pred[[g]] = predict(modelX, newx = data.matrix(test[, !names(test) %in% c("ResultProper")]), type = "response")[, s_lambda.a]
+    insample.pred[[g]] = predict(modelX, newx = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), type = "response")[, s_lambda.a]
+    
     varImp[[g]] = tibble::rownames_to_column(varImp(modelX, lambda = modelX$lambda[s_lambda.a]), var = "Variable")
     colnames(varImp[[g]])[2] = paste("Overall:", g, sep = "")
-    remove(modelX, train_temp, a)
+    remove(modelX, train_temp, train.label)
+    
   }
   
   pred = bind_cols(pred) %>%
     transmute(Predicted = rowMeans(.))
   
-  varImp = varImp %>% Reduce(function(x,y) left_join(x,y, by = "Variable"), .) 
+  insample.pred = bind_cols(insample.pred) %>%
+    transmute(Predicted = rowMeans(.))
+  
+  varImp = varImp %>% reduce(left_join, by = "Variable") 
   
   means = varImp %>% select_if(is.numeric) %>% transmute(VariableImportance = rowMeans(.))
   
   varImp = tibble(Variable = varImp$Variable, meanImportance = means$VariableImportance)
   
-  list(Predictions = pred$Predicted, VariableImportance = varImp)
+  if(calibrate == TRUE){
+    
+    list(Predictions = platt.scale(label.train = label_train, predicted.prob.train = insample.pred, 
+                                   predicted.prob.test = pred), VariableImportance = varImp)
+    
+  } else{
+    
+    list(Predictions = pred$Predicted, VariableImportance = varImp)  
+    
+  }
+  
+  
 }
 
 #..................................PCA Function....................................#
@@ -66,6 +86,18 @@ addPCA_variables = function(traindata, testdata, standardize = FALSE){
   
   
   list(train = bind_cols(traindata, pca_traindata), test = bind_cols(testdata, pca_newdata))
+}
+
+#..................................Platt Scaling........................................#
+
+platt.scale = function(label.train, predicted.prob.train, predicted.prob.test){
+  
+  model = glm(formula = label.train ~ ., data = predicted.prob.train, family = binomial(link = "logit"))
+  
+  scaled.prob = predict(model, newdata = predicted.prob.test, type = c("response"))
+  
+  scaled.prob
+  
 }
 
 #..................................Log Loss Function....................................#
@@ -221,7 +253,7 @@ randomGridSearch = function(innerTrainX, innerTestX, grid){
     writeLines(paste("Iteration:", m, sep = " "))
     
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
+                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]), calibrate = FALSE)
     
     #For AUROC
     #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
@@ -258,6 +290,7 @@ results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
     source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R")
+    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R")
     
   train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
   train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
@@ -322,7 +355,7 @@ predict.NHL = function(training, newdata, finalParameters){
   
   rm(frameswithKNN)
   
-  baggedModel(train = training, test = newdata, label_train = training$ResultProper, alpha.a = finalParameters$alpha, s_lambda.a = finalParameters$lambda)$Predictions
+  baggedModel(train = training, test = newdata, label_train = training$ResultProper, alpha.a = finalParameters$alpha, s_lambda.a = finalParameters$lambda, calibrate = FALSE)$Predictions
   
 }
 

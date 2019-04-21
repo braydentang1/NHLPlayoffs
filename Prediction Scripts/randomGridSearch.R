@@ -6,7 +6,7 @@ function(innerTrainX, innerTestX, grid){
     writeLines(paste("Iteration:", m, sep = " "))
     
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
+                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]), calibrate = FALSE)
     
     #For AUROC
     #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
@@ -15,7 +15,7 @@ function(innerTrainX, innerTestX, grid){
     grid[m, 3] = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper)
     
   }
-  
+
   grid
   
 }

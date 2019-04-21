@@ -16,35 +16,67 @@ library(fastknn)
 library(boot)
 
 #..................................Bagging Function...................................#
-baggedModel = function(train, test, label_train, alpha.a, s_lambda.a){
+baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
   
   set.seed(40689)
   samples = caret::createResample(y = label_train, times = 15)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
+  insample.pred = vector("list", length(samples))
   
   for (g in 1:length(samples)){
+    
     train_temp = train[samples[[g]], ]
-    a = label_train[samples[[g]]]
-    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = a, family = "binomial", alpha = alpha.a, nlambda = 120, standardize = FALSE)
+    train.label = label_train[samples[[g]]]
+    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = train.label, family = "binomial", alpha = alpha.a, nlambda = 120, standardize = FALSE)
     s_lambda.a = case_when(s_lambda.a > length(modelX$lambda) ~ length(modelX$lambda), TRUE ~ s_lambda.a)
+    
     pred[[g]] = predict(modelX, newx = data.matrix(test[, !names(test) %in% c("ResultProper")]), type = "response")[, s_lambda.a]
+    insample.pred[[g]] = predict(modelX, newx = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), type = "response")[, s_lambda.a]
+    
     varImp[[g]] = tibble::rownames_to_column(varImp(modelX, lambda = modelX$lambda[s_lambda.a]), var = "Variable")
     colnames(varImp[[g]])[2] = paste("Overall:", g, sep = "")
-    remove(modelX, train_temp, a)
+    remove(modelX, train_temp, train.label)
+    
   }
   
   pred = bind_cols(pred) %>%
     transmute(Predicted = rowMeans(.))
   
-  varImp = varImp %>% Reduce(function(x,y) left_join(x,y, by = "Variable"), .) 
+  insample.pred = bind_cols(insample.pred) %>%
+    transmute(Predicted = rowMeans(.))
+  
+  varImp = varImp %>% reduce(left_join, by = "Variable") 
   
   means = varImp %>% select_if(is.numeric) %>% transmute(VariableImportance = rowMeans(.))
   
   varImp = tibble(Variable = varImp$Variable, meanImportance = means$VariableImportance)
   
-  list(Predictions = pred$Predicted, VariableImportance = varImp)
+  if(calibrate == TRUE){
+  
+  list(Predictions = platt.scale(label.train = label_train, predicted.prob.train = insample.pred, 
+                                 predicted.prob.test = pred), VariableImportance = varImp)
+    
+  } else{
+    
+    list(Predictions = pred$Predicted, VariableImportance = varImp)  
+    
+    }
+  
+  
 }
+#..................................Platt Scaling/sigmoid........................................#
+#..................................Not used, makes model worse..........................#
+platt.scale = function(label.train, predicted.prob.train, predicted.prob.test){
+  
+  model = glm(formula = label.train ~ ., data = predicted.prob.train, family = binomial(link = "logit"))
+  
+  scaled.prob = predict(model, newdata = predicted.prob.test, type = c("response"))
+  
+  scaled.prob
+  
+}
+
 
 #..................................Log Loss Function....................................#
 
@@ -234,7 +266,7 @@ randomGridSearch = function(innerTrainX, innerTestX, grid){
     writeLines(paste("Iteration:", m, sep = " "))
     
     modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]))
+                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]), calibrate = FALSE)
     
     #For AUROC
     #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
@@ -271,7 +303,7 @@ modelPipe.outer = function(folds, lambda.final, alpha.final){
   rm(frameswithKNN)
   
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
-                      alpha.a = alpha.final, s_lambda.a = lambda.final)
+                      alpha.a = alpha.final, s_lambda.a = lambda.final, calibrate = FALSE)
   
   #For AUROC
   #ROC = roc(response = test$ResultProper, predictor = model$Predictions, levels = c("L", "W"))$auc
@@ -366,7 +398,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   set.seed(seeds[p])
   allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
   
-  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 125)
+  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 130)
   finalResults = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
   
   LogLoss.status[p] = finalResults$LogLoss
