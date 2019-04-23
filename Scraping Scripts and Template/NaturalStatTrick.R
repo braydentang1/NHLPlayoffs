@@ -1,14 +1,14 @@
 library(tidyverse)
 library(rvest)
 
-template = read.csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
+template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
                 
 
 getData_nst = function(year){
   
   year2 = year - 1
   
-  mainpage = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year2,year,"&thruseason=",year2,year,"&stype=2&sit=5v5&score=all&rate=y&team=all&loc=B&gpf=410&fd=&td=", sep=""))
+  mainpage = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year2,year,"&thruseason=",year2,year,"&stype=2&sit=sva&score=all&rate=y&team=all&loc=B&gpf=410&fd=&td=", sep=""))
   
   teams = mainpage %>%
     html_nodes(".lh") %>%
@@ -28,12 +28,12 @@ getData_nst = function(year){
           as.numeric(.) 
   
   HDCF = mainpage %>%
-          html_nodes("td:nth-child(31)") %>%
+          html_nodes("td:nth-child(34)") %>%
           html_text(.) %>%
           as.numeric(.)
   
   HDCA = mainpage %>% 
-          html_nodes("td:nth-child(32)") %>%
+          html_nodes("td:nth-child(35)") %>%
           html_text(.) %>%
           as.numeric(.)
   
@@ -55,12 +55,12 @@ getData_nst = function(year){
       as.numeric(.) 
     
     HDCF = mainpage %>%
-      html_nodes("td:nth-child(34)") %>%
+      html_nodes("td:nth-child(37)") %>%
       html_text(.) %>%
       as.numeric(.)
     
     HDCA = mainpage %>% 
-      html_nodes("td:nth-child(35)") %>%
+      html_nodes("td:nth-child(38)") %>%
       html_text(.) %>%
       as.numeric(.)
     

@@ -3,12 +3,12 @@ library(rvest)
 
 template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
 
-startdates = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv")
+startdates = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>% filter(Year >= 2008)
 
 getData.nst.Time = function(year, round, start, end){
   
-  page = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year-1,year,"&thruseason=",year-1,year,"&stype=3&sit=5v5&score=all&rate=y&team=all&loc=B&gpf=410&fd=",start,"&td=",end, sep ="")) 
-
+  page = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year-1,year,"&thruseason=",year-1,year,"&stype=3&sit=sva&score=all&rate=y&team=all&loc=B&gpf=410&fd=",start,"&td=",end, sep ="")) 
+  
   teamnames = page %>%
     html_nodes(".lh") %>% 
     html_text(.) %>%
@@ -47,22 +47,27 @@ getData.nst.Time = function(year, round, start, end){
     as.numeric(.)
   
   hdcf = page %>%
-    html_nodes("td:nth-child(27)") %>%
+    html_nodes("td:nth-child(30)") %>%
     html_text(.) %>%
     as.numeric(.)
   
   hdca = page %>%
-    html_nodes("td:nth-child(28)") %>%
+    html_nodes("td:nth-child(31)") %>%
+    html_text(.) %>%
+    as.numeric(.)
+  
+  hdsv = page %>%
+    html_nodes("td:nth-child(40)") %>%
     html_text(.) %>%
     as.numeric(.)
   
   savepercentage = page %>%
-    html_nodes("td:nth-child(36)") %>%
+    html_nodes("td:nth-child(64)") %>%
     html_text(.) %>%
     as.numeric(.)
   
   pdo = page %>%
-    html_nodes("td:nth-child(37)") %>%
+    html_nodes("td:nth-child(65)") %>%
     html_text(.) %>%
     as.numeric(.)
   
@@ -103,22 +108,27 @@ getData.nst.Time = function(year, round, start, end){
       as.numeric(.)
     
     hdcf = page %>%
-      html_nodes("td:nth-child(30)") %>%
+      html_nodes("td:nth-child(33)") %>%
       html_text(.) %>%
       as.numeric(.)
     
     hdca = page %>%
-      html_nodes("td:nth-child(31)") %>%
+      html_nodes("td:nth-child(34)") %>%
+      html_text(.) %>%
+      as.numeric(.)
+    
+    hdsv = page %>%
+      html_nodes("td:nth-child(43)") %>%
       html_text(.) %>%
       as.numeric(.)
     
     savepercentage = page %>%
-      html_nodes("td:nth-child(39)") %>%
+      html_nodes("td:nth-child(67)") %>%
       html_text(.) %>%
       as.numeric(.)
     
     pdo = page %>%
-      html_nodes("td:nth-child(40)") %>%
+      html_nodes("td:nth-child(68)") %>%
       html_text(.) %>%
       as.numeric(.)
     
@@ -137,12 +147,13 @@ getData.nst.Time = function(year, round, start, end){
   }
   
   tibble(Year = rep(year, length(teamnames)), Up.To.Round = rep(round, length(teamnames)), Team = teamnames, CF.Playoff = corsi_for, CA.Playoff = corsi_against,
-         FenFor.Playoff = fenwick_for, FenAga.Playoff = fenwick_against, SCF.Playoff = scf, SCA.Playoff = sca, HDCF.Playoff = hdcf, HDCA.Playoff = hdca, SavePercentage.Playoff = savepercentage,
+         FenFor.Playoff = fenwick_for, FenAga.Playoff = fenwick_against, SCF.Playoff = scf, SCA.Playoff = sca, HDSV.Playoff = hdsv, HDCF.Playoff = hdcf, HDCA.Playoff = hdca, SavePercentage.Playoff = savepercentage,
          PDO.Playoff = pdo, xGF.Playoff = xGF, xGA.Playoff = xGA)
 }
 
 #If you run this too many times, expect your IP address to be blocked on NaturalStatTrick for 24 hours because the site can't handle too much traffic.
 #allData = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, SIMPLIFY = FALSE))
+#write_csv(allData, "TimeData.csv")
 allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/TimeData.csv")
 
 findMatch = function(team.1, team.2, stat, data, highest.seed, round){
@@ -202,4 +213,5 @@ processData = function(year, team.1, team.2, highest.seed, round, data){
 
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, round = template$Round, MoreArgs = list(data = allData), SIMPLIFY = FALSE)) 
 
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "TimeRelatedPlayoffFeatures.csv")
