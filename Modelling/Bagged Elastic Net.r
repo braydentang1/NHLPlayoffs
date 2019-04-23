@@ -195,6 +195,7 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
   bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
+  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/TimeRelatedPlayoffFeatures.csv")) %>%
   mutate(ResultProper = as.factor(ResultProper)) %>%
   filter(!is.na(ResultProper))
 
@@ -204,11 +205,9 @@ allData = allData %>%
   mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
-  mutate(AverageGoalDiff_PerGame = GoalsFor/82) %>%
   mutate(AveragePenaltyDiff_PerGame = PenaltyMinsPG/82) %>%
   mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
   mutate(PPO_x_PenaltyKill = PowerPlayOppurtunities * PenaltyKillPercentage) %>%
-  mutate(PointsPercentage = Points/164) %>%
   mutate(GS_max_log = sign(GS_mean) * log(abs(GS_mean) + 1)) %>%
   mutate(CA_Per60Team_log = sign(CA_Per60Team) * log(abs(CA_Per60Team) + 1)) %>%
   mutate(Ratio_of_GoalstoGoalsAgainstlog = sign(GoalsFor/GoalsAgainst) * log(abs(GoalsFor/GoalsAgainst) +1)) %>%
