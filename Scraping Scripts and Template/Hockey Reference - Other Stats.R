@@ -203,9 +203,6 @@ processData = function(team.1, team.2, highest.seed, year, data){
 
 getWinner = function(pages, year, highest.seed, team.1, team.2){
   
-  #Will need to change this later. Just check for "over" in the string; if it is not 
-  #there give NA, if it is; then do what is done in the else statement below.
-  
   mainpage = pages[[year - 2005]]
 
   allPlayoffTeams = mainpage %>% 
@@ -214,7 +211,7 @@ getWinner = function(pages, year, highest.seed, team.1, team.2){
               str_remove(., "[.]") %>%
               .[str_detect(., "over")] %>%
               .[str_detect(., team.1) & str_detect(.,team.2)] %>%
-              str_split_fixed(., "over", n=2) 
+              str_split_fixed(., "over", n=2)
   
   if(nrow(allPlayoffTeams) == 0){
     NA
@@ -230,6 +227,72 @@ getWinner = function(pages, year, highest.seed, team.1, team.2){
     
   }
 }
+
+getPastNumberofGames = function(year){
+  
+  mainpage = read_html(paste("https://www.hockey-reference.com/playoffs/NHL_",year,".html", sep = ""))
+  
+  allPlayoffTeams = mainpage %>% 
+    html_nodes("#all_playoffs td:nth-child(3)") %>%
+    html_text(.) %>%
+    str_remove(., "[.]") %>%
+    .[str_detect(., "over")] %>%
+    as_tibble(.) %>%
+    rename(Teams = value) %>%
+    mutate(Teams = str_trim(Teams, side = "right"))
+  
+  game.series = mainpage %>%
+    html_nodes("#all_playoffs td:nth-child(2)") %>%
+    html_text(.) %>%
+    .[str_detect(., "-")] %>%
+    str_split_fixed(., "-", n=2) %>%
+    as_tibble(.) %>%
+    rename(Winning.Game.Count = V1, Losing.Game.Count = V2) %>%
+    mutate(Winning.Game.Count = as.numeric(Winning.Game.Count)) %>%
+    mutate(Losing.Game.Count = as.numeric(Losing.Game.Count)) %>%
+    filter(Winning.Game.Count == 4) %>%
+    transmute(TotalGamesPlayed = rowSums(.)) %>%
+    bind_cols(Year = rep(year, nrow(.)), allPlayoffTeams, .)
+  
+}
+
+processData.numberofGames = function(team.1, team.2, round, highest.seed, year, data){
+  
+  if(round == "quarter-finals"){
+    0
+  }else{
+  
+  team1.games = data %>% filter(Year == year) %>% .[str_detect(.$Teams, team.1),]
+  team2.games = data %>% filter(Year == year) %>% .[str_detect(.$Teams, team.2),]
+  
+  if(which(c(team.1, team.2) == highest.seed) == 1){
+    highest.seed.games = team1.games
+    lowest.seed.games = team2.games
+  }else{
+    highest.seed.games = team2.games
+    lowest.seed.games = team1.games
+  }
+  
+    if(round == "semi-finals"){
+      
+      highest.seed.games$TotalGamesPlayed[nrow(highest.seed.games)] - lowest.seed.games$TotalGamesPlayed[nrow(lowest.seed.games)]
+      
+    }else if(round == "finals"){
+      
+      highest.seed.games$TotalGamesPlayed[nrow(highest.seed.games) - 1] - lowest.seed.games$TotalGamesPlayed[nrow(lowest.seed.games) - 1]
+      
+    }else{
+      
+      highest.seed.games$TotalGamesPlayed[nrow(highest.seed.games) - 2] - lowest.seed.games$TotalGamesPlayed[nrow(lowest.seed.games) - 2]
+      
+    }
+  
+  }
+  
+}
+
+getPastNumberofGames = bind_rows(lapply(2006:2019, FUN = getPastNumberofGames))
+givePastNumberofGames = unlist(mapply(FUN = processData.numberofGames, year = template$Year, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, round = template$Round, MoreArgs = list(data = getPastNumberofGames), SIMPLIFY = FALSE))
 
 allData = bind_rows(lapply(2006:2019, FUN = getTeamNames)) 
 
@@ -257,7 +320,7 @@ rm(allData, allH2Hpages, allTeamPages)
 gc()
 
 allStats = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = final), SIMPLIFY = FALSE)) %>%
-           bind_cols(tibble(ResultProper = giveWinners),., giveH2H) %>%
+           bind_cols(tibble(ResultProper = giveWinners, PastSeriesGameCount = givePastNumberofGames),., giveH2H) %>%
            bind_cols(bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = RecordsOverTime), SIMPLIFY = FALSE)))
 
 rm(RecordsOverTime, final, giveH2H)
