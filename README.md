@@ -1,7 +1,7 @@
 # NHLPlayoffs
 A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-Currently sits at a log loss of 0.65474 with a 95% confidence interval given by via. 10,000 Bootstrap Samples: [0.64685, 0.66179].
+Currently sits at a log loss of 0.6542 with a 95% confidence interval given by via. 10,000 Bootstrap Samples: [0.64575, 0.66168].
 
 ![Alt text](https://github.com/braydentang1/NHLPlayoffs/blob/master/Histogram.jpeg)
 
