@@ -88,6 +88,7 @@ calculateH2H = function(mainpage, highest.seed, process = FALSE){
       as_tibble(.) %>%
       set_names(c("FullName", "Wins")) %>%
       mutate(WinRatio = Wins/sum(Wins)) %>%
+      mutate(FullName = str_remove(FullName, "[.]")) %>%
       right_join(., teamNames, by = "FullName") %>%
       replace_na(., list(Wins = 0, WinRatio = 0))
     

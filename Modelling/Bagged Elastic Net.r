@@ -202,7 +202,7 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
 #...................................Engineering of some features..................#
 
 allData = allData %>% 
-  mutate(Round = as.factor(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13))) %>%
+  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1)))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
   mutate(AveragePenaltyDiff_PerGame = PenaltyMinsPG/82) %>%

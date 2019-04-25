@@ -139,13 +139,30 @@ getData_Playoffs = function(year, ELO.EndofRegularSeason, round.end.dates){
     as.numeric(.) %>%
     .[!is.na(.)]
   
-  allData = tibble(Date = dates, Visitor = visitor, Home = home, Goals.Visitor = visitor.score, Goals.Home = home.score) %>%
+  allData = tibble(Date = dates[1:length(home.score)], Visitor = visitor[1:length(home.score)], Home = home[1:length(home.score)], Goals.Visitor = visitor.score, Goals.Home = home.score) %>%
     mutate(Outcome.Home = ifelse(Goals.Home > Goals.Visitor, 1,0))
   
   enddates = round.end.dates %>% filter(Year == year)
+  
+  if(nrow(enddates) == 1){
+    
+  semis = max(which(allData$Date <= enddates$End[1]))
+  finals = NULL
+  scf = NULL
+  
+  }else if(nrow(enddates) == 2){
+    
+  semis = max(which(allData$Date <= enddates$End[1]))
+  finals = max(which(allData$Date <= enddates$End[2]))
+  scf = NULL
+  
+  }else {
+    
   semis = max(which(allData$Date <= enddates$End[1]))
   finals = max(which(allData$Date <= enddates$End[2]))
   scf = max(which(allData$Date <= enddates$End[3])) 
+  
+  }
   
   ELORatings.Playoffs = vector("list", 3)
   trackELO = ELO.EndofRegularSeason %>% filter(Year == year)
@@ -164,11 +181,11 @@ getData_Playoffs = function(year, ELO.EndofRegularSeason, round.end.dates){
       
       ELORatings.Playoffs[[1]] = bind_cols(trackELO, Up.To.Start.of.Round = rep("semis", nrow(trackELO)))
         
-    } else if(i == finals){
+    } else if(i == finals && !is.null(finals)){
       
       ELORatings.Playoffs[[2]] = bind_cols(trackELO, Up.To.Start.of.Round = rep("finals", nrow(trackELO)))
       
-    } else if (i == scf){
+    } else if (i == scf && !is.null(scf)){
       
       ELORatings.Playoffs[[3]] = bind_cols(trackELO, Up.To.Start.of.Round = rep("stanley-cup", nrow(trackELO)))
       
@@ -176,7 +193,7 @@ getData_Playoffs = function(year, ELO.EndofRegularSeason, round.end.dates){
     
   }
   
-  bind_rows(ELORatings.Playoffs)
+  abc = bind_rows(ELORatings.Playoffs)
   
 }
 
@@ -186,7 +203,7 @@ data_delay = bind_rows(frames_delay)
 frames = lapply(seq(2006, 2019, 1), FUN = getData, last.games = 0)
 data = bind_rows(frames)
 
-frames_playoffs = lapply(seq(2008, 2018,1), FUN = getData_Playoffs, ELO.EndofRegularSeason = data, round.end.dates = startdates)
+frames_playoffs = lapply(seq(2008, 2019,1), FUN = getData_Playoffs, ELO.EndofRegularSeason = data, round.end.dates = startdates)
 data.playoffs = bind_rows(frames_playoffs)
 
 rm(frames, frames_delay, frames_playoffs)

@@ -157,15 +157,14 @@ getData.nst.Time = function(year, round, start, end, powerplay = FALSE){
   }else{
     tibble(Year = rep(year, length(teamnames)), Up.To.Round = rep(round, length(teamnames)), Team = teamnames, CF.Playoff.PP = corsi_for, CA.Playoff.PP = corsi_against,
            FenFor.Playoff.PP = fenwick_for, FenAga.Playoff.PP = fenwick_against, SCF.Playoff.PP = scf, SCA.Playoff.PP = sca, HDSV.Playoff.PP = hdsv, HDCF.Playoff.PP = hdcf,
-           HDCA.Playoff = hdca, SavePercentage.Playoff = savepercentage,
+           HDCA.Playoff.PP = hdca, SavePercentage.Playoff.PP = savepercentage,
            PDO.Playoff.PP = pdo, xGF.Playoff.PP = xGF, xGA.Playoff.PP = xGA)
   }
 }
 
 #If you run this too many times, expect your IP address to be blocked on NaturalStatTrick for 24 hours because the site can't handle too much traffic.
-
 #allData = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, powerplay = FALSE, SIMPLIFY = FALSE))
-#Sys.sleep(420)
+#Sys.sleep(500)
 #allData.powerplay = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, powerplay = TRUE, SIMPLIFY = FALSE))
 
 #write_csv(allData, "TimeData.csv")
@@ -231,6 +230,9 @@ processData = function(year, team.1, team.2, highest.seed, round, data){
 
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, round = template$Round, MoreArgs = list(data = allData), SIMPLIFY = FALSE)) %>%
         bind_cols(.,bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, round = template$Round, MoreArgs = list(data = allData.powerplay), SIMPLIFY = FALSE)))
+
+#remove the renaming after being unbanned from NST.
+final = final[, !names(final) %in% c("HDSV.Playoff.PP")] %>% rename(HDCA.Playoff.PP = HDCA.Playoff1, SavePercentage.Playoff.PP = SavePercentage.Playoff1)
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "TimeRelatedPlayoffFeatures.csv")

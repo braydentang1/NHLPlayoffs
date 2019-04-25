@@ -80,10 +80,26 @@ processData = function(year, team.1, team.2, data){
   
 }
 
-getData.current = function(year){
+#Kind of a hacky way to do this. Set the round argument to what is needed. Page 1 = quarters, page 2= semis, page 3=finals, page 4=stanley cup.
+getData.current = function(year, round){
+
+  if(round == "quarter-finals"){
   
   page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep = ""))
   
+  }else if(round == "semi-finals"){
+    
+  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg2.html", sep = ""))
+    
+  }else if(round == "finals"){
+    
+  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg3.html", sep = ""))
+  
+  }else{
+    
+  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg4.html", sep = ""))
+    
+  }
   teams = page %>% 
     html_nodes(".table-participant a:nth-child(3)") %>%
     html_text(.) %>%
@@ -117,7 +133,8 @@ template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
 #take the first game odds
 
 allData = bind_rows(lapply(2006:2018, FUN = getData)) %>%
-          bind_rows(lapply(2019, FUN = getData.current))
+          bind_rows(lapply(2019, FUN = getData.current, round = "quarter-finals")) %>%
+          bind_rows(lapply(2019, FUN = getData.current, round = "semi-finals"))
 
 template = template %>% 
                 rowwise %>%
