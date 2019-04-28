@@ -5,13 +5,21 @@ template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scri
 
 startdates = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>% filter(Year >= 2008)
 
-getData.nst.Time = function(year, round, start, end, powerplay = FALSE){
+getData.nst.Time = function(year, round, start, end, event = FALSE){
   
-  if(powerplay == FALSE){
-  page = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year-1,year,"&thruseason=",year-1,year,"&stype=3&sit=sva&score=all&rate=y&team=all&loc=B&gpf=410&fd=",start,"&td=",end, sep ="")) 
-  }else{
+  if(event == "penaltykill"){
+    
+  page = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year-1,year,"&thruseason=",year-1,year,"&stype=3&sit=pk&score=all&rate=y&team=all&loc=B&gpf=410&fd=",start,"&td=",end, sep ="")) 
+  
+  }else if(event == "powerplay"){
+    
   page = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year-1,year,"&thruseason=",year-1,year,"&stype=3&sit=pp&score=all&rate=y&team=all&loc=B&gpf=410&fd=",start,"&td=",end, sep ="")) 
-  }
+  
+  }else{
+    
+    page = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year-1,year,"&thruseason=",year-1,year,"&stype=3&sit=sva&score=all&rate=y&team=all&loc=B&gpf=410&fd=",start,"&td=",end, sep ="")) 
+  
+    }
   
   teamnames = page %>%
     html_nodes(".lh") %>% 
@@ -150,28 +158,44 @@ getData.nst.Time = function(year, round, start, end, powerplay = FALSE){
     
   }
   
-  if(powerplay == FALSE){
-  tibble(Year = rep(year, length(teamnames)), Up.To.Round = rep(round, length(teamnames)), Team = teamnames, CF.Playoff = corsi_for, CA.Playoff = corsi_against,
-         FenFor.Playoff = fenwick_for, FenAga.Playoff = fenwick_against, SCF.Playoff = scf, SCA.Playoff = sca, HDSV.Playoff = hdsv, HDCF.Playoff = hdcf, HDCA.Playoff = hdca, SavePercentage.Playoff = savepercentage,
-         PDO.Playoff = pdo, xGF.Playoff = xGF, xGA.Playoff = xGA)
-  }else{
+  if(event == "penaltykill"){
+    
+    tibble(Year = rep(year, length(teamnames)), Up.To.Round = rep(round, length(teamnames)), Team = teamnames, CF.Playoff.PK = corsi_for, CA.Playoff.PK = corsi_against,
+           FenFor.Playoff.PK = fenwick_for, FenAga.Playoff.PK = fenwick_against, SCF.Playoff.PK = scf, SCA.Playoff.PK = sca, HDSV.Playoff.PK = hdsv, HDCF.Playoff.PK = hdcf,
+           HDCA.Playoff.PK = hdca, SavePercentage.Playoff.PK = savepercentage,
+           PDO.Playoff.PK = pdo, xGF.Playoff.PK = xGF, xGA.Playoff.PK = xGA)
+  }
+
+  else if(event == "powerplay"){
+    
     tibble(Year = rep(year, length(teamnames)), Up.To.Round = rep(round, length(teamnames)), Team = teamnames, CF.Playoff.PP = corsi_for, CA.Playoff.PP = corsi_against,
            FenFor.Playoff.PP = fenwick_for, FenAga.Playoff.PP = fenwick_against, SCF.Playoff.PP = scf, SCA.Playoff.PP = sca, HDSV.Playoff.PP = hdsv, HDCF.Playoff.PP = hdcf,
            HDCA.Playoff.PP = hdca, SavePercentage.Playoff.PP = savepercentage,
            PDO.Playoff.PP = pdo, xGF.Playoff.PP = xGF, xGA.Playoff.PP = xGA)
+  }else{
+    
+      tibble(Year = rep(year, length(teamnames)), Up.To.Round = rep(round, length(teamnames)), Team = teamnames, CF.Playoff = corsi_for, CA.Playoff = corsi_against,
+             FenFor.Playoff = fenwick_for, FenAga.Playoff = fenwick_against, SCF.Playoff = scf, SCA.Playoff = sca, HDSV.Playoff = hdsv, HDCF.Playoff = hdcf, HDCA.Playoff = hdca, SavePercentage.Playoff = savepercentage,
+             PDO.Playoff = pdo, xGF.Playoff = xGF, xGA.Playoff = xGA)
   }
 }
 
 #If you run this too many times, expect your IP address to be blocked on NaturalStatTrick for 24 hours because the site can't handle too much traffic.
-#allData = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, powerplay = FALSE, SIMPLIFY = FALSE))
+
+
+#allData = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = FALSE, SIMPLIFY = FALSE))
 #Sys.sleep(500)
-#allData.powerplay = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, powerplay = TRUE, SIMPLIFY = FALSE))
+#allData.powerplay = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = "powerplay", SIMPLIFY = FALSE))
+#Sys.sleep(500)
+#allData.penaltykill = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = "penaltykill", SIMPLIFY = FALSE))
 
 #write_csv(allData, "TimeData.csv")
 #write_csv(allData.powerplay, "TimeData_PowerPlay.csv")
+#write_csv(allData.penaltykill, "TimeData_PenaltyKill.csv")
 
 allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData.csv")
 allData.powerplay = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PowerPlay.csv")
+allData.penaltykill = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PenaltyKill.csv")
 
 findMatch = function(team.1, team.2, stat, data, highest.seed, round){
   
@@ -229,10 +253,11 @@ processData = function(year, team.1, team.2, highest.seed, round, data){
 }
 
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, round = template$Round, MoreArgs = list(data = allData), SIMPLIFY = FALSE)) %>%
-        bind_cols(.,bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, round = template$Round, MoreArgs = list(data = allData.powerplay), SIMPLIFY = FALSE)))
+        bind_cols(.,bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, round = template$Round, MoreArgs = list(data = allData.powerplay), SIMPLIFY = FALSE))) %>%
+        bind_cols(.,bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, round = template$Round, MoreArgs = list(data = allData.penaltykill), SIMPLIFY = FALSE)))
 
-#remove the renaming after being unbanned from NST.
-final = final[, !names(final) %in% c("HDSV.Playoff.PP")] %>% rename(HDCA.Playoff.PP = HDCA.Playoff1, SavePercentage.Playoff.PP = SavePercentage.Playoff1)
+#Remove these variables because they aren't meaningful in the context.
+final = final %>% select(-HDSV.Playoff.PP, -CF.Playoff.PK, -SCF.Playoff.PK, -HDCF.Playoff.PK, -PDO.Playoff.PK, -xGF.Playoff.PK)
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "TimeRelatedPlayoffFeatures.csv")

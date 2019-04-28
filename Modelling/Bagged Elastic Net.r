@@ -1,6 +1,6 @@
 #Set the directory for parallel computation status checks. Change this to any folder on your computer so that we can monitor 
 #the status of the repeated cross validation.
-setwd("C:/Users/Brayden/Documents/NHLModel/Status")
+setwd("C:/Users/Brayden/Desktop/status")
 
 #Dependencies
 
@@ -19,7 +19,7 @@ library(boot)
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
   
   set.seed(40689)
-  samples = caret::createResample(y = label_train, times = 15)
+  samples = caret::createResample(y = label_train, times = 20)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
   insample.pred = vector("list", length(samples))
@@ -438,4 +438,4 @@ graphingParameters = tibble(LogLoss = finalLogLoss)
 
 ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "50 Repeats of Nested Cross Validation", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
+  labs(title = "50 Repeats of Nested Cross Validation; Using Data up To 2019 Round 1", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
