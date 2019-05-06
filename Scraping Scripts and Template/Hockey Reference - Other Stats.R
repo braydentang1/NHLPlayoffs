@@ -1,5 +1,6 @@
 library(rvest)
 library(tidyverse)
+library(RSelenium)
 
 template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
 
@@ -17,6 +18,9 @@ lookup_Accronyms = cbind(FullName = fullnames, Accronym = accronyms) %>% as_tibb
 lookup_Accronyms$Accronym = ifelse(lookup_Accronyms$Accronym == "VGK", "VEG", lookup_Accronyms$Accronym)                                                                       
 
 rm(accronyms_pg, accronyms, fullnames)
+
+rd = rsDriver(browser = c("chrome"), chromever = "74.0.3729.6")
+rem_dr = rd[["client"]]
 
 grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
 
@@ -176,12 +180,15 @@ PlayerPoints
 
 getTeamNames = function(year){
   
-      read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Hockey Reference/", year, ".html", sep = "")) %>%
-      html_nodes("#stats tbody .left") %>%
-      html_text(.) %>%
-      str_remove(.,"[*]") %>%
-      str_remove(., "[.]") %>%
-      tibble(Year = rep(year, length(.)), Team = .)
+  rem_dr$navigate(paste("https://www.hockey-reference.com/leagues/NHL_",year,".html", sep = ""))
+  
+  main = read_html(rem_dr$getPageSource()[[1]]) %>%
+  html_nodes("#stats tbody .left") %>%
+  html_text(.) %>%
+  str_remove(.,"[*]") %>%
+  str_remove(., "[.]") %>%
+  tibble(Year = rep(year, length(.)), Team = .)
+  
 }
 
 findMatch = function(team.1, team.2, stat, data, highest.seed){

@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rvest)
+library(RSelenium)
 
 template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
 
@@ -25,9 +26,13 @@ rm(accronyms_pg, accronyms, fullnames)
 #Input round as "quarter-finals, "semi-finals", "finals", "or stanley-cup-final"
 #Input year as 2006 (number)
 
+rd = rsDriver(browser = c("chrome"), chromever = "74.0.3729.6")
+rem_dr = rd[["client"]]
+
 getData = function(year){
   
-  main = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Hockey Reference/",year,".html", sep=""))
+  rem_dr$navigate(paste("https://www.hockey-reference.com/leagues/NHL_",year,".html", sep = ""))
+  main = read_html(rem_dr$getPageSource()[[1]])
   
   team_name = main %>%
               html_nodes("#stats tbody .left") %>%

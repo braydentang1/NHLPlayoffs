@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rvest)
+library(RSelenium)
 
 template = read.csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
 
@@ -18,9 +19,16 @@ lookup_Accronyms$Accronym = ifelse(lookup_Accronyms$Accronym == "VGK", "VEG", lo
 
 rm(accronyms_pg, accronyms, fullnames)
 
+#Create the rsDriver for Selenium
+
+rd = rsDriver(browser = c("chrome"), chromever = "74.0.3729.6")
+rem_dr = rd[["client"]]
+
 getData_nhl_HitsandBlocks = function(year){
   
-  mainpage = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/NHL HTML Renders/Hits and Blocks/NHL.com - Stats ",year,".html", sep=""))
+  rem_dr$navigate(paste("http://www.nhl.com/stats/team?report=realtime&reportType=season&seasonFrom=",year-1,year,"&seasonTo=",year - 1,year,"&gameType=2&filter=gamesPlayed,gte,1&sort=hits", sep = ""))
+  
+  mainpage = read_html(rem_dr$getPageSource()[[1]])
   
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
@@ -73,7 +81,11 @@ getData_nhl_HitsandBlocks = function(year){
 
 getData_nhl_LeadingandTrailing = function(year){
   
-  mainpage = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/NHL HTML Renders/Leading and Trailing/",year,".html", sep=""))
+  rem_dr$navigate(paste("http://www.nhl.com/stats/team?report=leadingtrailing&reportType=season&seasonFrom=",year-1,year,"&seasonTo=",year-1, year,"&gameType=2&filter=gamesPlayed,gte,1&sort=winsAfterLead1p", sep = ""))
+  
+  mainpage = read_html(rem_dr$getPageSource()[[1]])
+  
+  mainpage = read_html(rem_dr$getPageSource()[[1]])
   
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
