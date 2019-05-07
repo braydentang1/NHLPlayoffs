@@ -1,10 +1,21 @@
 library(tidyverse)
 library(rvest)
+library(RSelenium)
+
+rd = rsDriver(browser = c("chrome"), chromever = "74.0.3729.6")
+rem_dr = rd[["client"]]
+
+rd2 = rsDriver(port = 5000L, browser = c("chrome"), chromever = "74.0.3729.6")
+rem_dr2 = rd2[["client"]]
 
 getData = function(year){
 
-main = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep=""))
-main2 = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg2.html", sep=""))
+rem_dr$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-",year-1,"-",year,"/results/#/", sep = ""))  
+main = read_html(rem_dr$getPageSource()[[1]])
+
+#I tried navigating on the page, but it appears that it doesn't work (it keeps parsing only the first page, not the second)
+rem_dr2$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-",year-1,"-",year,"/results/#/page/2/", sep = ""))  
+main2 = read_html(rem_dr2$getPageSource()[[1]])
 
 teams = main %>% 
           html_nodes(".table-participant") %>%
@@ -63,7 +74,7 @@ combined = bind_cols(tibble(Year = rep(year, nrow(playoff_indicator))),teams_fin
 
 rm(main, main2, odds.Highest_fin, Odds.Lowest_fin, playoff_indicator, teams_fin)
 
-combined %>% select(-Playoff.Indicator)
+y = combined %>% select(-Playoff.Indicator)
           
 }
 
