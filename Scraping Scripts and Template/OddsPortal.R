@@ -74,7 +74,7 @@ combined = bind_cols(tibble(Year = rep(year, nrow(playoff_indicator))),teams_fin
 
 rm(main, main2, odds.Highest_fin, Odds.Lowest_fin, playoff_indicator, teams_fin)
 
-y = combined %>% select(-Playoff.Indicator)
+combined %>% select(-Playoff.Indicator)
           
 }
 
