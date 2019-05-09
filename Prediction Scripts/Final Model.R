@@ -163,7 +163,7 @@ predict.NHL = function(training, newdata, finalParameters){
 
 #...........................Global.........................................#
 
-finalParameters = modelPipe.inner(mainTrain = allData, seed.a = 40689, iterations = 130)
+finalParameters = modelPipe.inner(mainTrain = allData, seed.a = 89529, iterations = 130)
 
 predictions = predict.NHL(training = allData, newdata = newdata, finalParameters = finalParameters)
 

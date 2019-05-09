@@ -123,7 +123,7 @@ getData.current = function(year, round){
     tibble(Odds.HighestSeed =.)
   
   odds2 = page %>%
-    html_nodes(".odds-nowrp~ .odds-nowrp+ .odds-nowrp a") %>%
+    html_nodes(".odds-nowrp~ .odds-nowrp+ .odds-nowrp:nth-child(5) a") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(Odds.LowestSeed =.)
@@ -145,7 +145,8 @@ template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
 
 allData = bind_rows(lapply(2006:2018, FUN = getData)) %>%
           bind_rows(lapply(2019, FUN = getData.current, round = "quarter-finals")) %>%
-          bind_rows(lapply(2019, FUN = getData.current, round = "semi-finals"))
+          bind_rows(lapply(2019, FUN = getData.current, round = "semi-finals")) %>%
+          bind_rows(lapply(2019, FUN = getData.current, round = "finals"))
 
 template = template %>% 
                 rowwise %>%
