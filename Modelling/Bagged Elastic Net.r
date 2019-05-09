@@ -202,7 +202,7 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
 #...................................Engineering of some features..................#
 
 allData = allData %>% 
-  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1)))) %>%
+  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2)))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
   mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
@@ -319,7 +319,7 @@ modelPipe.inner = function(folds, seed.a, iterations){
   mainTrain = allData[folds[[1]], ]
   
   set.seed(seed.a)  
-  innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
+  innerFolds = createFolds(y = mainTrain$ResultProper, k = 6)
 
   #Create grid
   
@@ -394,7 +394,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   set.seed(seeds[p])
   allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
   
-  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 130)
+  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 115)
   finalResults = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
   
   LogLoss.status[p] = finalResults$LogLoss
@@ -437,4 +437,4 @@ graphingParameters = tibble(LogLoss = finalLogLoss)
 
 ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "50 Repeats of Nested Cross Validation; Using Data up To 2019 Round 1", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
+  labs(title = "50 Repeats of Nested Cross Validation; Using Data up To 2019 Round 2", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")

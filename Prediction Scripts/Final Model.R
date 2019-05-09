@@ -29,7 +29,7 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
 #...................................Engineering of some features..................#
 
 allData = allData %>% 
-  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2)))) %>%
+  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2,3,3)))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
   mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
@@ -168,7 +168,7 @@ finalParameters = modelPipe.inner(mainTrain = allData, seed.a = 89529, iteration
 predictions = predict.NHL(training = allData, newdata = newdata, finalParameters = finalParameters)
 
 template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
-  filter(Year == 2019, Round == "semi-finals") %>%
+  filter(Year == 2019, Round == "finals") %>%
   select(Team1, Team2, Highest.Seed)
 
 finalScores = template %>% bind_cols(., Prob.Win.HighestSeed = predictions$Prediction)
