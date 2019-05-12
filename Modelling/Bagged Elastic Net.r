@@ -19,7 +19,7 @@ library(boot)
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
   
   set.seed(40689)
-  samples = caret::createResample(y = label_train, times = 20)
+  samples = caret::createResample(y = label_train, times = 35)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
   insample.pred = vector("list", length(samples))
@@ -319,7 +319,7 @@ modelPipe.inner = function(folds, seed.a, iterations){
   mainTrain = allData[folds[[1]], ]
   
   set.seed(seed.a)  
-  innerFolds = createFolds(y = mainTrain$ResultProper, k = 6)
+  innerFolds = createFolds(y = mainTrain$ResultProper, k = 4)
 
   #Create grid
   
@@ -394,7 +394,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   set.seed(seeds[p])
   allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
   
-  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 115)
+  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 130)
   finalResults = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
   
   LogLoss.status[p] = finalResults$LogLoss
@@ -422,7 +422,7 @@ mean.custom = function(x, d){
   
 }
 
-bootstrapped.All.CI = boot.ci(boot(data = finalLogLoss, statistic = mean.custom, R = 10000), type = "basic")
+bootstrapped.All.CI = boot.ci(boot(data = finalLogLoss, statistic = mean.custom, R = 100000), type = "basic")
 
 #...................................Paste the Results.........................................................#
 
