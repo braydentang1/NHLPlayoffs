@@ -2,9 +2,16 @@ library(tidyverse)
 library(glmnet)
 library(recipes)
 library(caret)
-library(pROC)
-library(foreach)
-library(doParallel)
+library(parallel)
+
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R")
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R")
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R")
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R")
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/processVarImp.R")
 
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
 
@@ -53,37 +60,21 @@ allData = allData %>%
 newdata = allData %>% filter(., is.na(ResultProper))
 allData = allData %>% filter(., !is.na(ResultProper))
 
-#.................................To measure the log loss of the 2019 Round 1 Playoffs..........................#
-
-#allData_tmp = allData[1:195,]
-#newdata = allData[196:nrow(allData),] %>% filter(., !is.na(ResultProper))
-#newdata_label = newdata$ResultProper
-
 #.........................Define inner pipe for the inner cross validation...........................................#
+
 modelPipe.inner = function(mainTrain, seed.a, iterations){
   
   set.seed(seed.a)  
   innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
 
+  results = vector("list", length(innerFolds))
   #Create grid
   
   set.seed(seed.a)  
   grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
+
+for(m in 1:length(innerFolds)){
   
-  cluster = makeCluster(detectCores())
-  registerDoParallel(cluster)
-  
-results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "glmnet", "caret", "recipes", "fastknn")) %dopar% {
-    
-    #Load some custom functions
-    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R")
-    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R")
-    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")
-    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
-    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
-    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R")
-    source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R")
-    
   train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
   train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
   test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
@@ -102,19 +93,16 @@ results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "
   
   rm(frameswithKNN)
   
-  randomGridSearch(innerTrainX = train, innerTestX = test, grid = grid)
+  results[[m]] = randomGridSearch(innerTrainX = train, innerTestX = test, grid = grid)
   
-  }
+}
   
-  stopCluster(cluster)
-  rm(cluster)
-
   processedResults = results %>% 
     reduce(left_join, by = c("alpha", "s.lambda_val")) %>% 
     select(., contains("score")) %>%
     transmute(Average = rowMeans(.)) %>%
     bind_cols(grid[,1:2], .)
-
+  
   alpha = as.numeric(processedResults[which.min(processedResults$Average), 1])
   lambda = as.integer(processedResults[which.min(processedResults$Average), 2])
   
@@ -124,15 +112,6 @@ results = foreach(m = 1:length(innerFolds), .packages = c("tidyverse", "pROC", "
 
 #...........................Prediction Script.................................................................................#
 #Requires new data samples. 
-
-#Load custom functions for function below.
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R")
 
 predict.NHL = function(training, newdata, finalParameters){
   
@@ -156,14 +135,46 @@ predict.NHL = function(training, newdata, finalParameters){
   
   rm(frameswithKNN)
   
-  model = baggedModel(train = training, test = newdata, label_train = training$ResultProper, alpha.a = finalParameters$alpha, s_lambda.a = finalParameters$lambda, calibrate = FALSE)
+  predictions = vector("list", nrow(finalParameters))
+  varImp = vector("list", nrow(finalParameters))
   
-  list(Prediction = model$Predictions, Variable.Importance = model$VariableImportance)
+  for (i in 1:nrow(finalParameters)){
+    
+  model = baggedModel(train = training, test = newdata, label_train = training$ResultProper, alpha.a = finalParameters$alpha[i], s_lambda.a = finalParameters$lambda[i], calibrate = FALSE)
+  predictions[[i]] = model$Predictions
+  varImp[[i]] = model$VariableImportance
+  
+  }
+  
+  finalPredictions.processed = predictions %>% reduce(cbind) %>% rowMeans(.)
+  finalVarImp.processed = varImp %>% reduce(left_join, by = "Variable") %>% processVarImp(.)
+  
+  list(Prediction = finalPredictions.processed, Variable.Importance = finalVarImp.processed)
 }
 
 #...........................Global.........................................#
 
-finalParameters = modelPipe.inner(mainTrain = allData, seed.a = 40689, iterations = 130)
+set.seed(12345)
+seeds.Model = sample(1:1000000000, 5)
+
+cluster = makeCluster(detectCores())
+setDefaultCluster(cluster)
+
+#Load packages on each cluster
+clusterEvalQ(cluster, c(library(caret), library(recipes), library(tidyverse), library(glmnet), 
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/modelPipe_inner.R"),
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")))
+
+finalParameters = parLapply(NULL, seeds.Model, fun = modelPipe.inner, mainTrain = allData, iterations = 90) %>% reduce(bind_rows)
+stopCluster(cluster)
+rm(cluster)
 
 predictions = predict.NHL(training = allData, newdata = newdata, finalParameters = finalParameters)
 
@@ -172,10 +183,3 @@ template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scri
   select(Team1, Team2, Highest.Seed)
 
 finalScores = template %>% bind_cols(., Prob.Win.HighestSeed = predictions$Prediction)
-
-#............................Log Loss 2019....................................#
-#0.9735544, :(
-#finalParameters_2018 = modelPipe.inner(mainTrain = allData_tmp, seed.a = 40689, iterations = 130)
-#predictions = predict.NHL(training = allData_tmp, newdata = newdata, finalParameters = finalParameters_2018)
-
-#logLoss(scores = predictions$Prediction, label = newdata_label)

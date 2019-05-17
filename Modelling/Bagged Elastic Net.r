@@ -18,8 +18,8 @@ library(boot)
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
   
-  set.seed(40689)
-  samples = caret::createResample(y = label_train, times = 35)
+  set.seed(3742301)
+  samples = caret::createResample(y = label_train, times = 30)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
   insample.pred = vector("list", length(samples))
@@ -65,6 +65,7 @@ baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate 
   
   
 }
+
 #..................................Platt Scaling/sigmoid........................................#
 #..................................Not used, makes model worse..........................#
 platt.scale = function(label.train, predicted.prob.train, predicted.prob.test){
@@ -310,7 +311,7 @@ modelPipe.outer = function(folds, lambda.final, alpha.final){
   
   VarImp = model$VariableImportance
   
-  list(LogLoss = logloss, VarImp = VarImp)
+  list(Predictions = model$Predictions, LogLoss = logloss, VarImp = VarImp)
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
@@ -319,7 +320,7 @@ modelPipe.inner = function(folds, seed.a, iterations){
   mainTrain = allData[folds[[1]], ]
   
   set.seed(seed.a)  
-  innerFolds = createFolds(y = mainTrain$ResultProper, k = 4)
+  innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
 
   #Create grid
   
@@ -327,7 +328,7 @@ modelPipe.inner = function(folds, seed.a, iterations){
   grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
   
   results = vector("list", length(grid))
-  
+
   for(m in 1:length(innerFolds)){
   
     train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
@@ -363,6 +364,7 @@ modelPipe.inner = function(folds, seed.a, iterations){
 
   list(alpha = alpha, lambda = lambda, validation.score = min(processedResults$Average)) 
   
+ 
 }
 
 #..........................Processed variable importance output from the base model................................#
@@ -380,11 +382,34 @@ processVarImp = function(varImpRaw){
   final
 }
 
+#..........................Ensemble-simple average with different seeds................................#
+train.ensemble = function(folds, seed.a, iterations, numofModels){
+  
+  set.seed(seed.a)
+  seeds.EachModel = sample(1:100000000, numofModels, replace = FALSE)
+  finalPredictions = vector("list", length(seeds.EachModel))
+  finalVarImp = vector("list", length(seeds.EachModel))
+  
+  for (k in 1:length(seeds.EachModel)){
+    
+    bestParam = modelPipe.inner(folds = folds, seed.a = seeds.EachModel[k], iterations = iterations)
+    finalParameters = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
+    
+    finalPredictions[[k]] = finalParameters$Predictions
+    finalVarImp[[k]] = finalParameters$VarImp
+    
+  }
+  
+  finalPredictions.processed = finalPredictions %>% reduce(cbind) %>% rowMeans(.)
+  finalVarImp.processed = finalVarImp %>% reduce(left_join, by = "Variable") %>% processVarImp(.)
+  
+  list(LogLoss = logLoss(scores = finalPredictions.processed, label = allData[-folds[[1]], ]$ResultProper), 
+       VarImp = finalVarImp.processed)
+}
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
-seeds = sample(1:1000000000, 50, replace = FALSE)
+seeds = sample(1:1000000000, 35, replace = FALSE)
 LogLoss.status = rep(as.numeric(NA), length(seeds))
-LogLoss.status.val = rep(as.numeric(NA), length(seeds))
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
 registerDoParallel(cluster)
@@ -394,17 +419,12 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   set.seed(seeds[p])
   allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
   
-  bestParam = modelPipe.inner(folds = allFolds, seed.a = seeds[p], iterations = 130)
-  finalResults = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
+  ensemble.model = train.ensemble(folds = allFolds, seed.a = seeds[p], iterations = 90, numofModels = 5)
   
-  LogLoss.status[p] = finalResults$LogLoss
-  LogLoss.status.val[p] = bestParam$validation.score
-  
-  VarImp = processVarImp(varImpRaw = as_tibble(finalResults$VarImp))
-  
+  LogLoss.status[p] = ensemble.model$LogLoss
+
   writeLines(paste("REPEAT:", p, "...", "Running Average Log Loss Test Set:", mean(LogLoss.status, na.rm = TRUE), sep = " "))
-  writeLines(paste("Running Average Log Loss Validation Set:", mean(LogLoss.status.val, na.rm = TRUE), sep = " "))
-  list(LogLoss = finalResults$LogLoss, VarImp = VarImp)
+  list(LogLoss = ensemble.model$LogLoss, VarImp = ensemble.model$VarImp)
   
 }
 
@@ -437,4 +457,4 @@ graphingParameters = tibble(LogLoss = finalLogLoss)
 
 ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "50 Repeats of Nested Cross Validation; Using Data up To 2019 Round 2", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
+  labs(title = "35 Repeats of Nested Cross Validation; Using Data up To 2019 Round 2", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
