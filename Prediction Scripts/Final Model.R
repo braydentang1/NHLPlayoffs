@@ -154,7 +154,7 @@ predict.NHL = function(training, newdata, finalParameters){
 
 #...........................Global.........................................#
 
-set.seed(12345)
+set.seed(40689)
 seeds.Model = sample(1:1000000000, 5)
 
 cluster = makeCluster(detectCores())
