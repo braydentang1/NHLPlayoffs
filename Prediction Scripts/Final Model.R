@@ -192,8 +192,8 @@ seeds.Model = sample(1:1000000000, 5)
 
 #.................Otherwise, run this instead..................................#
 
-finalParameters = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/finalParameters.rds")
-processedData = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/processedData.rds")
+finalParameters = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/RDS Objects/finalParameters.rds")
+processedData = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/RDS Objects/processedData.rds")
 
 predictions = predict.NHL(processedDataSet = processedData$Data, recipeParameters = processedData$recipeParameters, newdata = newdata, finalParameters = finalParameters)
 
