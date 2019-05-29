@@ -1,100 +1,100 @@
 Year,Up.To.Round,Team,CF.Playoff.PP,CA.Playoff.PP,FenFor.Playoff.PP,FenAga.Playoff.PP,SCF.Playoff.PP,SCA.Playoff.PP,HDSV.Playoff.PP,HDCF.Playoff.PP,HDCA.Playoff.PP,SavePercentage.Playoff.PP,PDO.Playoff.PP,xGF.Playoff.PP,xGA.Playoff.PP
-2008,quarter-finals,Montreal Canadiens,101.44,27.57,63.95,22.05,46.31,7.72,100,20.95,2.21,93.33,1.002,NA,NA
-2008,quarter-finals,Boston Bruins,106.22,11.42,71.95,11.42,44.54,9.14,100,13.71,5.71,100,1.075,NA,NA
-2008,quarter-finals,Ottawa Senators,119.08,12.21,82.44,9.16,36.64,0,NA,18.32,0,100,1.059,NA,NA
-2008,quarter-finals,Pittsburgh Penguins,126.09,19.4,103.46,16.17,72.74,11.32,100,37.18,6.47,100,1.118,NA,NA
-2008,quarter-finals,Philadelphia Flyers,118.95,18.3,92.52,16.27,65.07,10.17,100,22.37,4.07,100,1.119,NA,NA
-2008,quarter-finals,Washington Capitals,114.5,11.01,78.17,8.81,53.94,5.5,100,22.02,1.1,100,1.16,NA,NA
-2008,quarter-finals,New York Rangers,62.88,17.97,56.14,15.72,35.93,13.47,100,20.21,8.98,100,1.235,NA,NA
-2008,quarter-finals,New Jersey Devils,73.3,13.03,50.5,13.03,35.84,8.14,50,22.81,4.89,83.33,1.071,NA,NA
-2008,quarter-finals,Nashville Predators,69.94,31.29,46.01,25.77,33.13,11.04,100,9.2,1.84,92.31,1.028,NA,NA
-2008,quarter-finals,Detroit Red Wings,106.17,19.82,83.52,18.4,59.46,8.49,100,25.48,4.25,100,1.064,NA,NA
-2008,quarter-finals,Calgary Flames,65.42,13.47,51.95,9.62,30.79,5.77,NA,17.32,1.92,100,1.286,NA,NA
-2008,quarter-finals,San Jose Sharks,104.71,7.22,84.25,6.02,50.55,3.61,100,28.89,2.41,100,1.102,NA,NA
-2008,quarter-finals,Colorado Avalanche,83.04,16.37,66.67,14.04,46.78,7.02,33.33,18.71,3.51,83.33,0.973,NA,NA
-2008,quarter-finals,Minnesota Wild,136.83,3.26,112.4,3.26,58.64,1.63,0,27.69,1.63,50,0.556,NA,NA
-2008,quarter-finals,Dallas Stars,81.14,12.81,69.4,9.61,39.5,7.47,100,20.28,1.07,100,1.182,NA,NA
-2008,quarter-finals,Anaheim Ducks,93.53,15.3,69.72,11.9,47.61,6.8,100,15.3,1.7,100,1.179,NA,NA
-2008,semi-finals,Montreal Canadiens,101.69,23.97,71.25,18.78,51.82,7.12,100,27.85,3.24,90.48,1.01,NA,NA
-2008,semi-finals,Boston Bruins,106.22,11.42,71.95,11.42,44.54,9.14,100,13.71,5.71,100,1.075,NA,NA
-2008,semi-finals,Ottawa Senators,119.08,12.21,82.44,9.16,36.64,0,NA,18.32,0,100,1.059,NA,NA
-2008,semi-finals,Pittsburgh Penguins,110.36,17.51,91.33,13.7,63.93,9.13,100,31.21,3.81,100,1.12,NA,NA
-2008,semi-finals,Philadelphia Flyers,108.88,21.64,81.66,18.84,54.44,10.47,75,20.94,4.19,94.74,1.087,NA,NA
-2008,semi-finals,Washington Capitals,114.5,11.01,78.17,8.81,53.94,5.5,100,22.02,1.1,100,1.16,NA,NA
-2008,semi-finals,New York Rangers,87.87,10.98,63.37,9.29,46.47,8.45,100,22.81,4.22,100,1.132,NA,NA
-2008,semi-finals,New Jersey Devils,73.3,13.03,50.5,13.03,35.84,8.14,50,22.81,4.89,83.33,1.071,NA,NA
-2008,semi-finals,Nashville Predators,69.94,31.29,46.01,25.77,33.13,11.04,100,9.2,1.84,92.31,1.028,NA,NA
-2008,semi-finals,Detroit Red Wings,110.76,12.75,90.04,11.16,60.56,4.78,100,26.29,2.39,100,1.111,NA,NA
-2008,semi-finals,Calgary Flames,65.42,13.47,51.95,9.62,30.79,5.77,NA,17.32,1.92,100,1.286,NA,NA
-2008,semi-finals,San Jose Sharks,89.31,8.18,69.18,6.29,46.54,5.03,100,22.01,1.26,100,1.095,NA,NA
-2008,semi-finals,Colorado Avalanche,85.15,16.88,70.57,14.57,48.33,8.44,42.86,20.71,5.37,78.95,0.934,NA,NA
-2008,semi-finals,Minnesota Wild,136.83,3.26,112.4,3.26,58.64,1.63,0,27.69,1.63,50,0.556,NA,NA
-2008,semi-finals,Dallas Stars,73.6,13.93,61.01,9.95,35.14,7.96,50,17.9,1.33,80,0.995,NA,NA
-2008,semi-finals,Anaheim Ducks,93.53,15.3,69.72,11.9,47.61,6.8,100,15.3,1.7,100,1.179,NA,NA
-2008,finals,Montreal Canadiens,101.69,23.97,71.25,18.78,51.82,7.12,100,27.85,3.24,90.48,1.01,NA,NA
-2008,finals,Boston Bruins,106.22,11.42,71.95,11.42,44.54,9.14,100,13.71,5.71,100,1.075,NA,NA
-2008,finals,Ottawa Senators,119.08,12.21,82.44,9.16,36.64,0,NA,18.32,0,100,1.059,NA,NA
-2008,finals,Pittsburgh Penguins,109.34,19.12,86.04,16.13,59.15,9.56,75,27.49,4.78,94.12,1.085,NA,NA
-2008,finals,Philadelphia Flyers,104.02,19.01,77.62,16.37,53.86,10.03,66.67,20.59,4.75,90.91,1.049,NA,NA
-2008,finals,Washington Capitals,114.5,11.01,78.17,8.81,53.94,5.5,100,22.02,1.1,100,1.16,NA,NA
-2008,finals,New York Rangers,87.87,10.98,63.37,9.29,46.47,8.45,100,22.81,4.22,100,1.132,NA,NA
-2008,finals,New Jersey Devils,73.3,13.03,50.5,13.03,35.84,8.14,50,22.81,4.89,83.33,1.071,NA,NA
-2008,finals,Nashville Predators,69.94,31.29,46.01,25.77,33.13,11.04,100,9.2,1.84,92.31,1.028,NA,NA
-2008,finals,Detroit Red Wings,115.52,11.39,91.65,9.76,63.45,3.8,100,27.12,2.17,100,1.122,NA,NA
-2008,finals,Calgary Flames,65.42,13.47,51.95,9.62,30.79,5.77,NA,17.32,1.92,100,1.286,NA,NA
-2008,finals,San Jose Sharks,89.31,8.18,69.18,6.29,46.54,5.03,100,22.01,1.26,100,1.095,NA,NA
-2008,finals,Colorado Avalanche,85.15,16.88,70.57,14.57,48.33,8.44,42.86,20.71,5.37,78.95,0.934,NA,NA
-2008,finals,Minnesota Wild,136.83,3.26,112.4,3.26,58.64,1.63,0,27.69,1.63,50,0.556,NA,NA
-2008,finals,Dallas Stars,68.47,14.19,53.86,11.27,28.81,9.18,66.67,14.19,3.76,80,0.971,NA,NA
-2008,finals,Anaheim Ducks,93.53,15.3,69.72,11.9,47.61,6.8,100,15.3,1.7,100,1.179,NA,NA
-2009,quarter-finals,Montreal Canadiens,60.18,10.62,42.48,10.62,28.32,7.08,100,7.08,7.08,100,1,NA,NA
-2009,quarter-finals,Boston Bruins,94.52,18.9,71.41,16.8,39.91,8.4,100,21,2.1,100,1.182,NA,NA
-2009,quarter-finals,New York Rangers,80,9.55,54.93,5.97,37.01,4.78,NA,14.33,0,75,0.871,NA,NA
-2009,quarter-finals,Washington Capitals,111.24,7.63,83.97,6.54,64.34,2.18,100,26.17,1.09,100,1.109,NA,NA
-2009,quarter-finals,Carolina Hurricanes,87.42,10.93,72.85,9.71,31.57,3.64,NA,13.36,0,100,1.043,NA,NA
-2009,quarter-finals,New Jersey Devils,104.98,14.08,84.5,6.4,53.77,5.12,100,26.88,2.56,100,1.063,NA,NA
-2009,quarter-finals,Pittsburgh Penguins,93.78,15.63,61.22,15.63,49.49,6.51,0,23.44,3.91,85.71,0.968,NA,NA
-2009,quarter-finals,Philadelphia Flyers,111.79,16.98,87.74,11.32,58.02,7.08,100,29.72,1.42,100,1.085,NA,NA
-2009,quarter-finals,Anaheim Ducks,122.9,22.69,92.65,18.91,68.07,9.45,100,35.92,3.78,100,1.135,NA,NA
-2009,quarter-finals,San Jose Sharks,125.5,4.09,98.22,2.73,61.39,0,NA,34.1,0,NA,NA,NA,NA
-2009,quarter-finals,Columbus Blue Jackets,112.85,8.46,81.82,8.46,31.03,2.82,100,22.57,2.82,100,1.13,NA,NA
-2009,quarter-finals,Detroit Red Wings,125.54,11.59,94.64,11.59,40.56,0,NA,15.45,0,100,1.206,NA,NA
-2009,quarter-finals,St Louis Blues,98.78,7.6,74.46,4.56,53.19,7.6,100,18.24,4.56,100,1.032,NA,NA
-2009,quarter-finals,Vancouver Canucks,103.8,11.04,79.51,11.04,68.47,4.42,NA,24.29,0,100,1.174,NA,NA
-2009,quarter-finals,Calgary Flames,77.06,6.61,68.26,6.61,41.83,2.2,NA,24.22,0,100,1.095,NA,NA
-2009,quarter-finals,Chicago Blackhawks,89.82,10.31,70.67,7.36,25.03,4.42,100,10.31,1.47,100,1.206,NA,NA
-2009,semi-finals,Montreal Canadiens,60.18,10.62,42.48,10.62,28.32,7.08,100,7.08,7.08,100,1,NA,NA
-2009,semi-finals,Boston Bruins,88.96,15.8,68.18,11.64,34.92,8.31,100,18.29,1.66,92.86,1.03,NA,NA
-2009,semi-finals,New York Rangers,80,9.55,54.93,5.97,37.01,4.78,NA,14.33,0,75,0.871,NA,NA
-2009,semi-finals,Washington Capitals,102.22,7.92,74.87,7.2,57.59,1.44,100,21.6,0.72,100,1.147,NA,NA
-2009,semi-finals,Carolina Hurricanes,75.06,8.95,62.66,6.89,29.61,4.13,100,13.77,0.69,100,1.07,NA,NA
-2009,semi-finals,New Jersey Devils,104.98,14.08,84.5,6.4,53.77,5.12,100,26.88,2.56,100,1.063,NA,NA
-2009,semi-finals,Pittsburgh Penguins,96.39,15.01,70.42,13.85,49.06,4.04,50,20.78,2.31,87.5,1.015,NA,NA
-2009,semi-finals,Philadelphia Flyers,111.79,16.98,87.74,11.32,58.02,7.08,100,29.72,1.42,100,1.085,NA,NA
-2009,semi-finals,Anaheim Ducks,107.55,22.74,81.32,20.99,60.34,11.37,100,27.98,2.62,100,1.181,NA,NA
-2009,semi-finals,San Jose Sharks,125.5,4.09,98.22,2.73,61.39,0,NA,34.1,0,NA,NA,NA,NA
-2009,semi-finals,Columbus Blue Jackets,112.85,8.46,81.82,8.46,31.03,2.82,100,22.57,2.82,100,1.13,NA,NA
-2009,semi-finals,Detroit Red Wings,122.12,8.04,95.8,7.31,54.84,2.19,100,21.21,1.46,100,1.147,NA,NA
-2009,semi-finals,St Louis Blues,98.78,7.6,74.46,4.56,53.19,7.6,100,18.24,4.56,100,1.032,NA,NA
-2009,semi-finals,Vancouver Canucks,98.63,8.07,75.32,7.17,52,3.59,NA,20.62,0,85.71,1.054,NA,NA
-2009,semi-finals,Calgary Flames,77.06,6.61,68.26,6.61,41.83,2.2,NA,24.22,0,100,1.095,NA,NA
-2009,semi-finals,Chicago Blackhawks,94.46,9.75,70.47,7.5,33.74,4.5,100,15.74,0.75,100,1.221,NA,NA
-2009,finals,Montreal Canadiens,60.18,10.62,42.48,10.62,28.32,7.08,100,7.08,7.08,100,1,NA,NA
-2009,finals,Boston Bruins,88.96,15.8,68.18,11.64,34.92,8.31,100,18.29,1.66,92.86,1.03,NA,NA
-2009,finals,New York Rangers,80,9.55,54.93,5.97,37.01,4.78,NA,14.33,0,75,0.871,NA,NA
-2009,finals,Washington Capitals,102.22,7.92,74.87,7.2,57.59,1.44,100,21.6,0.72,100,1.147,NA,NA
-2009,finals,Carolina Hurricanes,78.09,9.12,64.41,6.84,31.92,4.56,100,14.82,1.14,100,1.068,NA,NA
-2009,finals,New Jersey Devils,104.98,14.08,84.5,6.4,53.77,5.12,100,26.88,2.56,100,1.063,NA,NA
-2009,finals,Pittsburgh Penguins,99.73,15.94,73.78,13.66,50.55,5.92,75,18.67,3.19,90.48,1.034,NA,NA
-2009,finals,Philadelphia Flyers,111.79,16.98,87.74,11.32,58.02,7.08,100,29.72,1.42,100,1.085,NA,NA
-2009,finals,Anaheim Ducks,107.55,22.74,81.32,20.99,60.34,11.37,100,27.98,2.62,100,1.181,NA,NA
-2009,finals,San Jose Sharks,125.5,4.09,98.22,2.73,61.39,0,NA,34.1,0,NA,NA,NA,NA
-2009,finals,Columbus Blue Jackets,112.85,8.46,81.82,8.46,31.03,2.82,100,22.57,2.82,100,1.13,NA,NA
-2009,finals,Detroit Red Wings,124.33,8.76,98.04,7.67,52.58,4.38,100,22.46,1.64,100,1.143,NA,NA
-2009,finals,St Louis Blues,98.78,7.6,74.46,4.56,53.19,7.6,100,18.24,4.56,100,1.032,NA,NA
-2009,finals,Vancouver Canucks,98.63,8.07,75.32,7.17,52,3.59,NA,20.62,0,85.71,1.054,NA,NA
-2009,finals,Calgary Flames,77.06,6.61,68.26,6.61,41.83,2.2,NA,24.22,0,100,1.095,NA,NA
-2009,finals,Chicago Blackhawks,97.24,11.24,72.51,8.99,32.6,6.18,66.67,15.74,1.69,90.91,1.113,NA,NA
+2008,quarter-finals,Montreal Canadiens,101.44,27.57,63.95,22.05,5.28,0.75,0,66.67,10,4.35,100,NA,NA
+2008,quarter-finals,Boston Bruins,106.22,11.42,71.95,11.42,5.36,0.93,0,100,11.76,4.35,100,NA,NA
+2008,quarter-finals,Ottawa Senators,119.08,12.21,82.44,9.16,6.44,0.1,0,100,12.5,0,100,NA,NA
+2008,quarter-finals,Pittsburgh Penguins,126.09,19.4,103.46,16.17,9.89,1.35,0,100,14.29,6.67,100,NA,NA
+2008,quarter-finals,Philadelphia Flyers,118.95,18.3,92.52,16.27,8.29,0.86,0,100,12.2,11.54,100,NA,NA
+2008,quarter-finals,Washington Capitals,114.5,11.01,78.17,8.81,7.98,0.51,0,100,20.69,9.52,100,NA,NA
+2008,quarter-finals,New York Rangers,62.88,17.97,56.14,15.72,5.1,1.58,0,100,36.36,0,100,NA,NA
+2008,quarter-finals,New Jersey Devils,73.3,13.03,50.5,13.03,6.08,1.27,1.63,80,28.57,14.29,100,NA,NA
+2008,quarter-finals,Nashville Predators,69.94,31.29,46.01,25.77,3.77,0.87,0,100,16.67,0,100,NA,NA
+2008,quarter-finals,Detroit Red Wings,106.17,19.82,83.52,18.4,7.27,0.88,0,100,8,4.76,100,NA,NA
+2008,quarter-finals,Calgary Flames,65.42,13.47,51.95,9.62,4.6,0.65,0,100,41.67,11.11,100,NA,NA
+2008,quarter-finals,San Jose Sharks,104.71,7.22,84.25,6.02,8.11,0.38,0,100,18.18,0,100,NA,NA
+2008,quarter-finals,Colorado Avalanche,83.04,16.37,66.67,14.04,5.69,0.98,2.34,66.67,16,11.76,100,NA,NA
+2008,quarter-finals,Minnesota Wild,136.83,3.26,112.4,3.26,9.44,0.13,1.63,66.67,8,3.45,NA,NA,NA
+2008,quarter-finals,Dallas Stars,81.14,12.81,69.4,9.61,6.96,0.42,0,100,30,4,100,NA,NA
+2008,quarter-finals,Anaheim Ducks,93.53,15.3,69.72,11.9,6.12,0.73,0,100,33.33,6.67,100,NA,NA
+2008,semi-finals,Montreal Canadiens,101.69,23.97,71.25,18.78,6.9,0.67,0,87.5,17.5,2.86,75,NA,NA
+2008,semi-finals,Boston Bruins,106.22,11.42,71.95,11.42,5.36,0.93,0,100,11.76,4.35,100,NA,NA
+2008,semi-finals,Ottawa Senators,119.08,12.21,82.44,9.16,6.44,0.1,0,100,12.5,0,100,NA,NA
+2008,semi-finals,Pittsburgh Penguins,110.36,17.51,91.33,13.7,8.34,0.93,0,100,15.87,3.57,100,NA,NA
+2008,semi-finals,Philadelphia Flyers,108.88,21.64,81.66,18.84,7.52,1.16,0.7,88.89,16,11.11,100,NA,NA
+2008,semi-finals,Washington Capitals,114.5,11.01,78.17,8.81,7.98,0.51,0,100,20.69,9.52,100,NA,NA
+2008,semi-finals,New York Rangers,87.87,10.98,63.37,9.29,6.69,0.85,0,100,17.65,5.26,100,NA,NA
+2008,semi-finals,New Jersey Devils,73.3,13.03,50.5,13.03,6.08,1.27,1.63,80,28.57,14.29,100,NA,NA
+2008,semi-finals,Nashville Predators,69.94,31.29,46.01,25.77,3.77,0.87,0,100,16.67,0,100,NA,NA
+2008,semi-finals,Detroit Red Wings,110.76,12.75,90.04,11.16,7.94,0.5,0,100,14.58,7.32,100,NA,NA
+2008,semi-finals,Calgary Flames,65.42,13.47,51.95,9.62,4.6,0.65,0,100,41.67,11.11,100,NA,NA
+2008,semi-finals,San Jose Sharks,89.31,8.18,69.18,6.29,6.55,0.39,0,100,15.69,0,100,NA,NA
+2008,semi-finals,Colorado Avalanche,85.15,16.88,70.57,14.57,6.08,1.41,3.07,63.64,17.07,11.54,100,NA,NA
+2008,semi-finals,Minnesota Wild,136.83,3.26,112.4,3.26,9.44,0.13,1.63,66.67,8,3.45,NA,NA,NA
+2008,semi-finals,Dallas Stars,73.6,13.93,61.01,9.95,5.64,0.57,0.66,85.71,30,8.33,100,NA,NA
+2008,semi-finals,Anaheim Ducks,93.53,15.3,69.72,11.9,6.12,0.73,0,100,33.33,6.67,100,NA,NA
+2008,finals,Montreal Canadiens,101.69,23.97,71.25,18.78,6.9,0.67,0,87.5,17.5,2.86,75,NA,NA
+2008,finals,Boston Bruins,106.22,11.42,71.95,11.42,5.36,0.93,0,100,11.76,4.35,100,NA,NA
+2008,finals,Ottawa Senators,119.08,12.21,82.44,9.16,6.44,0.1,0,100,12.5,0,100,NA,NA
+2008,finals,Pittsburgh Penguins,109.34,19.12,86.04,16.13,8.09,1.07,0.6,92.86,18.06,7.89,100,NA,NA
+2008,finals,Philadelphia Flyers,104.02,19.01,77.62,16.37,7.21,1.08,1.06,84.62,17.46,9.09,100,NA,NA
+2008,finals,Washington Capitals,114.5,11.01,78.17,8.81,7.98,0.51,0,100,20.69,9.52,100,NA,NA
+2008,finals,New York Rangers,87.87,10.98,63.37,9.29,6.69,0.85,0,100,17.65,5.26,100,NA,NA
+2008,finals,New Jersey Devils,73.3,13.03,50.5,13.03,6.08,1.27,1.63,80,28.57,14.29,100,NA,NA
+2008,finals,Nashville Predators,69.94,31.29,46.01,25.77,3.77,0.87,0,100,16.67,0,100,NA,NA
+2008,finals,Detroit Red Wings,115.52,11.39,91.65,9.76,8.07,0.4,0,100,16.22,7.14,100,NA,NA
+2008,finals,Calgary Flames,65.42,13.47,51.95,9.62,4.6,0.65,0,100,41.67,11.11,100,NA,NA
+2008,finals,San Jose Sharks,89.31,8.18,69.18,6.29,6.55,0.39,0,100,15.69,0,100,NA,NA
+2008,finals,Colorado Avalanche,85.15,16.88,70.57,14.57,6.08,1.41,3.07,63.64,17.07,11.54,100,NA,NA
+2008,finals,Minnesota Wild,136.83,3.26,112.4,3.26,9.44,0.13,1.63,66.67,8,3.45,NA,NA,NA
+2008,finals,Dallas Stars,68.47,14.19,53.86,11.27,4.44,0.77,1.25,76.47,27.08,9.09,100,NA,NA
+2008,finals,Anaheim Ducks,93.53,15.3,69.72,11.9,6.12,0.73,0,100,33.33,6.67,100,NA,NA
+2009,quarter-finals,Montreal Canadiens,60.18,10.62,42.48,10.62,3.01,0.96,0,NA,0,0,100,NA,NA
+2009,quarter-finals,Boston Bruins,94.52,18.9,71.41,16.8,5.7,0.48,0,100,18.18,18.18,100,NA,NA
+2009,quarter-finals,New York Rangers,80,9.55,54.93,5.97,4.62,0.25,0,80,21.05,0,NA,NA,NA
+2009,quarter-finals,Washington Capitals,111.24,7.63,83.97,6.54,8.49,0.31,0,100,13.64,0,100,NA,NA
+2009,quarter-finals,Carolina Hurricanes,87.42,10.93,72.85,9.71,6.04,0.48,0,100,11.11,0,100,NA,NA
+2009,quarter-finals,New Jersey Devils,104.98,14.08,84.5,6.4,8.17,0.38,0,100,12.5,0,100,NA,NA
+2009,quarter-finals,Pittsburgh Penguins,93.78,15.63,61.22,15.63,6.24,0.94,1.3,75,14.29,6.67,100,NA,NA
+2009,quarter-finals,Philadelphia Flyers,111.79,16.98,87.74,11.32,9.3,0.69,0,100,14.81,0,100,NA,NA
+2009,quarter-finals,Anaheim Ducks,122.9,22.69,92.65,18.91,10.54,1.02,0,100,20.83,0,100,NA,NA
+2009,quarter-finals,San Jose Sharks,125.5,4.09,98.22,2.73,9.52,0.04,0,100,13.33,0,NA,NA,NA
+2009,quarter-finals,Columbus Blue Jackets,112.85,8.46,81.82,8.46,5.58,0.45,0,100,30,0,100,NA,NA
+2009,quarter-finals,Detroit Red Wings,125.54,11.59,94.64,11.59,5.78,0.28,0,100,28.57,15,100,NA,NA
+2009,quarter-finals,St Louis Blues,98.78,7.6,74.46,4.56,7.01,0.52,0,100,5,0,NA,NA,NA
+2009,quarter-finals,Vancouver Canucks,103.8,11.04,79.51,11.04,7.58,0.61,0,100,15.38,20,100,NA,NA
+2009,quarter-finals,Calgary Flames,77.06,6.61,68.26,6.61,5.99,0.25,0,100,16.67,0,100,NA,NA
+2009,quarter-finals,Chicago Blackhawks,89.82,10.31,70.67,7.36,4.71,0.44,0,100,40,12.5,100,NA,NA
+2009,semi-finals,Montreal Canadiens,60.18,10.62,42.48,10.62,3.01,0.96,0,NA,0,0,100,NA,NA
+2009,semi-finals,Boston Bruins,88.96,15.8,68.18,11.64,6.09,0.57,0,80,13.33,7.14,100,NA,NA
+2009,semi-finals,New York Rangers,80,9.55,54.93,5.97,4.62,0.25,0,80,21.05,0,NA,NA,NA
+2009,semi-finals,Washington Capitals,102.22,7.92,74.87,7.2,7.18,0.28,0,100,18.64,0,100,NA,NA
+2009,semi-finals,Carolina Hurricanes,75.06,8.95,62.66,6.89,5.4,0.43,0,100,16.67,0,100,NA,NA
+2009,semi-finals,New Jersey Devils,104.98,14.08,84.5,6.4,8.17,0.38,0,100,12.5,0,100,NA,NA
+2009,semi-finals,Pittsburgh Penguins,96.39,15.01,70.42,13.85,6.56,0.65,0.58,91.67,22.45,4.65,87.5,NA,NA
+2009,semi-finals,Philadelphia Flyers,111.79,16.98,87.74,11.32,9.3,0.69,0,100,14.81,0,100,NA,NA
+2009,semi-finals,Anaheim Ducks,107.55,22.74,81.32,20.99,9.08,1.28,0,100,23.91,8,100,NA,NA
+2009,semi-finals,San Jose Sharks,125.5,4.09,98.22,2.73,9.52,0.04,0,100,13.33,0,NA,NA,NA
+2009,semi-finals,Columbus Blue Jackets,112.85,8.46,81.82,8.46,5.58,0.45,0,100,30,0,100,NA,NA
+2009,semi-finals,Detroit Red Wings,122.12,8.04,95.8,7.31,7.04,0.31,0,100,20.83,8.51,100,NA,NA
+2009,semi-finals,St Louis Blues,98.78,7.6,74.46,4.56,7.01,0.52,0,100,5,0,NA,NA,NA
+2009,semi-finals,Vancouver Canucks,98.63,8.07,75.32,7.17,6.91,0.37,0,88.89,26.67,11.54,100,NA,NA
+2009,semi-finals,Calgary Flames,77.06,6.61,68.26,6.61,5.99,0.25,0,100,16.67,0,100,NA,NA
+2009,semi-finals,Chicago Blackhawks,94.46,9.75,70.47,7.5,5.48,0.38,0,100,35.71,12.82,100,NA,NA
+2009,finals,Montreal Canadiens,60.18,10.62,42.48,10.62,3.01,0.96,0,NA,0,0,100,NA,NA
+2009,finals,Boston Bruins,88.96,15.8,68.18,11.64,6.09,0.57,0,80,13.33,7.14,100,NA,NA
+2009,finals,New York Rangers,80,9.55,54.93,5.97,4.62,0.25,0,80,21.05,0,NA,NA,NA
+2009,finals,Washington Capitals,102.22,7.92,74.87,7.2,7.18,0.28,0,100,18.64,0,100,NA,NA
+2009,finals,Carolina Hurricanes,78.09,9.12,64.41,6.84,5.37,0.45,0,100,13.51,2,100,NA,NA
+2009,finals,New Jersey Devils,104.98,14.08,84.5,6.4,8.17,0.38,0,100,12.5,0,100,NA,NA
+2009,finals,Pittsburgh Penguins,99.73,15.94,73.78,13.66,6.46,0.7,0.46,93.33,21.21,3.51,88.89,NA,NA
+2009,finals,Philadelphia Flyers,111.79,16.98,87.74,11.32,9.3,0.69,0,100,14.81,0,100,NA,NA
+2009,finals,Anaheim Ducks,107.55,22.74,81.32,20.99,9.08,1.28,0,100,23.91,8,100,NA,NA
+2009,finals,San Jose Sharks,125.5,4.09,98.22,2.73,9.52,0.04,0,100,13.33,0,NA,NA,NA
+2009,finals,Columbus Blue Jackets,112.85,8.46,81.82,8.46,5.58,0.45,0,100,30,0,100,NA,NA
+2009,finals,Detroit Red Wings,124.33,8.76,98.04,7.67,7.66,0.36,0,100,19.7,9.09,100,NA,NA
+2009,finals,St Louis Blues,98.78,7.6,74.46,4.56,7.01,0.52,0,100,5,0,NA,NA,NA
+2009,finals,Vancouver Canucks,98.63,8.07,75.32,7.17,6.91,0.37,0,88.89,26.67,11.54,100,NA,NA
+2009,finals,Calgary Flames,77.06,6.61,68.26,6.61,5.99,0.25,0,100,16.67,0,100,NA,NA
+2009,finals,Chicago Blackhawks,97.24,11.24,72.51,8.99,5.81,0.48,0.56,92.86,35.14,10.91,100,NA,NA
 2010,quarter-finals,Montreal Canadiens,88.26,17.4,65.88,14.92,47.24,8.7,33.33,23.62,4.97,75,0.912,5.46,0.93
 2010,quarter-finals,Washington Capitals,129.28,13.66,93.55,9.46,71.47,7.36,NA,25.23,0,100,1.016,8,0.51
 2010,quarter-finals,Philadelphia Flyers,96.18,8.24,79.69,5.5,52.21,4.12,50,23.36,2.75,50,0.7,7.34,0.42
@@ -551,3 +551,7 @@ Year,Up.To.Round,Team,CF.Playoff.PP,CA.Playoff.PP,FenFor.Playoff.PP,FenAga.Playo
 2019,semi-finals,St Louis Blues,90.6,7.95,69.93,7.95,54.04,4.77,66.67,19.07,4.77,80,0.869,6.53,0.68
 2019,semi-finals,Colorado Avalanche,58.52,16.51,34.51,15.01,31.51,9,100,12.01,3,100,1.111,3.28,1.91
 2019,semi-finals,San Jose Sharks,102.8,9.52,57.11,7.62,55.21,1.9,100,34.27,1.9,100,1.087,6.29,0.43
+2019,finals,Carolina Hurricanes,112.73,9.8,90.67,9.8,46.56,4.9,NA,26.96,0,100,1.033,9.27,0.43
+2019,finals,Boston Bruins,99.35,14.61,87.66,14.61,61.36,5.84,NA,46.75,0,100,1.304,9.99,0.53
+2019,finals,San Jose Sharks,72.52,23.31,64.75,23.31,38.85,10.36,100,18.13,2.59,100,1.125,6.75,1.1
+2019,finals,St Louis Blues,93.86,19.55,66.49,17.6,39.11,7.82,0,21.51,1.96,88.89,1.074,6.29,0.95

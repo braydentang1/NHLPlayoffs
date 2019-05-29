@@ -15,8 +15,15 @@ function(traindata, testdata, standardize = FALSE){
     
   }else{
     
-    pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(.) 
+    if(nrow(newdata) == 1){
     
+    pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(., rownames = "id") %>% spread(., key = "id", value = value)
+    
+    }else{
+      
+      pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(.)
+      
+    }
   }
   
   

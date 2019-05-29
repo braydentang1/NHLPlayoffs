@@ -146,7 +146,8 @@ template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
 allData = bind_rows(lapply(2006:2018, FUN = getData)) %>%
           bind_rows(lapply(2019, FUN = getData.current, round = "quarter-finals")) %>%
           bind_rows(lapply(2019, FUN = getData.current, round = "semi-finals")) %>%
-          bind_rows(lapply(2019, FUN = getData.current, round = "finals"))
+          bind_rows(lapply(2019, FUN = getData.current, round = "finals")) %>%
+          bind_rows(tibble(Year = 2019, Teams = "Boston Bruins - St. Louis Blues", Odds.HighestSeed = 1.99, Odds.LowestSeed = 3.30))
 
 template = template %>% 
                 rowwise %>%

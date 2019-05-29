@@ -36,7 +36,7 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
 #...................................Engineering of some features..................#
 
 allData = allData %>% 
-  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2,3,3)))) %>%
+  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),14)))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
   mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
@@ -110,27 +110,34 @@ for(m in 1:length(innerFolds)){
   
 }
 
+#...........................Preprocess all the data; give the recipe parameters for all newdata........#
+
+preProcessData = function(data){
+  
+  recipe.parameters = prep(preProcess.recipe(data), training = data)
+  
+  processedDataSet = bake(recipe.parameters, new_data = data) 
+  
+  list(Data = processedDataSet, recipeParameters = recipe.parameters)
+}
+
 #...........................Prediction Script.................................................................................#
 #Requires new data samples. 
 
-predict.NHL = function(training, newdata, finalParameters){
+predict.NHL = function(processedDataSet, recipeParameters, newdata, finalParameters){
   
-  recipe.parameters = prep(preProcess.recipe(training), training = training)
+  newdata = bake(recipeParameters, new_data = newdata)
   
-  training = bake(recipe.parameters, new_data = training)
+  frameswithPCA = addPCA_variables(traindata = processedDataSet, testdata = newdata, standardize = FALSE)
   
-  newdata = newdata %>% bake(recipe.parameters, new_data = .)
-  
-  frameswithPCA = addPCA_variables(traindata = training, testdata = newdata, standardize = FALSE)
-  
-  training = frameswithPCA$train
+  processedDataSet = frameswithPCA$train
   newdata = frameswithPCA$test
   
   rm(frameswithPCA)
   
-  frameswithKNN = addKNN_variables(traindata = training, testdata = newdata, distances = TRUE)
+  frameswithKNN = addKNN_variables(traindata = processedDataSet, testdata = newdata, distances = TRUE, include_PCA = FALSE)
   
-  training = frameswithKNN$train
+  processedDataSet = frameswithKNN$train
   newdata = frameswithKNN$test
   
   rm(frameswithKNN)
@@ -140,7 +147,7 @@ predict.NHL = function(training, newdata, finalParameters){
   
   for (i in 1:nrow(finalParameters)){
     
-  model = baggedModel(train = training, test = newdata, label_train = training$ResultProper, alpha.a = finalParameters$alpha[i], s_lambda.a = finalParameters$lambda[i], calibrate = FALSE)
+  model = baggedModel(train = processedDataSet, test = newdata, label_train = processedDataSet$ResultProper, alpha.a = finalParameters$alpha[i], s_lambda.a = finalParameters$lambda[i], calibrate = FALSE)
   predictions[[i]] = model$Predictions
   varImp[[i]] = model$VariableImportance
   
@@ -157,29 +164,41 @@ predict.NHL = function(training, newdata, finalParameters){
 set.seed(40689)
 seeds.Model = sample(1:1000000000, 5)
 
-cluster = makeCluster(detectCores())
-setDefaultCluster(cluster)
+#...............If you want to retrain the model, uncomment this and run.................#
+
+#cluster = makeCluster(detectCores(), outfile = "messages.txt")
+#setDefaultCluster(cluster)
 
 #Load packages on each cluster
-clusterEvalQ(cluster, c(library(caret), library(recipes), library(tidyverse), library(glmnet), 
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/modelPipe_inner.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")))
+#clusterEvalQ(cluster, c(library(caret), library(recipes), library(tidyverse), library(glmnet),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/modelPipe_inner.R"),
+                        # source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")))
 
-finalParameters = parLapply(NULL, seeds.Model, fun = modelPipe.inner, mainTrain = allData, iterations = 90) %>% reduce(bind_rows)
-stopCluster(cluster)
-rm(cluster)
+#finalParameters = parLapply(NULL, seeds.Model, fun = modelPipe.inner, mainTrain = allData, iterations = 90) %>% reduce(bind_rows)
+#stopCluster(cluster)
+#rm(cluster)
 
-predictions = predict.NHL(training = allData, newdata = newdata, finalParameters = finalParameters)
+#saveRDS(finalParameters, file = "finalParameters.rds")
+
+#processedData = preProcessData(data = allData)
+#saveRDS(processedData, file = "processedData.rds")
+
+#.................Otherwise, run this instead..................................#
+
+finalParameters = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/finalParameters.rds")
+processedData = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/processedData.rds")
+
+predictions = predict.NHL(processedDataSet = processedData$Data, recipeParameters = processedData$recipeParameters, newdata = newdata, finalParameters = finalParameters)
 
 template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
-  filter(Year == 2019, Round == "finals") %>%
+  filter(Year == 2019, Round == "stanley-cup-final") %>%
   select(Team1, Team2, Highest.Seed)
 
 finalScores = template %>% bind_cols(., Prob.Win.HighestSeed = predictions$Prediction)

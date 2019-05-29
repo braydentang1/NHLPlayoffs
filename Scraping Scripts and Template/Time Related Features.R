@@ -182,21 +182,20 @@ getData.nst.Time = function(year, round, start, end, event = FALSE){
 
 #If you run this too many times, expect your IP address to be blocked on NaturalStatTrick for 24 hours because the site can't handle too much traffic.
 
+allData = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = FALSE, SIMPLIFY = FALSE))
+Sys.sleep(500)
+allData.powerplay = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = "powerplay", SIMPLIFY = FALSE))
+Sys.sleep(500)
+allData.penaltykill = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = "penaltykill", SIMPLIFY = FALSE))
 
-#allData = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = FALSE, SIMPLIFY = FALSE))
-#Sys.sleep(500)
-#allData.powerplay = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = "powerplay", SIMPLIFY = FALSE))
-#Sys.sleep(500)
-#allData.penaltykill = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = "penaltykill", SIMPLIFY = FALSE))
+setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data")
+write_csv(allData, "TimeData.csv")
+write_csv(allData.powerplay, "TimeData_PowerPlay.csv")
+write_csv(allData.penaltykill, "TimeData_PenaltyKill.csv")
 
-#setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data")
-#write_csv(allData, "TimeData.csv")
-#write_csv(allData.powerplay, "TimeData_PowerPlay.csv")
-#write_csv(allData.penaltykill, "TimeData_PenaltyKill.csv")
-
-allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData.csv")
-allData.powerplay = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PowerPlay.csv")
-allData.penaltykill = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PenaltyKill.csv")
+#allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData.csv")
+#allData.powerplay = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PowerPlay.csv")
+#allData.penaltykill = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PenaltyKill.csv")
 
 findMatch = function(team.1, team.2, stat, data, highest.seed, round){
   
