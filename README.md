@@ -1,9 +1,7 @@
 # NHLPlayoffs
 A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-With the addition of the 2019 playoff data up to Round 2; log loss sits at 0.66292 with a 95% confidence interval given by via. Bootstrapping: [0.65394, 0.67074].
-
-Using only 2018 and older data, log loss is 0.6542 with a 95% confidence interval given by via. Bootstrapping: [0.64575, 0.66168]. 2019 data makes the model perform worse, on average. 
+With the addition of the 2019 playoff data up to Round 3; log loss sits at 0.65806 with a 95% confidence interval given by via. Bootstrapping: [0.65054, 0.66506].
 
 ![Alt text](https://github.com/braydentang1/NHLPlayoffs/blob/master/Histogram.jpeg)
 

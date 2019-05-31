@@ -19,7 +19,7 @@ library(boot)
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
   
   set.seed(3742301)
-  samples = caret::createResample(y = label_train, times = 30)
+  samples = caret::createResample(y = label_train, times = 20)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
   insample.pred = vector("list", length(samples))
@@ -118,8 +118,15 @@ addPCA_variables = function(traindata, testdata, standardize = FALSE){
     
   }else{
     
-    pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(.) 
-    
+    if(nrow(testdata) == 1){
+      
+      pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(., rownames = "id") %>% spread(., key = "id", value = value)
+      
+    }else{
+      
+      pca_newdata = predict(pca_parameters, newdata = testdata_tmp)[,1:5] %>% as_tibble(.)
+      
+    }
   }
   
   
@@ -203,7 +210,7 @@ allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data 
 #...................................Engineering of some features..................#
 
 allData = allData %>% 
-  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2)))) %>%
+  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2,3,3)))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
   mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
@@ -408,7 +415,7 @@ train.ensemble = function(folds, seed.a, iterations, numofModels){
 }
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
-seeds = sample(1:1000000000, 35, replace = FALSE)
+seeds = sample(1:1000000000, 40, replace = FALSE)
 LogLoss.status = rep(as.numeric(NA), length(seeds))
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
@@ -417,7 +424,7 @@ registerDoParallel(cluster)
 results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse", "glmnet", "caret", "pROC", "recipes", "fastknn")) %dopar% {
   
   set.seed(seeds[p])
-  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
+  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.80)
   
   ensemble.model = train.ensemble(folds = allFolds, seed.a = seeds[p], iterations = 90, numofModels = 5)
   
@@ -457,4 +464,4 @@ graphingParameters = tibble(LogLoss = finalLogLoss)
 
 ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "35 Repeats of Nested Cross Validation; Using Data up To 2019 Round 2", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
+  labs(title = "40 Repeats of Nested Cross Validation; Using Data up To 2019 Round 3", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
