@@ -4,15 +4,7 @@ library(recipes)
 library(caret)
 library(parallel)
 
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R")
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/processVarImp.R")
-
+source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R")
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
 
 #..................................Read data in....................................#
@@ -57,58 +49,8 @@ allData = allData %>%
 
 #..................................Separate out the new observations from all prior data........................#
 
-newdata = allData %>% .[208:209,] %>% mutate(ResultProper = rep(NA, nrow(.)))
-allData = allData[1:207, ]
-
-#.........................Define inner pipe for the inner cross validation...........................................#
-
-modelPipe.inner = function(mainTrain, seed.a, iterations){
-  
-  set.seed(seed.a)  
-  innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
-
-  results = vector("list", length(innerFolds))
-  #Create grid
-  
-  set.seed(seed.a)  
-  grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
-
-for(m in 1:length(innerFolds)){
-  
-  train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
-  train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
-  test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
-  
-  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
-  
-  train = frameswithPCA$train
-  test = frameswithPCA$test
-  
-  rm(train.param, frameswithPCA)
-  
-  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
-  
-  train = frameswithKNN$train
-  test = frameswithKNN$test
-  
-  rm(frameswithKNN)
-  
-  results[[m]] = randomGridSearch(innerTrainX = train, innerTestX = test, grid = grid)
-  
-}
-  
-  processedResults = results %>% 
-    reduce(left_join, by = c("alpha", "s.lambda_val")) %>% 
-    select(., contains("score")) %>%
-    transmute(Average = rowMeans(.)) %>%
-    bind_cols(grid[,1:2], .)
-  
-  alpha = as.numeric(processedResults[which.min(processedResults$Average), 1])
-  lambda = as.integer(processedResults[which.min(processedResults$Average), 2])
-  
-  list(alpha = alpha, lambda = lambda, validation.score = min(processedResults$Average)) 
-  
-}
+newdata = allData %>% filter(is.na(ResultProper))
+allData = allData %>% filter(!is.na(ResultProper))
 
 #...........................Preprocess all the data; give the recipe parameters for all newdata........#
 
@@ -172,24 +114,16 @@ setDefaultCluster(cluster)
 
 # Load packages on each cluster
 clusterEvalQ(cluster, c(library(caret), library(recipes), library(tidyverse), library(glmnet),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addKNN_variables.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/addPCA_variables.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/randomGridSearch.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/baggedModel.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/logLoss.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/plattScale.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/modelPipe_inner.R"),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/preProcess_recipe.R")))
+                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R")))
 
 finalParameters = parLapply(NULL, seeds.Model, fun = modelPipe.inner, mainTrain = allData, iterations = 90) %>% reduce(bind_rows)
 stopCluster(cluster)
 rm(cluster)
 
-saveRDS(finalParameters, file = "finalParameters-sf.rds")
+saveRDS(finalParameters, file = "finalParameters.rds")
 
 processedData = preProcessData(data = allData)
-saveRDS(processedData, file = "processedData-sf.rds")
+saveRDS(processedData, file = "processedData.rds")
 
 #.................Otherwise, run this instead..................................#
 
@@ -201,7 +135,7 @@ saveRDS(processedData, file = "processedData-sf.rds")
 predictions = predict.NHL(processedDataSet = processedData$Data, recipeParameters = processedData$recipeParameters, newdata = newdata, finalParameters = finalParameters)
 
 template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
-  filter(Year == 2019, Round == "finals") %>%
+  filter(Year == 2019, Round == "stanley-cup-finals") %>%
   select(Team1, Team2, Highest.Seed)
 
 finalScores = template %>% bind_cols(., Prob.Win.HighestSeed = predictions$Prediction)
