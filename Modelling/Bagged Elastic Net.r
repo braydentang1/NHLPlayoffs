@@ -415,7 +415,7 @@ train.ensemble = function(folds, seed.a, iterations, numofModels, allData){
 }
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
-seeds = sample(1:1000000000, 45, replace = FALSE)
+seeds = sample(1:1000000000, 40, replace = FALSE)
 LogLoss.status = rep(as.numeric(NA), length(seeds))
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
