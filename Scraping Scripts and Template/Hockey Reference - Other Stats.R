@@ -57,7 +57,7 @@ grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
   mainpage
 }
 
-grabPageandGamesofSpecificTeam = function(team, year){
+grabPageandGamesofSpecificTeam = function(team, year, lookup_Accronyms){
   teamAcc = as.character(lookup_Accronyms[which(lookup_Accronyms$FullName == team),2])
   
   list(page = read_html(paste("https://www.hockey-reference.com/teams/",teamAcc,"/",year,".html", sep="")),
@@ -304,7 +304,7 @@ givePastNumberofGames = unlist(mapply(FUN = processData.numberofGames, year = te
 
 allData = bind_rows(lapply(2006:2019, FUN = getTeamNames)) 
 
-allTeamPages = mapply(FUN = grabPageandGamesofSpecificTeam, team = allData$Team, year = allData$Year, SIMPLIFY = FALSE)
+allTeamPages = mapply(FUN = grabPageandGamesofSpecificTeam, team = allData$Team, year = allData$Year, MoreArgs = list(lookup_Accronyms = lookup_Accronyms), SIMPLIFY = FALSE)
 allWinners = lapply(2006:2019, function(year){read_html(paste("https://www.hockey-reference.com/playoffs/NHL_",year, ".html", sep = ""))})
 giveWinners = unlist(mapply(FUN = getWinner, year = template$Year, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, MoreArgs = list(pages = allWinners), SIMPLIFY = FALSE))
 

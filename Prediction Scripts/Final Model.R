@@ -135,7 +135,7 @@ saveRDS(processedData, file = "processedData.rds")
 predictions = predict.NHL(processedDataSet = processedData$Data, recipeParameters = processedData$recipeParameters, newdata = newdata, finalParameters = finalParameters)
 
 template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
-  filter(Year == 2019, Round == "stanley-cup-finals") %>%
+  filter(Year == 2019, Round == "stanley-cup-final") %>%
   select(Team1, Team2, Highest.Seed)
 
 finalScores = template %>% bind_cols(., Prob.Win.HighestSeed = predictions$Prediction)

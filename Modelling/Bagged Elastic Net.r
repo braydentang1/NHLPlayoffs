@@ -286,7 +286,7 @@ randomGridSearch = function(innerTrainX, innerTestX, grid){
 
 #.........................Define outer pipe for the outer cross validation fold...........................................#
 
-modelPipe.outer = function(folds, lambda.final, alpha.final){
+modelPipe.outer = function(folds, lambda.final, alpha.final, allData){
   
   train.param = prep(preProcess.recipe(trainX = allData[folds[[1]],]), training = allData[folds[[1]],])
   train = bake(train.param, new_data = allData[folds[[1]], ])
@@ -322,7 +322,7 @@ modelPipe.outer = function(folds, lambda.final, alpha.final){
 }
 
 #.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(folds, seed.a, iterations){
+modelPipe.inner = function(folds, seed.a, iterations, allData){
   
   mainTrain = allData[folds[[1]], ]
   
@@ -399,8 +399,8 @@ train.ensemble = function(folds, seed.a, iterations, numofModels){
   
   for (k in 1:length(seeds.EachModel)){
     
-    bestParam = modelPipe.inner(folds = folds, seed.a = seeds.EachModel[k], iterations = iterations)
-    finalParameters = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha)
+    bestParam = modelPipe.inner(folds = folds, seed.a = seeds.EachModel[k], iterations = iterations, allData = allData)
+    finalParameters = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha, allData = allData)
     
     finalPredictions[[k]] = finalParameters$Predictions
     finalVarImp[[k]] = finalParameters$VarImp
@@ -415,7 +415,7 @@ train.ensemble = function(folds, seed.a, iterations, numofModels){
 }
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
-seeds = sample(1:1000000000, 40, replace = FALSE)
+seeds = sample(1:1000000000, 45, replace = FALSE)
 LogLoss.status = rep(as.numeric(NA), length(seeds))
 
 cluster = makeCluster(detectCores(), outfile = "messages.txt")
