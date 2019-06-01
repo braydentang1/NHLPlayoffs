@@ -390,7 +390,7 @@ processVarImp = function(varImpRaw){
 }
 
 #..........................Ensemble-simple average with different seeds................................#
-train.ensemble = function(folds, seed.a, iterations, numofModels){
+train.ensemble = function(folds, seed.a, iterations, numofModels, allData){
   
   set.seed(seed.a)
   seeds.EachModel = sample(1:100000000, numofModels, replace = FALSE)
@@ -426,7 +426,7 @@ results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse"
   set.seed(seeds[p])
   allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.80)
   
-  ensemble.model = train.ensemble(folds = allFolds, seed.a = seeds[p], iterations = 90, numofModels = 5)
+  ensemble.model = train.ensemble(folds = allFolds, seed.a = seeds[p], iterations = 90, numofModels = 5, allData = allData)
   
   LogLoss.status[p] = ensemble.model$LogLoss
 
