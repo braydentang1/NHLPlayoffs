@@ -10,8 +10,8 @@ library(pROC)
 library(tidyverse)
 library(recipes)
 library(moments)
-library(doParallel)
-library(foreach)
+library(parallel)
+library(rBayesianOptimization)
 library(fastknn)
 library(boot)
 
@@ -261,50 +261,12 @@ preProcess.recipe = function(trainX){
   mainRecipe
 }
 
-#........................Define random search function..................................#
-
-randomGridSearch = function(innerTrainX, innerTestX, grid){
-  
-  for(m in 1:nrow(grid)){
-    
-    writeLines(paste("Iteration:", m, sep = " "))
-    
-    modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]), calibrate = FALSE)
-    
-    #For AUROC
-    #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
-    
-    #For LogLoss
-    grid[m, 3] = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper)
-    
-  }
-
-  grid
-  
-}
-
 #.........................Define outer pipe for the outer cross validation fold...........................................#
 
-modelPipe.outer = function(folds, lambda.final, alpha.final, allData){
+modelPipe.outer = function(lambda.final, alpha.final, processedData){
   
-  train.param = prep(preProcess.recipe(trainX = allData[folds[[1]],]), training = allData[folds[[1]],])
-  train = bake(train.param, new_data = allData[folds[[1]], ])
-  test = bake(train.param, new_data = allData[-folds[[1]], ])
-  
-  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
-  
-  train = frameswithPCA$train
-  test = frameswithPCA$test
-  
-  rm(train.param, frameswithPCA)
-  
-  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
-  
-  train = frameswithKNN$train
-  test = frameswithKNN$test
-  
-  rm(frameswithKNN)
+  train = processedData$Train
+  test = processedData$Test
   
   model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
                       alpha.a = alpha.final, s_lambda.a = lambda.final, calibrate = FALSE)
@@ -321,58 +283,32 @@ modelPipe.outer = function(folds, lambda.final, alpha.final, allData){
   list(Predictions = model$Predictions, LogLoss = logloss, VarImp = VarImp)
 }
 
-#.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(folds, seed.a, iterations, allData){
-  
-  mainTrain = allData[folds[[1]], ]
-  
-  set.seed(seed.a)  
-  innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
+#.............................Process Folds...................................#
 
-  #Create grid
+processFolds = function(fold.index, mainTrain){
   
-  set.seed(seed.a)  
-  grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
+  train.param = prep(preProcess.recipe(trainX = mainTrain[fold.index,]), training = mainTrain[fold.index,])
+  train = bake(train.param, new_data = mainTrain[fold.index,])
+  test = bake(train.param, new_data = mainTrain[-fold.index,])
   
-  results = vector("list", length(grid))
-
-  for(m in 1:length(innerFolds)){
+  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
   
-    train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
-    train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
-    test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
+  train = frameswithPCA$train
+  test = frameswithPCA$test
   
-    frameswithPCA = addPCA_variables(traindata = train, testdata = test)
+  rm(train.param, frameswithPCA)
   
-    train = frameswithPCA$train
-    test = frameswithPCA$test
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
   
-    rm(train.param, frameswithPCA)
+  train = frameswithKNN$train
+  test = frameswithKNN$test
   
-    frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
+  rm(frameswithKNN)
   
-    train = frameswithKNN$train
-    test = frameswithKNN$test
+  list(Train = train, Test = test)
   
-    rm(frameswithKNN)
-  
-    results[[m]] = randomGridSearch(innerTrainX = train, innerTestX = test, grid = grid)
-  
-  }
-  
-  processedResults = results %>% 
-    reduce(left_join, by = c("alpha", "s.lambda_val")) %>% 
-    select(., contains("score")) %>%
-    transmute(Average = rowMeans(.)) %>%
-    bind_cols(grid[,1:2], .)
-  
-  alpha = as.numeric(processedResults[which.min(processedResults$Average), 1])
-  lambda = as.integer(processedResults[which.min(processedResults$Average), 2])
-
-  list(alpha = alpha, lambda = lambda, validation.score = min(processedResults$Average)) 
-  
- 
 }
+
 
 #..........................Processed variable importance output from the base model................................#
 processVarImp = function(varImpRaw){
@@ -390,56 +326,107 @@ processVarImp = function(varImpRaw){
 }
 
 #..........................Ensemble-simple average with different seeds................................#
-train.ensemble = function(folds, seed.a, iterations, numofModels, allData){
+train.ensemble = function(folds, seed.a, finalParameters, numofModels, processedData, label_test){
+
+  finalPredictions = vector("list", numofModels)
+  finalVarImp = vector("list", numofModels)
   
   set.seed(seed.a)
-  seeds.EachModel = sample(1:100000000, numofModels, replace = FALSE)
-  finalPredictions = vector("list", length(seeds.EachModel))
-  finalVarImp = vector("list", length(seeds.EachModel))
+  seeds.EachModel = sample(1:1000000000, numofModels, replace = FALSE)
   
   for (k in 1:length(seeds.EachModel)){
     
-    bestParam = modelPipe.inner(folds = folds, seed.a = seeds.EachModel[k], iterations = iterations, allData = allData)
-    finalParameters = modelPipe.outer(folds = allFolds, lambda.final = bestParam$lambda, alpha.final = bestParam$alpha, allData = allData)
+    finalModel = modelPipe.outer(lambda.final = as.integer(finalParameters$lambda[k]), alpha.final = finalParameters$alpha[k], processedData = processedData)
     
-    finalPredictions[[k]] = finalParameters$Predictions
-    finalVarImp[[k]] = finalParameters$VarImp
+    finalPredictions[[k]] = finalModel$Predictions
+    finalVarImp[[k]] = finalModel$VarImp
     
   }
   
   finalPredictions.processed = finalPredictions %>% reduce(cbind) %>% rowMeans(.)
   finalVarImp.processed = finalVarImp %>% reduce(left_join, by = "Variable") %>% processVarImp(.)
   
-  list(LogLoss = logLoss(scores = finalPredictions.processed, label = allData[-folds[[1]], ]$ResultProper), 
+  list(LogLoss = logLoss(scores = finalPredictions.processed, label = label_test), 
        VarImp = finalVarImp.processed)
+  
 }
 #..........................Global Envrionment..............................................................#
+#Forced to define a bunch of stuff globally because the package rBayesianOptimization doesn't let you pass any other arguments except the ones being tuned...
+#I don't know why this wasn't thought of.
 set.seed(40689)
-seeds = sample(1:1000000000, 40, replace = FALSE)
-LogLoss.status = rep(as.numeric(NA), length(seeds))
+allSeeds = sample(1:1000000000, 40, replace = FALSE)
 
-cluster = makeCluster(detectCores(), outfile = "messages.txt")
-registerDoParallel(cluster)
-
-results = foreach(p = 1:length(seeds), .combine = "c", .packages = c("tidyverse", "glmnet", "caret", "pROC", "recipes", "fastknn")) %dopar% {
+giveResults = function(seed, allData){
   
-  set.seed(seeds[p])
+  writeLines(paste("Seed:", seed))
+  
+  set.seed(seed)
   allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.80)
+  mainTrain = allData[allFolds[[1]], ]
   
-  ensemble.model = train.ensemble(folds = allFolds, seed.a = seeds[p], iterations = 90, numofModels = 5, allData = allData)
+  set.seed(seed)
+  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = 3, times = 5)
   
-  LogLoss.status[p] = ensemble.model$LogLoss
+  finalParameters = vector("list", length(innerFolds)/3)
+  
+  for(i in 1:(length(innerFolds)/3)){
+  
+  innerFolds.temp = innerFolds[str_detect(string = names(innerFolds), pattern = paste("Rep", i, sep = ""))]
+  allProcessedFrames = lapply(innerFolds.temp, FUN = processFolds, mainTrain = mainTrain)
+  
+  init_grid_dt = data.frame(alpha = c(0.5, 0.7, 0.8), lambda = c(30L, 50L, 20L))
+  
+  bestParam = BayesianOptimization(FUN =  function(alpha, lambda){
+        
+    scores = vector("numeric", length(allProcessedFrames))
+    predictions = vector("list", length(allProcessedFrames))
+                                   
+      for(m in 1:length(allProcessedFrames)){
+                                     
+        model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), calibrate = FALSE)
+        scores[m] = logLoss(scores = model$Predictions, label = allProcessedFrames[[m]]$Test$ResultProper)
+        predictions[[m]] = tibble(Row = setdiff(1:nrow(mainTrain), innerFolds.temp[[m]]), Pred = model$Predictions)
+        
+        }
+        
+    predictions.final = bind_rows(predictions) %>%
+      arrange(Row)
+                                
+    list(Score = -mean(scores), Pred = predictions.final$Pred)
+    
+    }
+    , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)),
+                                   init_grid_dt = init_grid_dt, n_iter = 33)
+  
+  finalParameters[[i]] = tibble(alpha = bestParam$Best_Par[1], lambda = as.integer(bestParam$Best_Par[2]))
 
-  writeLines(paste("REPEAT:", p, "...", "Running Average Log Loss Test Set:", mean(LogLoss.status, na.rm = TRUE), sep = " "))
-  list(LogLoss = ensemble.model$LogLoss, VarImp = ensemble.model$VarImp)
+  rm(innerFolds.temp, allProcessedFrames)
+  
+  }
+  
+  rm(i, bestParam, init_grid_dt, mainTrain)
+  
+  finalParameters = bind_rows(finalParameters)
+  
+  processedData = processFolds(fold.index = allFolds[[1]], mainTrain = allData)
+  finalTestSet.Score = train.ensemble(folds = allFolds, seed.a = seed, finalParameters = finalParameters, numofModels = length(innerFolds)/3, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
+  
+  writeLines(paste("Log Loss Test Set:", finalTestSet.Score$LogLoss, sep = " "))
+  list(LogLoss = finalTestSet.Score$LogLoss, VarImp = finalTestSet.Score$VarImp)
   
 }
+
+cluster = makeCluster(detectCores(), outfile = "messages.txt")
+setDefaultCluster(cluster)
+
+clusterEvalQ(cluster, c(library(caret), library(forecast), library(tidyverse), source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Modelling/All Functions.R")))
+results = parLapply(NULL, allSeeds, fun = giveResults, allData = allData)
 
 stopCluster(cluster)
 rm(cluster)
 
-finalLogLoss = unlist(results[c(seq(1, length(results), 2))])
-finalVarImp = processVarImp(varImpRaw = results[c(seq(2, length(results),2))] %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 
+finalLogLoss = unlist(lapply(results, function(x) {x$LogLoss})) 
+finalVarImp = processVarImp(varImpRaw = lapply(results, function(x) {x$VarImp}) %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 
 
 #...................................Bootstrap the vector finalROC and RFE.data..............................#
 
