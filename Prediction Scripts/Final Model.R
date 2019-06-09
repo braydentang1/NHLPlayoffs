@@ -3,6 +3,7 @@ library(glmnet)
 library(recipes)
 library(caret)
 library(parallel)
+library(rBayesianOptimization)
 
 source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R")
 setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
@@ -90,10 +91,10 @@ predict.NHL = function(processedDataSet, recipeParameters, newdata, finalParamet
   
   for (i in 1:nrow(finalParameters)){
     
-  model = baggedModel(train = processedDataSet, test = newdata, label_train = processedDataSet$ResultProper, alpha.a = finalParameters$alpha[i], s_lambda.a = finalParameters$lambda[i], calibrate = FALSE)
-  predictions[[i]] = model$Predictions
-  varImp[[i]] = model$VariableImportance
-  
+    model = baggedModel(train = processedDataSet, test = newdata, label_train = processedDataSet$ResultProper, alpha.a = finalParameters$alpha[i], s_lambda.a = finalParameters$lambda[i], calibrate = FALSE)
+    predictions[[i]] = model$Predictions
+    varImp[[i]] = model$VariableImportance
+    
   }
   
   finalPredictions.processed = predictions %>% reduce(cbind) %>% rowMeans(.)
@@ -105,7 +106,7 @@ predict.NHL = function(processedDataSet, recipeParameters, newdata, finalParamet
 #...........................Global.........................................#
 
 set.seed(40689)
-seeds.Model = sample(1:1000000000, 5)
+innerFolds = caret::createMultiFolds(y = allData$ResultProper, k = 3, times = 5)
 
 #...............If you want to retrain the model, uncomment this and run.................#
 
@@ -113,13 +114,14 @@ cluster = makeCluster(detectCores(), outfile = "messages.txt")
 setDefaultCluster(cluster)
 
 # Load packages on each cluster
-clusterEvalQ(cluster, c(library(caret), library(recipes), library(tidyverse), library(glmnet),
-                        source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R")))
+clusterEvalQ(cluster, source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R"))
 
-finalParameters = parLapply(NULL, seeds.Model, fun = modelPipe.inner, mainTrain = allData, iterations = 90) %>% reduce(bind_rows)
+finalParameters = parLapply(NULL, 1:5, fun = trainModel.oneRep, innerFolds = innerFolds, mainTrain = allData) %>%
+  bind_rows(.)
+
 stopCluster(cluster)
 rm(cluster)
-
+  
 saveRDS(finalParameters, file = "finalParameters.rds")
 
 processedData = preProcessData(data = allData)

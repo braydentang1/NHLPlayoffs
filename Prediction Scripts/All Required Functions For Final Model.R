@@ -1,15 +1,15 @@
-library(glmnet)
-library(caret)
-library(pROC)
 library(tidyverse)
+library(glmnet)
 library(recipes)
-library(fastknn)
+library(caret)
+library(parallel)
+library(rBayesianOptimization)
 
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
   
   set.seed(3742301)
-  samples = caret::createResample(y = label_train, times = 15)
+  samples = caret::createResample(y = label_train, times = 20)
   pred = vector("list", length(samples))
   varImp = vector("list", length(samples))
   insample.pred = vector("list", length(samples))
@@ -194,26 +194,29 @@ preProcess.recipe = function(trainX){
   mainRecipe
 }
 
-#........................Define random search function..................................#
+#.............................Process Folds...................................#
 
-randomGridSearch = function(innerTrainX, innerTestX, grid){
+processFolds = function(fold.index, mainTrain){
   
-  for(m in 1:nrow(grid)){
-    
-    writeLines(paste("Iteration:", m, sep = " "))
-    
-    modelX = baggedModel(train = innerTrainX[, !names(innerTrainX) %in% c("ResultProper")], test = innerTestX, 
-                         label_train = innerTrainX$ResultProper, alpha.a = as.numeric(grid[m, 1]), s_lambda.a = as.integer(grid[m,2]), calibrate = FALSE)
-    
-    #For AUROC
-    #grid[m, 3] = roc(response = innerTestX$ResultProper, predictor = modelX$Predictions, levels = c("L", "W"))$auc
-    
-    #For LogLoss
-    grid[m, 3] = logLoss(scores = modelX$Predictions, label = innerTestX$ResultProper)
-    
-  }
+  train.param = prep(preProcess.recipe(trainX = mainTrain[fold.index,]), training = mainTrain[fold.index,])
+  train = bake(train.param, new_data = mainTrain[fold.index,])
+  test = bake(train.param, new_data = mainTrain[-fold.index,])
   
-  grid
+  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
+  
+  train = frameswithPCA$train
+  test = frameswithPCA$test
+  
+  rm(train.param, frameswithPCA)
+  
+  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
+  
+  train = frameswithKNN$train
+  test = frameswithKNN$test
+  
+  rm(frameswithKNN)
+  
+  list(Train = train, Test = test)
   
 }
 
@@ -232,52 +235,39 @@ processVarImp = function(varImpRaw){
   final
 }
 
+#.........................The main inner pipe....................................#
 
-#.........................Define inner pipe for the inner cross validation...........................................#
-modelPipe.inner = function(mainTrain, seed.a, iterations){
+trainModel.oneRep = function(rep.index, innerFolds, mainTrain){
+
+  repetitionFolds = innerFolds[str_detect(string = names(innerFolds), pattern = paste("Rep", rep.index, sep = ""))]
+  allProcessedFrames = lapply(repetitionFolds, FUN = processFolds, mainTrain = mainTrain)
   
-  set.seed(seed.a)  
-  innerFolds = createFolds(y = mainTrain$ResultProper, k = 3)
+  init_grid_dt = data.frame(alpha = c(0.5, 0.7, 0.8), lambda = c(30L, 50L, 20L))
   
-  results = vector("list", length(innerFolds))
-  #Create grid
-  
-  set.seed(seed.a)  
-  grid = tibble(alpha = as.numeric(runif(n = iterations, min = 0, max = 1)), s.lambda_val = as.integer(sample(15:90, iterations, replace = TRUE)), score = rep(0, iterations)) 
-  
-  for(m in 1:length(innerFolds)){
+  bestParam = BayesianOptimization(FUN =  function(alpha, lambda){
+      
+      scores = vector("numeric", length(allProcessedFrames))
+      predictions = vector("list", length(allProcessedFrames))
+      
+      for(m in 1:length(allProcessedFrames)){
+        
+        model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), calibrate = FALSE)
+        scores[m] = logLoss(scores = model$Predictions, label = allProcessedFrames[[m]]$Test$ResultProper)
+        predictions[[m]] = tibble(Row = setdiff(1:nrow(mainTrain), repetitionFolds[[m]]), Pred = model$Predictions)
+        
+      }
+      
+      predictions.final = bind_rows(predictions) %>%
+        arrange(Row)
+      
+      list(Score = -mean(scores), Pred = predictions.final$Pred)
+      
+    }
+    , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)),
+    init_grid_dt = init_grid_dt, n_iter = 33)
     
-    train.param = prep(preProcess.recipe(trainX = mainTrain[-innerFolds[[m]],]), training = mainTrain[-innerFolds[[m]],])
-    train = bake(train.param, new_data = mainTrain[-innerFolds[[m]],])
-    test = bake(train.param, new_data = mainTrain[innerFolds[[m]],])
-    
-    frameswithPCA = addPCA_variables(traindata = train, testdata = test)
-    
-    train = frameswithPCA$train
-    test = frameswithPCA$test
-    
-    rm(train.param, frameswithPCA)
-    
-    frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE)
-    
-    train = frameswithKNN$train
-    test = frameswithKNN$test
-    
-    rm(frameswithKNN)
-    
-    results[[m]] = randomGridSearch(innerTrainX = train, innerTestX = test, grid = grid)
-    
-  }
-  
-  processedResults = results %>% 
-    reduce(left_join, by = c("alpha", "s.lambda_val")) %>% 
-    select(., contains("score")) %>%
-    transmute(Average = rowMeans(.)) %>%
-    bind_cols(grid[,1:2], .)
-  
-  alpha = as.numeric(processedResults[which.min(processedResults$Average), 1])
-  lambda = as.integer(processedResults[which.min(processedResults$Average), 2])
-  
-  list(alpha = alpha, lambda = lambda, validation.score = min(processedResults$Average)) 
+    tibble(alpha = bestParam$Best_Par[1], lambda = as.integer(bestParam$Best_Par[2]))
   
 }
+  
+
