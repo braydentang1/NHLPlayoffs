@@ -69,7 +69,7 @@ preProcessData = function(data){
 
 predict.NHL = function(processedDataSet, recipeParameters, newdata, finalParameters){
   
-  newdata = newdata[names(newdata) %in% c("ResultProper"), ]
+  newdata = newdata %>% select(-ResultProper)
   newdata = bake(recipeParameters, new_data = newdata)
   
   frameswithPCA = addPCA_variables(traindata = processedDataSet, testdata = newdata, standardize = FALSE)
@@ -121,7 +121,7 @@ finalParameters = parLapply(NULL, 1:5, fun = trainModel.oneRep, innerFolds = inn
 
 stopCluster(cluster)
 rm(cluster)
-  
+
 saveRDS(finalParameters, file = "finalParameters.rds")
 
 processedData = preProcessData(data = allData)
