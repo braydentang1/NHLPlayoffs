@@ -4,7 +4,7 @@ library(caret)
 library(tidyverse)
 library(recipes)
 library(moments)
-library(rBayesianOptimization)
+library(ParBayesianOptimization)
 library(fastknn)
 
 #..................................Bagging Function...................................#
