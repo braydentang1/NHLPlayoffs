@@ -3,7 +3,7 @@ library(glmnet)
 library(recipes)
 library(caret)
 library(parallel)
-library(rBayesianOptimization)
+library(ParBayesianOptimization)
 
 #..................................Bagging Function...................................#
 baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate = FALSE){
@@ -242,29 +242,23 @@ trainModel.oneRep = function(rep.index, innerFolds, mainTrain){
   repetitionFolds = innerFolds[str_detect(string = names(innerFolds), pattern = paste("Rep", rep.index, sep = ""))]
   allProcessedFrames = lapply(repetitionFolds, FUN = processFolds, mainTrain = mainTrain)
   
-  init_grid_dt = data.frame(alpha = c(0.5, 0.7, 0.8), lambda = c(30L, 50L, 20L))
-  
   bestParam = BayesianOptimization(FUN =  function(alpha, lambda){
       
       scores = vector("numeric", length(allProcessedFrames))
-      predictions = vector("list", length(allProcessedFrames))
-      
+
       for(m in 1:length(allProcessedFrames)){
         
         model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), calibrate = FALSE)
         scores[m] = logLoss(scores = model$Predictions, label = allProcessedFrames[[m]]$Test$ResultProper)
-        predictions[[m]] = tibble(Row = setdiff(1:nrow(mainTrain), repetitionFolds[[m]]), Pred = model$Predictions)
         
       }
       
-      predictions.final = bind_rows(predictions) %>%
-        arrange(Row)
-      
-      list(Score = -mean(scores), Pred = predictions.final$Pred)
+
+      list(Score = -mean(scores))
       
     }
     , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)),
-    init_grid_dt = init_grid_dt, n_iter = 33)
+    initPoints = 3, nIters = 40)
     
     tibble(alpha = bestParam$Best_Par[1], lambda = as.integer(bestParam$Best_Par[2]))
   
