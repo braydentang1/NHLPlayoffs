@@ -89,6 +89,7 @@ logLoss = function(scores, label){
 }
 
 
+
 #..................................PCA Function....................................#
 #I tried to center and scale these variables after they were mistakenly left uncentered and unscaled (recall: the model has a loss function that is a function of the 
 #magnitude of the parameters themselves, hence, it is vital we center and scale variables to be unitless so that the magnitude of such variables are not unfairly penalized.
@@ -219,7 +220,6 @@ modelPipe.outer = function(lambda.final, alpha.final, processedData){
   
   list(Predictions = model$Predictions, LogLoss = logloss, VarImp = VarImp)
 }
-
 #.............................Process Folds...................................#
 
 processFolds = function(fold.index, mainTrain){
@@ -277,6 +277,8 @@ train.ensemble = function(folds, seed.a, finalParameters, numofModels, processed
     
     finalPredictions[[k]] = finalModel$Predictions
     finalVarImp[[k]] = finalModel$VarImp
+    
+    rm(finalModel) 
     
   }
   
