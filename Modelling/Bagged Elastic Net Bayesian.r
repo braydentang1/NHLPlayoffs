@@ -1,6 +1,6 @@
 #Set the directory for parallel computation status checks. Change this to any folder on your computer so that we can monitor 
 #the status of the repeated cross validation.
-setwd("C:/Users/Brayden/Desktop/status")
+setwd("/home/brayden/Desktop/status")
 
 #Dependencies
 
@@ -192,18 +192,18 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE, distances 
 #Change directories to pull in data from the "Required Data Sets" folder located in the repository.
 
 cat("Reading in Data..... \n")
-allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/ELORatings.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/TimeRelatedPlayoffFeatures.csv")) %>%
+allData = read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ELORatings.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/TimeRelatedPlayoffFeatures.csv")) %>%
   mutate(ResultProper = as.factor(ResultProper)) %>%
   filter(!is.na(ResultProper))
 
@@ -340,6 +340,8 @@ train.ensemble = function(folds, seed.a, finalParameters, numofModels, processed
     
     finalPredictions[[k]] = finalModel$Predictions
     finalVarImp[[k]] = finalModel$VarImp
+   
+    rm(finalModel) 
     
   }
   
@@ -371,8 +373,12 @@ giveResults = function(seed, allData){
   
   for(i in 1:(length(innerFolds)/3)){
   
+  writeLines(paste("Fitting Five Models For Seed:", seed, "in Rep:",i))
+    
   innerFolds.temp = innerFolds[str_detect(string = names(innerFolds), pattern = paste("Rep", i, sep = ""))]
   allProcessedFrames = lapply(innerFolds.temp, FUN = processFolds, mainTrain = mainTrain)
+  
+  writeLines(paste("Finished Processing Data For Seed:", seed, "in Rep:", i))
   
   bestParam = BayesianOptimization(FUN =  function(alpha, lambda){
         
@@ -383,41 +389,44 @@ giveResults = function(seed, allData){
         model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), calibrate = FALSE)
         scores[m] = logLoss(scores = model$Predictions, label = allProcessedFrames[[m]]$Test$ResultProper)
 
-        }
+        rm(model)
+        
+      }
         
 
     list(Score = -mean(scores))
     
     }
-    , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)),
-                                   initPoints = 3, nIters = 40)
+    , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)), parallel = FALSE,
+                                   initPoints = 4, nIters = 42, convThresh = 100, verbose = 1)
   
-  finalParameters[[i]] = tibble(alpha = bestParam$Best_Par[1], lambda = as.integer(bestParam$Best_Par[2]))
+  writeLines(paste("Store Final Parameters For Seed:", seed, "in Rep:", i))
+  finalParameters[[i]] = tibble(alpha = bestParam$ScoreDT$alpha[which.max(bestParam$ScoreDT$Score)], lambda = as.integer(bestParam$ScoreDT$lambda[which.max(bestParam$ScoreDT$Score)]))
 
-  rm(innerFolds.temp, allProcessedFrames)
+  rm(innerFolds.temp, allProcessedFrames, bestParam)
+  gc()
   
   }
   
-  rm(i, bestParam, init_grid_dt, mainTrain)
+  rm(i, mainTrain)
+  gc()
   
+  writeLines(paste("Bind Rows for Seed:", seed))
   finalParameters = bind_rows(finalParameters)
   
+  writeLines(paste("Score the Test Set for Seed:", seed))
   processedData = processFolds(fold.index = allFolds[[1]], mainTrain = allData)
   finalTestSet.Score = train.ensemble(folds = allFolds, seed.a = seed, finalParameters = finalParameters, numofModels = length(innerFolds)/3, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
   
   writeLines(paste("Log Loss Test Set:", finalTestSet.Score$LogLoss, sep = " "))
+  
   list(LogLoss = finalTestSet.Score$LogLoss, VarImp = finalTestSet.Score$VarImp)
+  #finalTestSet.Score$LogLoss
   
 }
 
-cluster = makeCluster(detectCores(), outfile = "messages.txt")
-setDefaultCluster(cluster)
-
-clusterEvalQ(cluster, c(library(caret), library(forecast), library(tidyverse), source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Modelling/All Functions.R")))
-results = parLapply(NULL, allSeeds, fun = giveResults, allData = allData)
-
-stopCluster(cluster)
-rm(cluster)
+results = mclapply(X = allSeeds, FUN = giveResults, allData = allData, mc.cores = 6)
+#results = lapply(X = allSeeds, FUN = giveResults, allData = allData)
 
 finalLogLoss = unlist(lapply(results, function(x) {x$LogLoss})) 
 finalVarImp = processVarImp(varImpRaw = lapply(results, function(x) {x$VarImp}) %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 
@@ -441,8 +450,8 @@ finalVarImp %>% arrange(., -Importance)
 
 #..............................................Graphing the log loss scores.........................#
 
-graphingParameters = tibble(LogLoss = finalLogLoss)
-
-ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
-  geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-  labs(title = "40 Repeats of Nested Cross Validation; Using Data up To 2019 Round 3", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
+# graphingParameters = tibble(LogLoss = finalLogLoss)
+# 
+# ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
+#   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
+#   labs(title = "40 Repeats of Nested Cross Validation; Using Data up To 2019 Round 3", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
