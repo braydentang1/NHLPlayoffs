@@ -1,11 +1,11 @@
 # NHLPlayoffs
 A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-With the addition of the 2019 playoff data up to Round 3; log loss sits at 0.65806 with a 95% confidence interval given by via. Bootstrapping: [0.65054, 0.66506].
+With the addition of the 2019 playoff data up to Round 3; log loss sits at 0.65806.
 
 ![Alt text](https://github.com/braydentang1/NHLPlayoffs/blob/master/Histogram.jpeg)
 
-I tried a lot of different methodlogies but ended up settling on this one after tons of trial and error. Explicit feature selection makes the model worse (though none of these differences were statistically significant, it should be noted that the bootstrapped confidence intervals over 60 repeats of cv were way wider than the full, 176 variable model, making me stay with the full model), as expected in general with a model that explicitly removes variables anyway. Run the script in the modelling section "Bagged Elastic Net Bayesian - RFE.r" to see.
+I tried a lot of different methodlogies but ended up settling on this one after tons of trial and error. Explicit feature selection makes the model worse with RFE selection due to how much variance is exhibited when selecting variables, probably due to the small dataset.
 
 Folder Descriptions:
 -----
