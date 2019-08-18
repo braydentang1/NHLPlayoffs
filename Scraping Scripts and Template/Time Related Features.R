@@ -1,9 +1,9 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
 
-startdates = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>% filter(Year >= 2008)
+startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>% filter(Year >= 2008)
 
 getData.nst.Time = function(year, round, start, end, event = FALSE){
   
@@ -188,14 +188,14 @@ allData.powerplay = bind_rows(mapply(getData.nst.Time, year = startdates$Year, r
 Sys.sleep(500)
 allData.penaltykill = bind_rows(mapply(getData.nst.Time, year = startdates$Year, round = startdates$Round, start = startdates$Start, end = startdates$End, event = "penaltykill", SIMPLIFY = FALSE))
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data")
 write_csv(allData, "TimeData.csv")
 write_csv(allData.powerplay, "TimeData_PowerPlay.csv")
 write_csv(allData.penaltykill, "TimeData_PenaltyKill.csv")
 
-#allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData.csv")
-#allData.powerplay = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PowerPlay.csv")
-#allData.penaltykill = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PenaltyKill.csv")
+#allData = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData.csv")
+#allData.powerplay = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PowerPlay.csv")
+#allData.penaltykill = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PenaltyKill.csv")
 
 findMatch = function(team.1, team.2, stat, data, highest.seed, round){
   
@@ -259,5 +259,5 @@ final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = te
 #Remove these variables because they aren't meaningful in the context.
 final = final %>% select(-HDSV.Playoff.PP, -CF.Playoff.PK, -SCF.Playoff.PK, -HDCF.Playoff.PK, -PDO.Playoff.PK, -xGF.Playoff.PK)
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "TimeRelatedPlayoffFeatures.csv")

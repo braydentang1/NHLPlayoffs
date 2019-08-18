@@ -1,9 +1,8 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
                 
-
 getData_nst = function(year){
   
   year2 = year - 1
@@ -101,5 +100,5 @@ final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = te
                MoreArgs = list(data = allData), SIMPLIFY = FALSE)) %>%
         select_if(~sum(!is.na(.)) > 0) 
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "SCFScores.csv")

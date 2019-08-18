@@ -2,11 +2,11 @@ library(tidyverse)
 library(rvest)
 library(RSelenium)
 
-rd = rsDriver(browser = c("chrome"), chromever = "74.0.3729.6")
-rem_dr = rd[["client"]]
+rem_dr = remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
+rem_dr$open()
 
-rd2 = rsDriver(port = 5000L, browser = c("chrome"), chromever = "74.0.3729.6")
-rem_dr2 = rd2[["client"]]
+rem_dr2 = remoteDriver(remoteServerAddr = "localhost", port = 4433L, browserName = "chrome")
+rem_dr2$open()
 
 getData = function(year){
 
@@ -96,19 +96,19 @@ getData.current = function(year, round){
 
   if(round == "quarter-finals"){
   
-  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep = ""))
+  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep = ""))
   
   }else if(round == "semi-finals"){
     
-  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg2.html", sep = ""))
+  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg2.html", sep = ""))
     
   }else if(round == "finals"){
     
-  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg3.html", sep = ""))
+  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg3.html", sep = ""))
   
   }else{
     
-  page = read_html(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg4.html", sep = ""))
+  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg4.html", sep = ""))
     
   }
   teams = page %>% 
@@ -134,7 +134,7 @@ getData.current = function(year, round){
 }
 
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
 template[template == "St Louis Blues"] = "St. Louis Blues"
 template[template == "Mighty Ducks of Anaheim"] = "Anaheim Ducks"
 template[template == "Phoenix Coyotes"] = "Arizona Coyotes"
@@ -143,17 +143,13 @@ template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
 #Note: the function call below sends an error because on OddsPortal the actual odds are missing! But, these values are not important as we only 
 #take the first game odds
 
-allData = bind_rows(lapply(2006:2018, FUN = getData)) %>%
-          bind_rows(lapply(2019, FUN = getData.current, round = "quarter-finals")) %>%
-          bind_rows(lapply(2019, FUN = getData.current, round = "semi-finals")) %>%
-          bind_rows(lapply(2019, FUN = getData.current, round = "finals")) %>%
-          bind_rows(tibble(Year = 2019, Teams = "Boston Bruins - St. Louis Blues", Odds.HighestSeed = 1.99, Odds.LowestSeed = 3.30))
+allData = bind_rows(lapply(2006:2019, FUN = getData)) 
 
 template = template %>% 
                 rowwise %>%
                 mutate(VegasOpeningOdds = processData(year = Year, team.1 = Team1, team.2 = Team2, data = allData))
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[,7], "VegasOddsOpening.csv")
 
 

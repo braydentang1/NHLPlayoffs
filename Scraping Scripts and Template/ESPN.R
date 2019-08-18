@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -152,5 +152,5 @@ template = template %>% rowwise %>%
   mutate(RPI = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$RPI) %>%
   mutate(PenaltyKill_PostAllStar = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$PenaltyKill_PostAllStar)
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPLayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[,7:ncol(template)], "ESPNStats.csv")

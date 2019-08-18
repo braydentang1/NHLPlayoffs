@@ -2,7 +2,7 @@ library(rvest)
 library(tidyverse)
 library(RSelenium)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv")
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -19,8 +19,8 @@ lookup_Accronyms$Accronym = ifelse(lookup_Accronyms$Accronym == "VGK", "VEG", lo
 
 rm(accronyms_pg, accronyms, fullnames)
 
-rd = rsDriver(browser = c("chrome"), chromever = "74.0.3729.6")
-rem_dr = rd[["client"]]
+rem_dr = remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
+rem_dr$open()
 
 grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
 
@@ -333,5 +333,5 @@ allStats = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 =
 
 rm(RecordsOverTime, final, giveH2H)
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(allStats, "HockeyReference2.csv")

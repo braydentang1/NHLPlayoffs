@@ -2,12 +2,12 @@ library(tidyverse)
 library(lubridate)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
               mutate(Team1 = ifelse(Team1 == "St Louis Blues", "St. Louis Blues", Team1)) %>%
               mutate(Team2 = ifelse(Team2 == "St Louis Blues", "St. Louis Blues", Team2)) %>%
               mutate(Highest.Seed = ifelse(Highest.Seed == "St Louis Blues", "St. Louis Blues", Highest.Seed))
 
-startdates = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>%
+startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>%
               mutate(Start = ymd(Start)) %>%
               mutate(End = ymd(End))
   
@@ -247,5 +247,5 @@ template = template %>% rowwise %>%
   mutate(ELORating.Playoffs = processData.Playoffs(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = data.playoffs, year = Year, round = Round)) %>%
   mutate(ELORating.Playoffs = ifelse(is.na(ELORating.Playoffs), ELORating, ELORating.Playoffs))
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[, 7:ncol(template)], "ELORatings.csv")

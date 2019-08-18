@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
   mutate_all(funs(str_replace(., "Mighty Ducks of Anaheim", "Anaheim Ducks"))) %>%
   mutate_all(funs(str_replace(., "Phoenix Coyotes", "Arizona Coyotes")))
 
@@ -25,7 +25,7 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData = function(year){
   
-  data = read_csv(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Evolving Hockey/Player Stats WAR/", year, ".csv", sep = "")) 
+  data = read_csv(paste("/home/brayden/GitHub/NHLPlayoffs/Evolving Hockey/Player Stats WAR/", year, ".csv", sep = "")) 
   
   data[data == "S.J"] = "SJS"
   data[data == "L.A"] = "LAK"
@@ -75,7 +75,7 @@ processData = function(team.1, team.2, highest.seed, data, year){
 
 allCombined = bind_rows(lapply(2008:2019, FUN = getData))
 
-setwd("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allCombined), SIMPLIFY = FALSE)) %>%
         write_csv(., "EvolvingHockey_WAR.csv")
 

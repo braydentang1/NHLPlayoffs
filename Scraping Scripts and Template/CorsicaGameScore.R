@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
               mutate_all(funs(str_replace(., "Mighty Ducks of Anaheim", "Anaheim Ducks"))) %>%
               mutate_all(funs(str_replace(., "Phoenix Coyotes", "Arizona Coyotes")))
 
@@ -26,7 +26,7 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData = function(year){
   
-  data = read_csv(paste("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Game Score/", year, ".csv", sep=""), na = "--") %>%
+  data = read_csv(paste("/home/brayden/GitHub/NHLPlayoffs/Game Score/", year, ".csv", sep=""), na = "--") %>%
           .[,2:ncol(.)] %>%
     mutate(TradedPlayer = ifelse(grepl("/", Team) == TRUE, 1,0)) %>%
     mutate(Team = gsub(" ", "", Team, fixed = TRUE)) %>%
@@ -95,5 +95,5 @@ processData = function(team.1, team.2, highest.seed, data, year){
 final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allCombined), SIMPLIFY = FALSE)) %>%
         select_if(~sum(!is.na(.)) > 0)
   
-setwd("C:/Users/Brayden/Documents/Github/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "CorsicaGameScoreStats.csv")

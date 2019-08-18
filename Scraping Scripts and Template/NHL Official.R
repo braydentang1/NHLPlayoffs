@@ -2,7 +2,7 @@ library(tidyverse)
 library(rvest)
 library(RSelenium)
 
-template = read.csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
+template = read.csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -21,8 +21,8 @@ rm(accronyms_pg, accronyms, fullnames)
 
 #Create the rsDriver for Selenium
 
-rd = rsDriver(browser = c("chrome"), chromever = "74.0.3729.6")
-rem_dr = rd[["client"]]
+rem_dr = remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
+rem_dr$open()
 
 getData_nhl_HitsandBlocks = function(year){
   
@@ -33,7 +33,7 @@ getData_nhl_HitsandBlocks = function(year){
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
     html_text(.) %>%
-    gsub("é", "e",.) %>%
+    gsub("?", "e",.) %>%
     gsub("\\.", "",.) 
   
   Hits = mainpage %>%
@@ -90,7 +90,7 @@ getData_nhl_LeadingandTrailing = function(year){
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
     html_text(.) %>%
-    gsub("é", "e",.) %>%
+    gsub("?", "e",.) %>%
     gsub("\\.", "",.) 
   
   WinPercent_Lead1P = mainpage %>%
@@ -170,5 +170,5 @@ allData = lapply(2006:2019, FUN = getData_nhl_HitsandBlocks) %>%
 final = bind_rows(mapply(processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData),
                SIMPLIFY = FALSE))
 
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(final, "NHLOfficialStats.csv")
