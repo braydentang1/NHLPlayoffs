@@ -134,7 +134,7 @@ getData.current = function(year, round){
 }
 
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv") 
 template[template == "St Louis Blues"] = "St. Louis Blues"
 template[template == "Mighty Ducks of Anaheim"] = "Anaheim Ducks"
 template[template == "Phoenix Coyotes"] = "Arizona Coyotes"

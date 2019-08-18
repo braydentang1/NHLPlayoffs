@@ -2,7 +2,7 @@ library(tidyverse)
 library(rvest)
 library(RSelenium)
 
-template = read.csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv", na.strings = FALSE, stringsAsFactors = FALSE)
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv")
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 

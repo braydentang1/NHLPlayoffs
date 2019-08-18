@@ -1,9 +1,9 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") 
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv") 
 
-startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>% filter(Year >= 2008)
+startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Time Related Features.csv") %>% filter(Year >= 2008)
 
 getData.nst.Time = function(year, round, start, end, event = FALSE){
   

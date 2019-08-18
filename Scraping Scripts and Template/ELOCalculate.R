@@ -2,12 +2,12 @@ library(tidyverse)
 library(lubridate)
 library(rvest)
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv") %>%
               mutate(Team1 = ifelse(Team1 == "St Louis Blues", "St. Louis Blues", Team1)) %>%
               mutate(Team2 = ifelse(Team2 == "St Louis Blues", "St. Louis Blues", Team2)) %>%
               mutate(Highest.Seed = ifelse(Highest.Seed == "St Louis Blues", "St. Louis Blues", Highest.Seed))
 
-startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Time Related Features.csv") %>%
+startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Time Related Features.csv") %>%
               mutate(Start = ymd(Start)) %>%
               mutate(End = ymd(End))
   
