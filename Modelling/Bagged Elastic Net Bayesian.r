@@ -26,7 +26,7 @@ allData = read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyRe
 #...................................Engineering of some features..................#
 
 allData = allData %>% 
-  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2,3,3)))) %>%
+  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),14)))) %>%
   mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
   mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
   mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
@@ -43,8 +43,6 @@ allData = allData %>%
   mutate("ixGF/60_max.TO.Rel CF%_max" = allData$'Rel CF%_max' / allData$'ixGF/60_max') %>%
   mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
   mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
-
-options(repr.matrix.max.rows=600, repr.matrix.max.cols=200, scipen = 999)
 
 #...................................Check skewness and kurtosis..................#
 
@@ -109,8 +107,6 @@ train.ensemble = function(folds, seed.a, finalParameters, numofModels, processed
   
 }
 #..........................Global Envrionment..............................................................#
-#Forced to define a bunch of stuff globally because the package rBayesianOptimization doesn't let you pass any other arguments except the ones being tuned...
-#I don't know why this wasn't thought of.
 set.seed(40689)
 allSeeds = sample(1:1000000000, 40, replace = FALSE)
 

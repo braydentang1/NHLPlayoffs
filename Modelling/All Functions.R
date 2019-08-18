@@ -5,6 +5,7 @@ library(tidyverse)
 library(recipes)
 library(moments)
 library(ParBayesianOptimization)
+library(parallel)
 library(fastknn)
 
 #..................................Bagging Function...................................#
