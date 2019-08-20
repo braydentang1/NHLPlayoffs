@@ -48,7 +48,7 @@ allData = allData %>%
 
 kurt = allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::kurtosis(., na.rm=TRUE))) %>%
                                          gather(., Variable, Kurtosis)
-allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
+skew = allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
                                          gather(., Variable, Skewness) %>%
                                          left_join(., kurt, by = "Variable")
 rm(kurt)
@@ -183,22 +183,9 @@ results = mclapply(X = allSeeds, FUN = giveResults, allData = allData, mc.cores 
 finalLogLoss = unlist(lapply(results, function(x) {x$LogLoss})) 
 finalVarImp = processVarImp(varImpRaw = lapply(results, function(x) {x$VarImp}) %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 
 
-#...................................Bootstrap the vector finalROC and RFE.data..............................#
-
-mean.custom = function(x, d){
-  
-  mean(x[d])
-  
-}
-
-bootstrapped.All.CI = boot.ci(boot(data = finalLogLoss, statistic = mean.custom, R = 100000), type = "basic")
-
 #...................................Paste the Results.........................................................#
 
-paste("Final LogLoss: ", round(mean(finalLogLoss),5), " with a 95% confidence interval given by via. Bootstrapping: ", "[", round(bootstrapped.All.CI$basic[1,4],5), ", ", 
-      round(bootstrapped.All.CI$basic[1,5],5), "]", sep = "")
-
-finalVarImp %>% arrange(., -Importance)
+paste("Final LogLoss from Repeats: ", round(mean(finalLogLoss),5))
 
 #..............................................Graphing the log loss scores.........................#
 
