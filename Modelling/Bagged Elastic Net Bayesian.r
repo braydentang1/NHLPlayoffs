@@ -119,9 +119,9 @@ giveResults = function(seed, allData){
   mainTrain = allData[allFolds[[1]], ]
   
   set.seed(seed)
-  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = 3, times = 5)
+  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = 4, times = 6)
   
-  finalParameters = vector("list", length(innerFolds)/3)
+  finalParameters = vector("list", length(innerFolds)/4)
   
   for(i in 1:(length(innerFolds)/3)){
   
@@ -149,7 +149,7 @@ giveResults = function(seed, allData){
     list(Score = -mean(scores))
     
     }
-    , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)), parallel = FALSE,
+    , bounds = list(alpha = c(0, 1), lambda = c(10L, 100L)), parallel = FALSE,
                                    initPoints = 4, nIters = 42, convThresh = 100, verbose = 1)
   
   writeLines(paste("Store Final Parameters For Seed:", seed, "in Rep:", i))
@@ -168,7 +168,7 @@ giveResults = function(seed, allData){
   
   writeLines(paste("Score the Test Set for Seed:", seed))
   processedData = processFolds(fold.index = allFolds[[1]], mainTrain = allData)
-  finalTestSet.Score = train.ensemble(folds = allFolds, seed.a = seed, finalParameters = finalParameters, numofModels = length(innerFolds)/3, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
+  finalTestSet.Score = train.ensemble(folds = allFolds, seed.a = seed, finalParameters = finalParameters, numofModels = length(innerFolds)/4, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
   
   writeLines(paste("Log Loss Test Set:", finalTestSet.Score$LogLoss, sep = " "))
   

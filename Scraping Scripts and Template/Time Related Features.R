@@ -26,70 +26,7 @@ getData.nst.Time = function(year, round, start, end, event = FALSE){
     html_text(.) %>%
     .[-str_detect(., "Team")]
   
-  if(year < 2010){
-  
   corsi_for = page %>%
-    html_nodes("td:nth-child(7)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  corsi_against = page %>%
-    html_nodes("td:nth-child(8)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  fenwick_for = page %>%
-    html_nodes("td:nth-child(10)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  fenwick_against = page %>%
-    html_nodes("td:nth-child(11)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  scf = page %>%
-    html_nodes("td:nth-child(19)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  sca = page %>%
-    html_nodes("td:nth-child(20)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  hdcf = page %>%
-    html_nodes("td:nth-child(30)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  hdca = page %>%
-    html_nodes("td:nth-child(31)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  hdsv = page %>%
-    html_nodes("td:nth-child(40)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  savepercentage = page %>%
-    html_nodes("td:nth-child(64)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  pdo = page %>%
-    html_nodes("td:nth-child(65)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  xGF = rep(NA, length(teamnames))
-  xGA = rep(NA, length(teamnames))
-  
-  
-  } else{
-    
-    corsi_for = page %>%
       html_nodes("td:nth-child(7)") %>%
       html_text(.) %>%
       as.numeric(.)
@@ -144,8 +81,6 @@ getData.nst.Time = function(year, round, start, end, event = FALSE){
       html_text(.) %>%
       as.numeric(.)
     
-    #Extra stats introduced in 2010:
-    
     xGF = page %>%
       html_nodes("td:nth-child(19)") %>%
       html_text(.) %>%
@@ -156,8 +91,6 @@ getData.nst.Time = function(year, round, start, end, event = FALSE){
       html_text(.) %>%
       as.numeric(.)
     
-  }
-  
   if(event == "penaltykill"){
     
     tibble(Year = rep(year, length(teamnames)), Up.To.Round = rep(round, length(teamnames)), Team = teamnames, CF.Playoff.PK = corsi_for, CA.Playoff.PK = corsi_against,

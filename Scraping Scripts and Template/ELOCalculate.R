@@ -105,7 +105,7 @@ constant = ifelse(last.games == 0, 1, nrow(data)-last.games)
   
   rm(i)
   
-  out = trackELO
+  trackELO
   
 }
 

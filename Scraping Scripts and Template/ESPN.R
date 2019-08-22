@@ -112,14 +112,6 @@ getData_ESPN = function(year){
     as.numeric(.) %>%
     tibble(RPI = .) 
   
-  ESPNPower = mainpage %>%
-    html_nodes("td:nth-child(9)") %>%
-    .[2:length(.)] %>%
-    html_text(.) %>%
-    as.numeric(.) %>%
-    tibble(ESPNPower = .) %>%
-    mutate(ESPNPower = ifelse(ESPNPower == "null", NA, ESPNPower))
-  
   PenaltyKill_PostAllStar = secondary.page %>% 
     html_nodes("td:nth-child(10)") %>%
     html_text(.) %>%
@@ -128,19 +120,17 @@ getData_ESPN = function(year){
     as.numeric(.) %>%
     bind_cols(teams.2, PenaltyKill_PostAllStar = .)
 
-  data = bind_cols(tibble(Year = rep(year, nrow(teams))), teams, ESPNPower, RPI) %>% left_join(., PenaltyKill_PostAllStar, by = "Team")
+  data = bind_cols(tibble(Year = rep(year, nrow(teams))), teams, RPI) %>% left_join(., PenaltyKill_PostAllStar, by = "Team")
   
 }
 
 processData = function(team.1, team.2, highest.seed, data, year){
   data = data %>% filter(., Year == year)
   
-  team_ESPN = c(data$ESPNPower[which(data$Team == team.1)], data$ESPNPower[which(data$Team == team.2)])
   team_RPI = c(data$RPI[which(data$Team == team.1)], data$RPI[which(data$Team == team.2)])
   team_PK = c(data$PenaltyKill_PostAllStar[which(data$Team == team.1)], data$PenaltyKill_PostAllStar[which(data$Team == team.2)])
   
-  list(ESPNPower = as.numeric(team_ESPN[which(c(team.1,team.2) == highest.seed)] - team_ESPN[which(c(team.1, team.2) != highest.seed)]),
-             RPI = as.numeric(team_RPI[which(c(team.1,team.2) == highest.seed)] - team_RPI[which(c(team.1, team.2) != highest.seed)]),
+  list(RPI = as.numeric(team_RPI[which(c(team.1,team.2) == highest.seed)] - team_RPI[which(c(team.1, team.2) != highest.seed)]),
        PenaltyKill_PostAllStar = as.numeric(team_PK[which(c(team.1,team.2) == highest.seed)] - team_PK[which(c(team.1, team.2) != highest.seed)]))
 }
 
@@ -148,7 +138,6 @@ allYears = bind_rows(lapply(seq(2006, 2019,1), FUN = getData_ESPN))
 allYears$PenaltyKill_PostAllStar = ifelse(allYears$PenaltyKill_PostAllStar == 0, NA, allYears$PenaltyKill_PostAllStar)
 
 template = template %>% rowwise %>% 
-  mutate(ESPNPower = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$ESPNPower) %>%
   mutate(RPI = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$RPI) %>%
   mutate(PenaltyKill_PostAllStar = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$PenaltyKill_PostAllStar)
 
