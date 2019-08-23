@@ -41,8 +41,8 @@ allData = allData %>%
   mutate(GStoSOS = GS_mean / SOS) %>%
   mutate(SRStoSOS = SRS/SOS) %>%
   mutate("ixGF/60_max.TO.Rel CF%_max" = allData$'Rel CF%_max' / allData$'ixGF/60_max') %>%
-  mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
-  mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
+  mutate_if(is.numeric, .funs = list(~ ifelse(is.nan(.), 0,.))) %>%
+  mutate_if(is.numeric, .funs = list(~ ifelse(is.infinite(.), 0,.))) 
 
 #...................................Check skewness and kurtosis..................#
 
@@ -115,13 +115,13 @@ giveResults = function(seed, allData){
   writeLines(paste("Seed:", seed))
   
   set.seed(seed)
-  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.80)
+  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
   mainTrain = allData[allFolds[[1]], ]
   
   set.seed(seed)
-  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = 4, times = 6)
+  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = 3, times = 5)
   
-  finalParameters = vector("list", length(innerFolds)/4)
+  finalParameters = vector("list", length(innerFolds)/3)
   
   for(i in 1:(length(innerFolds)/3)){
   
@@ -168,7 +168,7 @@ giveResults = function(seed, allData){
   
   writeLines(paste("Score the Test Set for Seed:", seed))
   processedData = processFolds(fold.index = allFolds[[1]], mainTrain = allData)
-  finalTestSet.Score = train.ensemble(folds = allFolds, seed.a = seed, finalParameters = finalParameters, numofModels = length(innerFolds)/4, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
+  finalTestSet.Score = train.ensemble(folds = allFolds, seed.a = seed, finalParameters = finalParameters, numofModels = length(innerFolds)/3, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
   
   writeLines(paste("Log Loss Test Set:", finalTestSet.Score$LogLoss, sep = " "))
   
