@@ -2,7 +2,7 @@
 #the status of the repeated cross validation.
 setwd("/home/brayden/Desktop/status")
 
-source('/home/brayden/GitHub/NHLPlayoffs/Modelling/All Functions.R')
+source('/home/brayden/GitHub/NHLPlayoffs/Modelling/Experiment All Functions.R')
 
 #..................................Read data in....................................#
 #Change directories to pull in data from the "Required Data Sets" folder located in the repository.
@@ -57,6 +57,55 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
                                           filter(., abs(Skew) >= 1)
 
 
+#.........................Define outer pipe for the outer cross validation fold...........................................#
+
+modelPipe.outer = function(lambda.final, alpha.final, processedData){
+  
+  train = processedData$Train
+  test = processedData$Test
+  
+  model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
+                      alpha.a = alpha.final, s_lambda.a = lambda.final, calibrate = FALSE)
+  
+  #For AUROC
+  #ROC = roc(response = test$ResultProper, predictor = model$Predictions, levels = c("L", "W"))$auc
+  
+  #For Log Loss
+  
+  logloss = logLoss(scores = model$Predictions, label = test$ResultProper)
+  
+  VarImp = model$VariableImportance
+  
+  list(Predictions = model$Predictions, LogLoss = logloss, VarImp = VarImp)
+}
+
+#..........................Ensemble-simple average with different seeds................................#
+train.ensemble = function(folds, seed.a, finalParameters, numofModels, processedData, label_test){
+
+  finalPredictions = vector("list", numofModels)
+  finalVarImp = vector("list", numofModels)
+  
+  set.seed(seed.a)
+  seeds.EachModel = sample(1:1000000000, numofModels, replace = FALSE)
+  
+  for (k in 1:length(seeds.EachModel)){
+    
+    finalModel = modelPipe.outer(lambda.final = as.integer(finalParameters$lambda[k]), alpha.final = finalParameters$alpha[k], processedData = processedData)
+    
+    finalPredictions[[k]] = finalModel$Predictions
+    finalVarImp[[k]] = finalModel$VarImp
+   
+    rm(finalModel) 
+    
+  }
+  
+  finalPredictions.processed = finalPredictions %>% reduce(cbind) %>% rowMeans(.)
+  finalVarImp.processed = finalVarImp %>% reduce(left_join, by = "Variable") %>% processVarImp(.)
+  
+  list(LogLoss = logLoss(scores = finalPredictions.processed, label = label_test), 
+       VarImp = finalVarImp.processed)
+  
+}
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
 allSeeds = sample(1:1000000000, 40, replace = FALSE)
@@ -83,28 +132,30 @@ giveResults = function(seed, allData){
   
   writeLines(paste("Finished Processing Data For Seed:", seed, "in Rep:", i))
   
-  bestParam = BayesianOptimization(FUN =  function(alpha, lambda){
+  bestParam = BayesianOptimization(FUN =  function(alpha, lambda, ncomp){
         
     scores = vector("numeric", length(allProcessedFrames))
                                    
       for(m in 1:length(allProcessedFrames)){
-                                     
-        model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), calibrate = FALSE)
+        
+        PCAframes = PCA_recipe(ncomp = ncomp, train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test)
+        
+        model = baggedModel(train = PCAframes$train, test = PCAframes$test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), calibrate = FALSE)
         scores[m] = logLoss(scores = model$Predictions, label = allProcessedFrames[[m]]$Test$ResultProper)
 
         rm(model)
         
       }
         
-
     list(Score = -mean(scores))
     
     }
-    , bounds = list(alpha = c(0, 1), lambda = c(10L, 100L)), parallel = FALSE,
+    , bounds = list(alpha = c(0, 1), lambda = c(10L, 100L), ncomp = c(1L, 100L)), parallel = FALSE,
                                    initPoints = 4, nIters = 42, convThresh = 100, verbose = 1)
   
   writeLines(paste("Store Final Parameters For Seed:", seed, "in Rep:", i))
-  finalParameters[[i]] = tibble(alpha = bestParam$ScoreDT$alpha[which.max(bestParam$ScoreDT$Score)], lambda = as.integer(bestParam$ScoreDT$lambda[which.max(bestParam$ScoreDT$Score)]))
+  finalParameters[[i]] = tibble(alpha = bestParam$ScoreDT$alpha[which.max(bestParam$ScoreDT$Score)], lambda = as.integer(bestParam$ScoreDT$lambda[which.max(bestParam$ScoreDT$Score)]),
+                                ncomp = bestParam$ScoreDT$ncomp[which.max(bestParam$ScoreDT$Score)])
 
   rm(innerFolds.temp, allProcessedFrames, bestParam)
   gc()
@@ -129,7 +180,6 @@ giveResults = function(seed, allData){
 }
 
 results = mclapply(X = allSeeds, FUN = giveResults, allData = allData, mc.cores = 6)
-#results = lapply(X = allSeeds, FUN = giveResults, allData = allData)
 
 finalLogLoss = unlist(lapply(results, function(x) {x$LogLoss})) 
 finalVarImp = processVarImp(varImpRaw = lapply(results, function(x) {x$VarImp}) %>% Reduce(function(x,y) left_join(x,y, by = "Variable"),.)) 

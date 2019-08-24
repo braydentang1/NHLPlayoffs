@@ -33,7 +33,7 @@ getData_nhl_HitsandBlocks = function(year){
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
     html_text(.) %>%
-    gsub("?", "e",.) %>%
+    gsub("é", "e",.) %>%
     gsub("\\.", "",.) 
   
   Hits = mainpage %>%
@@ -90,7 +90,7 @@ getData_nhl_LeadingandTrailing = function(year){
   TeamName = mainpage %>%
     html_nodes(".rt-td:nth-child(2)") %>%
     html_text(.) %>%
-    gsub("?", "e",.) %>%
+    gsub("é", "e",.) %>%
     gsub("\\.", "",.) 
   
   WinPercent_Lead1P = mainpage %>%
