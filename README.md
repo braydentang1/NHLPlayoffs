@@ -1,11 +1,14 @@
 # NHLPlayoffs
 A model that aims to predict the outcome of a NHL playoff series before the first game is played. 
 
-With the addition of the 2019 playoff data up to Round 3; log loss sits at 0.65806.
+Sits at 0.65742 log loss using data from 2006 and onwards.
 
-![Alt text](https://github.com/braydentang1/NHLPlayoffs/blob/master/Histogram.jpeg)
+The problem with this dataset mostly concerns the dimension of the dataset (relative to how small the dataset is). However, feature reduction/extraction techniques tried so far have not been able to improve the model, besides the embedded feature selection present in all elastic net models via. penalization of the likelihood.
 
-I tried a lot of different methodlogies but ended up settling on this one after tons of trial and error. Explicit feature selection makes the model worse with RFE selection due to how much variance is exhibited when selecting variables, probably due to the small dataset.
+Methods used that did not improve the model:
+1) PCA for dimension reduction.
+2) Calibration via. platt scaling.
+3) Recursive feature elimination.
 
 Folder Descriptions:
 -----
