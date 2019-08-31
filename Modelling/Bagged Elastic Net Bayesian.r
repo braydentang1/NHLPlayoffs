@@ -59,14 +59,14 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
 
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
-allSeeds = sample(1:1000000000, 40, replace = FALSE)
+allSeeds = sample(1:1000000000, 42, replace = FALSE)
 
 giveResults = function(seed, allData){
   
   writeLines(paste("Seed:", seed))
   
   set.seed(seed)
-  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.75)
+  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.80)
   mainTrain = allData[allFolds[[1]], ]
   
   set.seed(seed)
@@ -100,7 +100,7 @@ giveResults = function(seed, allData){
     list(Score = -mean(scores))
     
     }
-    , bounds = list(alpha = c(0, 1), lambda = c(10L, 100L)), parallel = FALSE,
+    , bounds = list(alpha = c(0, 1), lambda = c(15L, 100L)), parallel = FALSE,
                                    initPoints = 4, nIters = 42, convThresh = 100, verbose = 1)
   
   writeLines(paste("Store Final Parameters For Seed:", seed, "in Rep:", i))
@@ -128,7 +128,7 @@ giveResults = function(seed, allData){
   
 }
 
-results = mclapply(X = allSeeds, FUN = giveResults, allData = allData, mc.cores = 6)
+results = mclapply(X = allSeeds, FUN = giveResults, allData = allData, mc.cores = 6, mc.preschedule = FALSE)
 #results = lapply(X = allSeeds, FUN = giveResults, allData = allData)
 
 finalLogLoss = unlist(lapply(results, function(x) {x$LogLoss})) 

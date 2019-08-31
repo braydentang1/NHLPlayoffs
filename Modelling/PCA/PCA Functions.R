@@ -21,7 +21,7 @@ baggedModel = function(train, test, label_train, alpha.a, s_lambda.a, calibrate 
     
     train_temp = train[samples[[g]], ]
     train.label = label_train[samples[[g]]]
-    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = train.label, family = "binomial", alpha = alpha.a, nlambda = 120, standardize = FALSE)
+    modelX = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = train.label, family = "binomial", alpha = alpha.a, nlambda = 150, standardize = FALSE)
     s_lambda.a = case_when(s_lambda.a > length(modelX$lambda) ~ length(modelX$lambda), TRUE ~ s_lambda.a)
     
     pred[[g]] = predict(modelX, newx = data.matrix(test[, !names(test) %in% c("ResultProper")]), type = "response")[, s_lambda.a]
@@ -162,10 +162,12 @@ preProcess.recipe = function(trainX){
   mainRecipe
 }
 
+#....................Transform all variables via. PCA.......................#
+
 PCA_recipe = function(ncomp, train, test){
   
   pca = recipe(ResultProper ~., data = train) %>%
-    step_pca(num_comp = ncomp)
+    step_pca(all_predictors(), num_comp = ncomp) 
   
   train_param = prep(pca, training = train)
   
@@ -182,12 +184,12 @@ modelPipe.outer = function(lambda.final, alpha.final, ncomp.final, processedData
   
   PCAframes = PCA_recipe(ncomp = ncomp.final, train = train, test = test)
   
-  model = baggedModel(train = PCAframes$train, test = PCAframes$test, label_train = train$ResultProper, 
+  model = baggedModel(train = PCAframes$train, test = PCAframes$test, label_train = PCAframes$train$ResultProper, 
                       alpha.a = alpha.final, s_lambda.a = lambda.final, calibrate = FALSE)
   
   #For Log Loss
   
-  logloss = logLoss(scores = model$Predictions, label = test$ResultProper)
+  logloss = logLoss(scores = model$Predictions, label = PCAframes$test$ResultProper)
   
   VarImp = model$VariableImportance
   
@@ -229,18 +231,18 @@ processVarImp = function(varImpRaw){
 }
 
 #..........................Ensemble-simple average with different seeds................................#
-train.ensemble = function(folds, seed.a, finalParameters, numofModels, processedData, label_test){
+train.ensemble = function(folds, seed.a, finalParameters, processedData, label_test){
   
-  finalPredictions = vector("list", numofModels)
-  finalVarImp = vector("list", numofModels)
+  finalPredictions = vector("list", nrow(finalParameters))
+  finalVarImp = vector("list", nrow(finalParameters))
   
   set.seed(seed.a)
-  seeds.EachModel = sample(1:1000000000, numofModels, replace = FALSE)
+  seeds.EachModel = sample(1:1000000000, nrow(finalParameters), replace = FALSE)
   
   for (k in 1:length(seeds.EachModel)){
     
     finalModel = modelPipe.outer(lambda.final = as.integer(finalParameters$lambda[k]), alpha.final = finalParameters$alpha[k],
-                                 ncomp.final = as.integer(finalParameters$ncomp[k], processedData = processedData))
+                                 ncomp.final = as.integer(finalParameters$ncomp[k]), processedData = processedData)
     
     finalPredictions[[k]] = finalModel$Predictions
     finalVarImp[[k]] = finalModel$VarImp
