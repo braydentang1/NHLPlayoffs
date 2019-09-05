@@ -1,7 +1,3 @@
-#Set the directory for parallel computation status checks. Change this to any folder on your computer so that we can monitor 
-#the status of the repeated cross validation.
-setwd("/home/brayden/Desktop/status")
-
 source('/home/brayden/GitHub/NHLPlayoffs/Modelling/All Functions.R')
 
 #..................................Read data in....................................#
