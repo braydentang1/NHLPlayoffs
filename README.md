@@ -10,6 +10,12 @@ Methods used that did not improve the model:
 2) Calibration via. platt scaling.
 3) Recursive feature elimination.
 
+Other methods potentially useful:
+
+1) Boruta
+2) SHAP
+3) Null importances; highly correlated features will influence variable importance scores by making them harder to interpret. It might be advantageous to correct for said correlation via. permutation based methods.
+
 Folder Descriptions:
 -----
 1. **All Team Stats:** .csv files pulled from corsica.hockey. Used in the .R file CorsicaAllTeamStats, located in the Scraping Scripts and Template.
