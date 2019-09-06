@@ -14,7 +14,7 @@ Other methods potentially useful:
 
 1) Boruta
 2) SHAP
-3) Null importances; highly correlated features will influence variable importance scores by making them harder to interpret. It might be advantageous to correct for said correlation via. permutation based methods.
+3) Null importances; highly correlated features will influence variable importance scores due to conflation. It might be advantageous to correct for said correlation via. permutation based methods, in combination with external validation i.e. recursive feature elimination.
 
 Folder Descriptions:
 -----
