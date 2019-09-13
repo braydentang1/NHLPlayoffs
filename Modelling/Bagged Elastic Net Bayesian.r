@@ -57,7 +57,7 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
 set.seed(40689)
 allSeeds = sample(1:1000000000, 42, replace = FALSE)
 
-giveResults = function(seed, allData){
+giveResults = function(seed, allData, times){
   
   writeLines(paste("Seed:", seed))
   
@@ -85,7 +85,8 @@ giveResults = function(seed, allData){
                                    
       for(m in 1:length(allProcessedFrames)){
                                      
-        model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), calibrate = FALSE)
+        model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda),
+                            times = times, calibrate = FALSE)
         scores[m] = logLoss(scores = model$Predictions, label = allProcessedFrames[[m]]$Test$ResultProper)
 
         rm(model)
