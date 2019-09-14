@@ -57,25 +57,45 @@ allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness
 set.seed(40689)
 allSeeds = sample(1:1000000000, 42, replace = FALSE)
 
-giveResults = function(seed, allData, times){
+giveResults = function(seed, allData, times = 20, p = 0.8, k = 3, numofModels = 5, useOnlyVariables = NULL){
+  
+  ############################################################################################
+  # Runs the entire modelling pipeline from start to finish.
+  #
+  # Arguments:
+  #
+  # seed -- an integer to determine data splitting
+  # allData -- the entire dataset to train and evaluate the model using k-fold cross validation and Monte Carlo cross validation.
+  # times -- number of models to include in each bootstrap model. Default = 20.
+  # p -- numeric value in [0,1] to determine how much of the entire dataset should be used for training. Default = 0.8.
+  # k -- integer value specifying the number of folds in k-fold cross validation for hyperparameter tuning. Default = 3.
+  # numofModels -- integer value that specifies the amount of models to fit in the ensemble. Default = 5.
+  # useOnlyVariables -- a character vector that gives specific variables to use when producing kNN variables. Default = NULL.
+  #
+  # Returns:
+  #
+  # list
+  #  A list containing the log loss on the test set and the variable importance scores from the fitted model.
+  #
+  ############################################################################################
   
   writeLines(paste("Seed:", seed))
   
   set.seed(seed)
-  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = 0.80)
+  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = p)
   mainTrain = allData[allFolds[[1]], ]
   
   set.seed(seed)
-  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = 3, times = 5)
+  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = k, times = numofModels)
   
-  finalParameters = vector("list", length(innerFolds)/3)
+  finalParameters = vector("list", length(innerFolds)/k)
   
-  for(i in 1:(length(innerFolds)/3)){
+  for(i in 1:(length(innerFolds)/k)){
   
   writeLines(paste("Fitting Five Models For Seed:", seed, "in Rep:",i))
     
   innerFolds.temp = innerFolds[str_detect(string = names(innerFolds), pattern = paste("Rep", i, sep = ""))]
-  allProcessedFrames = lapply(innerFolds.temp, FUN = processFolds, mainTrain = mainTrain)
+  allProcessedFrames = lapply(innerFolds.temp, FUN = processFolds, mainTrain = mainTrain, useOnlyVariables = useOnlyVariables)
   
   writeLines(paste("Finished Processing Data For Seed:", seed, "in Rep:", i))
   
@@ -115,8 +135,8 @@ giveResults = function(seed, allData, times){
   finalParameters = bind_rows(finalParameters)
   
   writeLines(paste("Score the Test Set for Seed:", seed))
-  processedData = processFolds(fold.index = allFolds[[1]], mainTrain = allData)
-  finalTestSet.Score = train.ensemble(folds = allFolds, seed.a = seed, finalParameters = finalParameters, numofModels = length(innerFolds)/3, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
+  processedData = processFolds(fold.index = allFolds[[1]], mainTrain = allData, useOnlyVariables = useOnlyVariables)
+  finalTestSet.Score = train.ensemble(folds = allFolds, times = times, finalParameters = finalParameters, processedData = processedData, label_test = allData$ResultProper[-allFolds[[1]]])
   
   writeLines(paste("Log Loss Test Set:", finalTestSet.Score$LogLoss, sep = " "))
   
@@ -125,7 +145,8 @@ giveResults = function(seed, allData, times){
   
 }
 
-results = mclapply(X = allSeeds, FUN = giveResults, allData = allData, mc.cores = 6, mc.preschedule = FALSE)
+results = mclapply(X = allSeeds, FUN = giveResults, allData = allData, useOnlyVariables = c("H2H", "WeightedGPS", "Q2Record", "PowerPlayOppurtunities", "PenaltyKillPercentage", "VegasOpeningOdds", "TOI% QoT_mean"),
+                   p = 0.8, k = 3, times = 20, numofModels = 5, mc.cores = 6, mc.preschedule = FALSE)
 #results = lapply(X = allSeeds, FUN = giveResults, allData = allData)
 
 finalLogLoss = unlist(lapply(results, function(x) {x$LogLoss})) 
