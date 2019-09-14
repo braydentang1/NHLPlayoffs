@@ -206,7 +206,7 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE, distances 
   #
   # traindata -- a tibble containing the training set. Should not contain the target variable (ResultProper) and if ResultProper is included, this variable will be removed before running the PCA. The tibble should only contain numeric values and be standardized and scaled. 
   # testdata -- a tibble containing the validation or test set. The tibble should only contain numeric values and be standardized and scaled.
-  # include_PCA -- a boolean. If TRUE, includes any PCA components (see function addPCA_variables) in the creation of kNN variables. Default = FALSE. The PCA variables should start with the prefix "PC".
+  # include_PCA -- a boolean. If TRUE, includes any PCA components (see function addPCA_variables) in the creation of the kNN variables. Default = FALSE. The PCA variables should start with the prefix "PC".
   # distances -- a boolean. If TRUE, will return cumulative euclidian distances to the k most closest neighbours for each class label to an observation. If FALSE, calculates the proportion of winners (and therefore, losers) out of the k most closest neighbours to an observation.
   # useOnlyVariables -- a character vector that specifies which variables to use in traindata to compute kNN distances for. By default, uses all variables in traindata.
   #
