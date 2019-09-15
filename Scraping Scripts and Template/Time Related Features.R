@@ -7,6 +7,24 @@ startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Tem
 
 getData.nst.Time = function(year, round, start, end, event = FALSE){
   
+  ############################################################################################
+  # Retrieves data from NaturalStatTrick in a "walk-through" fashion through the playoffs (to prevent data leakage).
+  #
+  # Arguments:
+  #
+  # year -- an integer: the year of playoffs. Example: 2009 for the 2009 NHL Playoffs.
+  # round -- either "quarter-finals", "semi-finals", "finals" or "stanley-cup-final"
+  # start -- starting date of the playoffs
+  # end -- the ending date of a particular round
+  # event -- the context of the data during the game. Must be either "penaltykill" or "powerplay". By default, assumes score and venue adjusted data during regular 5v5 play.
+  #
+  # Returns:
+  #
+  # tibble
+  #  A tibble that contains relevant playoff data from NaturalStatTrick.
+  #
+  ############################################################################################
+  
   if(event == "penaltykill"){
     
   page = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year-1,year,"&thruseason=",year-1,year,"&stype=3&sit=pk&score=all&rate=y&team=all&loc=B&gpf=410&fd=",start,"&td=",end, sep ="")) 
@@ -131,6 +149,25 @@ write_csv(allData.penaltykill, "TimeData_PenaltyKill.csv")
 #allData.penaltykill = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Raw Time Features Data/TimeData_PenaltyKill.csv")
 
 findMatch = function(team.1, team.2, stat, data, highest.seed, round){
+  
+  ############################################################################################
+  # Parses the raw dataset given by the function "getData.nst.time", finds the two teams that are playing each other during a round in the playoffs, and differences their stats.
+  #
+  # Arguments:
+  #
+  # team.1 -- a team that is playing against team.2 in a particular round of the playoffs
+  # team.2 -- a second team that is playing against team.1 in a particular round of the playoffs
+  # stat -- the particular statistic (i.e. the column name) in data
+  # data -- the "raw" dataset given by the function getData.nst.time
+  # highest.seed -- specifies which of team.1 or team.2 is the highest seed. The highest seed is defined in terms of who starts the series at home. The name of the team must match one of team.1 or team.2.
+  # round -- the round of which the playoff series between team.1 and team.2 is being played. Can be "quarter-finals", "semi-finals", "finals" or "stanley-cup-final".
+  #
+  # Returns:
+  #
+  # numeric
+  #  A numeric value that provides the difference between the highest seed and the lower seed between team.1 and team.2, for a particular column found in data.
+  #
+  ############################################################################################
   
   if(round == "quarter-finals"){
     0
