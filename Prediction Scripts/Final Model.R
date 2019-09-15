@@ -3,27 +3,27 @@ library(glmnet)
 library(recipes)
 library(caret)
 library(parallel)
-library(rBayesianOptimization)
+library(ParBayesianOptimization)
 
-source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R")
-setwd("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/")
+source("/home/brayden/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R")
+setwd("/home/brayden/GitHub/NHLPlayoffs/Prediction Scripts/")
 
 #..................................Read data in....................................#
 #Change directories to pull in data from the "Required Data Sets" folder located in the repository.
 
 cat("Reading in Data..... \n")
-allData = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/ELORatings.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
-  bind_cols(read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Required Data Sets/TimeRelatedPlayoffFeatures.csv")) %>%
+allData = read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ELORatings.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
+  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/TimeRelatedPlayoffFeatures.csv")) %>%
   mutate(ResultProper = as.factor(ResultProper))
 
 #...................................Engineering of some features..................#
@@ -57,6 +57,21 @@ allData = allData %>% filter(!is.na(ResultProper))
 
 preProcessData = function(data){
   
+  ############################################################################################
+  # Preprocesses the data given in the argument "data" using the recipe defined in the function preProcess.recipe
+  # 
+  # Arguments:
+  #
+  # data -- a tibble containing the dataset that the final model will be fit on (i.e. the entire dataset)
+  #
+  # Returns:
+  #
+  # list
+  #   A list containing the preprocessed dataset and learned recipe parameters.
+  #
+  ############################################################################################
+  
+  
   recipe.parameters = prep(preProcess.recipe(data), training = data)
   
   processedDataSet = bake(recipe.parameters, new_data = data) 
@@ -68,6 +83,23 @@ preProcessData = function(data){
 #Requires new data samples. 
 
 predict.NHL = function(processedDataSet, recipeParameters, newdata, finalParameters){
+  
+  ############################################################################################
+  # Fits an ensemble of bagged elastic net models and combines their predictions using a simple average.
+  # 
+  # Arguments:
+  #
+  # processedDataSet -- a tibble of training data which should be the result of calling the function preProcessData
+  # recipeParameters -- a recipe which should be the result of calling the function preProcessData
+  # newdata -- a tibble of new data samples. Must contain the same predictors as the processedDataSet.
+  # finalParameters -- a tibble of hyperparameters to be used for each bagged elastic net in the ensemble; must contain column names alpha and lambda.
+  #
+  # Returns:
+  #
+  # list
+  #   A list containing predictions on newdata (given as probability of W = winning) and variable importance scores from the fitted model.
+  #
+  ############################################################################################
   
   newdata = newdata %>% select(-ResultProper)
   newdata = bake(recipeParameters, new_data = newdata)
@@ -110,17 +142,8 @@ innerFolds = caret::createMultiFolds(y = allData$ResultProper, k = 3, times = 5)
 
 #...............If you want to retrain the model, uncomment this and run.................#
 
-cluster = makeCluster(detectCores(), outfile = "messages.txt")
-setDefaultCluster(cluster)
-
-# Load packages on each cluster
-clusterEvalQ(cluster, source("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/All Required Functions For Final Model.R"))
-
-finalParameters = parLapply(NULL, 1:5, fun = trainModel.oneRep, innerFolds = innerFolds, mainTrain = allData) %>%
+finalParameters = mclapply(X = 1:5, FUN = trainModel.oneRep, innerFolds = innerFolds, mainTrain = allData) %>%
   bind_rows(.)
-
-stopCluster(cluster)
-rm(cluster)
 
 saveRDS(finalParameters, file = "finalParameters.rds")
 
@@ -129,14 +152,14 @@ saveRDS(processedData, file = "processedData.rds")
 
 #.................Otherwise, run this instead..................................#
 
-# finalParameters = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/RDS Objects/finalParameters.rds")
-# processedData = readRDS("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Prediction Scripts/RDS Objects/processedData.rds")
+# finalParameters = readRDS("/home/brayden//GitHub/NHLPlayoffs/Prediction Scripts/RDS Objects/finalParameters.rds")
+# processedData = readRDS("/home/brayden//GitHub/NHLPlayoffs/Prediction Scripts/RDS Objects/processedData.rds")
 
 #.................Find, and then present final predictions....................................#
  
 predictions = predict.NHL(processedDataSet = processedData$Data, recipeParameters = processedData$recipeParameters, newdata = newdata, finalParameters = finalParameters)
 
-template = read_csv("C:/Users/Brayden/Documents/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Template.csv") %>%
   filter(Year == 2019, Round == "stanley-cup-final") %>%
   select(Team1, Team2, Highest.Seed)
 
