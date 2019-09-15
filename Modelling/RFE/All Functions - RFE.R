@@ -413,7 +413,7 @@ rfeSelection = function(allProcessedFrames, subset.size, varImp){
   #
   # Arguments:
   #
-  # allProcessedFrames -- a list that has two named tibbles; Train and Test. Should be the result of the the function processFolds.
+  # allProcessedFrames -- a list that has two named tibbles; Train and Test. Should be the result of calling the function processFolds.
   # subset.size -- an integer value that takes the top (subset.size) number of features, as given in the varImp argument
   # varImp -- a tibble that has two columns: Variable, which gives the variable name corresponding to a column in any of the tibbles in allProcessedFrames, and Importance, which provides the variable importance from the bagged elastic net using all features.
   #
