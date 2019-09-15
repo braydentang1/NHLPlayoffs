@@ -193,6 +193,25 @@ findMatch = function(team.1, team.2, stat, data, highest.seed, round){
 
 processData = function(year, team.1, team.2, highest.seed, round, data){
   
+  ############################################################################################
+  # A wrapper around the function findMatch that processes the data into a usable form. For quarter-final matchups, sets all values to 0 since there are no prior playoff games for that particular season.
+  #
+  # Arguments:
+  #
+  # year -- an integer: the year of the NHL Playoffs
+  # team.1 -- character string of the name of a particular team playing in the NHL playoffs, playing against team.2
+  # team.2 -- character string the name of a particular team playing in the NHL playoffs, playing against team.1
+  # highest.seed -- character string representing the highest seed amongst team.1 or team.2. The highest seed is defined as the team that starts the playoff series at home.
+  # round -- the round of the playoff series between team.1 and team.2
+  # data -- the dataset that should be the result of a call to getData.nst.time
+  #
+  # Returns:
+  #
+  # tibble
+  #  A tibble that provides the processed data for a particular matchup of the NHL Playoffs.
+  #
+  ############################################################################################
+  
   if(year <= 2007){
     
     if(round == "quarter-finals"){
