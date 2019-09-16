@@ -10,6 +10,21 @@ rem_dr2$open()
 
 getData = function(year){
 
+  ############################################################################################
+  # Gets the historical odds from OddsPortal for every game during the playoffs of a particular year.
+  # 
+  # Arguments:
+  #
+  # year -- an integer; the desired year of playoff data to pull odds from
+  #
+  # Returns:
+  #
+  # list
+  #   A tibble that provides the odds for every game during the NHL playoffs.
+  #
+  ############################################################################################
+  
+  
 rem_dr$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-",year-1,"-",year,"/results/#/", sep = ""))  
 main = read_html(rem_dr$getPageSource()[[1]])
 
@@ -80,6 +95,23 @@ combined %>% select(-Playoff.Indicator)
 
 processData = function(year, team.1, team.2, data){
   
+  ############################################################################################
+  # Processes the raw dataset resulting from a call to the function getData
+  # 
+  # Arguments:
+  #
+  # year -- an integer: playoff year of the particular series between team.1 and team.2 
+  # team.1 -- a character string of a team in a playoff series that is playing against team.2
+  # team.2 -- a character string of a team in a playoff series that is playing against team.1
+  # data -- the raw dataset resulting from the function getData
+  #
+  # Returns:
+  #
+  # list
+  #   A tibble that provides the odds for every game during the NHL playoffs.
+  #
+  ############################################################################################
+  
   data = data %>% filter(Year == year)
   
   string1 = paste(team.1, "-", team.2, sep =" ")
@@ -93,7 +125,24 @@ processData = function(year, team.1, team.2, data){
 
 #Kind of a hacky way to do this. Set the round argument to what is needed. Page 1 = quarters, page 2= semis, page 3=finals, page 4=stanley cup.
 getData.current = function(year, round){
-
+  
+  ############################################################################################
+  # Grabs data from the current year. OddsPortal has a separate page for NHL playoff games that are upcoming. This function requires
+  # that a saved copy of the HTML page is saved in some directory.
+  # 
+  # Arguments:
+  #
+  # year -- an integer: current playoff year
+  # round -- a character string: one of "quarter-finals", "semi-finals", "finals" or "stanley-cup-final"
+  # 
+  # Returns:
+  #
+  # list
+  #   A tibble that provides the odds for the current year of the NHL playoffs, based off the saved HTML pages.
+  #
+  ############################################################################################
+  
+  
   if(round == "quarter-finals"){
   
   page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep = ""))

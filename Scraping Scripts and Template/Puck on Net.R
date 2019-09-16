@@ -21,6 +21,19 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData_pon = function(year){
   
+  ############################################################################################
+  # Pulls data from Puck on Net, namely, stats from the last 20 games of the regular season.
+  #
+  # Arguments:
+  #
+  # year -- an integer: the year of NHL Playoffs to pull data from.
+  #
+  # Returns:
+  #
+  # tibble
+  #  A tibble that contains stats from the last 20 games played.
+  #
+  ############################################################################################  
     year2 = year - 1
     
     mainpage = read_html(paste("http://www.puckon.net/fenwick.php?s=",year2,"-09-01&e=",year,"-06-30&f=0&ld=1&l=82&p=0", sep=""))
@@ -107,6 +120,25 @@ getData_pon = function(year){
 }
 
 processData = function(team.1, team.2, highest.seed, data, year){
+  
+  ############################################################################################
+  # Processes the raw data from the function getData_pon to be the differences in stats between two teams from the highest seeds perspective.
+  #
+  # Arguments:
+  #
+  # team.1 -- a particular team in a NHL playoff series, playing against team.2
+  # team.2 -- a particular team in a NHL playoff series, playing against team.1
+  # highest.seed -- the highest seed between team.1 and team.2
+  # data -- the raw data resulting from the function getData_pon
+  # year -- the year of the NHL playoffs for the series played between team.1 and team.2
+  #
+  # Returns:
+  #
+  # list
+  #  A list of the processed stats given in the raw dataset.
+  #
+  ############################################################################################  
+  
   data = data %>% filter(., Year == year)
   
   team_Fenwick = c(data$Fenwick[which(data$Team == team.1)], data$Fenwick[which(data$Team == team.2)])
