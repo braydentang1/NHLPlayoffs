@@ -5,6 +5,20 @@ template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Templ
                 
 getData_nst = function(year){
   
+  ############################################################################################
+  # Pulls data from NaturalStatTrick, mostly specialized stats.
+  #
+  # Arguments:
+  #
+  # year -- an integer: the year of NHL Playoffs to pull data from.
+  #
+  # Returns:
+  #
+  # tibble
+  #  A tibble that contains stats on specialized stats for all teams during a particular NHL regular season.
+  #
+  ############################################################################################  
+  
   year2 = year - 1
   
   mainpage = read_html(paste("https://www.naturalstattrick.com/teamtable.php?fromseason=",year2,year,"&thruseason=",year2,year,"&stype=2&sit=sva&score=all&rate=y&team=all&loc=B&gpf=410&fd=&td=", sep=""))
@@ -42,12 +56,49 @@ getData_nst = function(year){
 
 findMatch = function(team.1, team.2, stat, data, highest.seed){
   
+  ############################################################################################
+  # Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
+  # and calculates the difference in a statistic from the perspective of the higher seed.
+  #
+  # Arguments:
+  #
+  # team.1 -- character string; a team competing against team.2 in a particular NHL series
+  # team.2 -- character string; a team competing against team.1 in a particular NHL series
+  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
+  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #
+  # Returns:
+  #
+  # numeric
+  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #
+  ############################################################################################  
+  
   tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
   tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)]
   
 }
 
 processData = function(team.1, team.2, highest.seed, year, data){
+  
+  ############################################################################################
+  # Processes the dataset for team.1 and team.2 for a particular dataset.
+  #
+  # Arguments:
+  #
+  # team.1 -- character string; a team competing against team.2 in a particular NHL series
+  # team.2 -- character string; a team competing against team.1 in a particular NHL series
+  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
+  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #
+  # Returns:
+  #
+  # numeric
+  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #
+  ############################################################################################  
   
   data = data %>% filter(., Year == year)
   
