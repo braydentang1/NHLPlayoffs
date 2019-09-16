@@ -26,6 +26,20 @@ rem_dr$open()
 
 getData_nhl_HitsandBlocks = function(year){
   
+  ############################################################################################
+  # Pulls data from the NHL official page, namely, hits and blocks during the regular season.
+  #
+  # Arguments:
+  #
+  # year -- an integer: the year of NHL Playoffs to pull data from.
+  #
+  # Returns:
+  #
+  # tibble
+  #  A tibble that contains stats on Hits and Blocks for all teams during a particular NHL regular season.
+  #
+  ############################################################################################  
+  
   rem_dr$navigate(paste("http://www.nhl.com/stats/team?report=realtime&reportType=season&seasonFrom=",year-1,year,"&seasonTo=",year - 1,year,"&gameType=2&filter=gamesPlayed,gte,1&sort=hits", sep = ""))
   
   mainpage = read_html(rem_dr$getPageSource()[[1]])
@@ -80,6 +94,20 @@ getData_nhl_HitsandBlocks = function(year){
 }
 
 getData_nhl_LeadingandTrailing = function(year){
+  
+  ############################################################################################
+  # Pulls data from the NHL official page, namely, number of times a team is leading or trailing during particular periods of any game during the regular season.
+  #
+  # Arguments:
+  #
+  # year -- an integer: the year of NHL Playoffs to pull data from.
+  #
+  # Returns:
+  #
+  # tibble
+  #  A tibble that contains leading and trailing stats for a particular year of the NHL regular season.
+  #
+  ############################################################################################  
   
   rem_dr$navigate(paste("http://www.nhl.com/stats/team?report=leadingtrailing&reportType=season&seasonFrom=",year-1,year,"&seasonTo=",year-1, year,"&gameType=2&filter=gamesPlayed,gte,1&sort=winsAfterLead1p", sep = ""))
   
@@ -145,11 +173,49 @@ getData_nhl_LeadingandTrailing = function(year){
 }
 
 findMatch = function(team.1, team.2, stat, data, highest.seed){
+  
+  ############################################################################################
+  # Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
+  # and calculates the difference in a statistic from the perspective of the higher seed.
+  #
+  # Arguments:
+  #
+  # team.1 -- character string; a team competing against team.2 in a particular NHL series
+  # team.2 -- character string; a team competing against team.1 in a particular NHL series
+  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
+  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #
+  # Returns:
+  #
+  # numeric
+  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #
+  ############################################################################################  
+  
   tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
   tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)] 
 }
 
 processData = function(team.1, team.2, highest.seed, year, data){
+  
+  ############################################################################################
+  # Processes the dataset for team.1 and team.2 for a particular dataset.
+  #
+  # Arguments:
+  #
+  # team.1 -- character string; a team competing against team.2 in a particular NHL series
+  # team.2 -- character string; a team competing against team.1 in a particular NHL series
+  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
+  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #
+  # Returns:
+  #
+  # numeric
+  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #
+  ############################################################################################  
   
   data = data %>% filter(., Year == year)
   

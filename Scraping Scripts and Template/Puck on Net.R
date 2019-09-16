@@ -119,6 +119,31 @@ getData_pon = function(year){
  
 }
 
+findMatch = function(team.1, team.2, stat, data, highest.seed){
+  
+  ############################################################################################
+  # Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
+  # and calculates the difference in a statistic from the perspective of the higher seed.
+  #
+  # Arguments:
+  #
+  # team.1 -- character string; a team competing against team.2 in a particular NHL series
+  # team.2 -- character string; a team competing against team.1 in a particular NHL series
+  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
+  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #
+  # Returns:
+  #
+  # numeric
+  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #
+  ############################################################################################  
+  
+  tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
+  tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)] 
+}
+
 processData = function(team.1, team.2, highest.seed, data, year){
   
   ############################################################################################
@@ -141,36 +166,19 @@ processData = function(team.1, team.2, highest.seed, data, year){
   
   data = data %>% filter(., Year == year)
   
-  team_Fenwick = c(data$Fenwick[which(data$Team == team.1)], data$Fenwick[which(data$Team == team.2)])
-  team_FenwickLast20 = c(data$Fenwick_Last20[which(data$Team == team.1)], data$Fenwick_Last20[which(data$Team == team.2)])
-  team_CorsiLast20 = c(data$Corsi_Last20[which(data$Team == team.1)], data$Corsi_Last20[which(data$Team == team.2)])
-  team_SOGLast20 = c(data$SOG_Last20[which(data$Team == team.1)], data$SOG_Last20[which(data$Team == team.2)])
-  team_GoalsPercentageLast20 = c(data$GoalsPercentage_Last20[which(data$Team == team.1)], data$GoalsPercentage_Last20[which(data$Team == team.2)])
-  team_MissesPercentageLast20 = c(data$MissesPercentage_Last20[which(data$Team == team.1)], data$MissesPercentage_Last20[which(data$Team == team.2)])
-  team_BlocksPercentageLast20 = c(data$BlocksPercentage_Last20[which(data$Team == team.1)], data$BlocksPercentage_Last20[which(data$Team == team.2)])
-  team_HitsPercentageLast20 = c(data$HitsPercentage_Last20[which(data$Team == team.1)], data$HitsPercentage_Last20[which(data$Team == team.2)])
+  team_vec = as_tibble(unlist(lapply(colnames(data)[5:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
+    rownames_to_column(.) %>%
+    mutate(rowname = colnames(data)[5:ncol(data)]) %>%
+    spread(rowname, value) 
   
-  list(Fenwick = as.numeric(team_Fenwick[which(c(team.1,team.2) == highest.seed)] - team_Fenwick[which(c(team.1, team.2) != highest.seed)]),
-       Fenwick_Last20 = as.numeric(team_FenwickLast20[which(c(team.1,team.2) == highest.seed)] - team_FenwickLast20[which(c(team.1, team.2) != highest.seed)]),
-       Corsi_Last20 = as.numeric(team_CorsiLast20[which(c(team.1,team.2) == highest.seed)] - team_CorsiLast20[which(c(team.1, team.2) != highest.seed)]),
-       SOG_Last20 = as.numeric(team_SOGLast20[which(c(team.1,team.2) == highest.seed)] - team_SOGLast20[which(c(team.1, team.2) != highest.seed)]),
-       GoalsPercentageLast20 = as.numeric(team_GoalsPercentageLast20[which(c(team.1,team.2) == highest.seed)] - team_GoalsPercentageLast20[which(c(team.1, team.2) != highest.seed)]),
-       MissesPercentageLast20 = as.numeric(team_MissesPercentageLast20[which(c(team.1,team.2) == highest.seed)] - team_MissesPercentageLast20[which(c(team.1, team.2) != highest.seed)]),
-       BlocksPercentageLast20 = as.numeric(team_BlocksPercentageLast20[which(c(team.1,team.2) == highest.seed)] - team_BlocksPercentageLast20[which(c(team.1, team.2) != highest.seed)]),
-       HitsPercentageLast20 = as.numeric(team_HitsPercentageLast20[which(c(team.1,team.2) == highest.seed)] - team_HitsPercentageLast20[which(c(team.1, team.2) != highest.seed)]))
+  team_vec
 }
+
+
 
 allYears = bind_rows(lapply(seq(2006, 2019,1), FUN = getData_pon)) %>% rename(Team = FullName)
 
-template = template %>% rowwise %>% 
-  mutate(Fenwick = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$Fenwick) %>%
-  mutate(Fenwick_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$Fenwick_Last20) %>% 
-  mutate(Corsi_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$Corsi_Last20) %>% 
-  mutate(SOG_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$SOG_Last20) %>% 
-  mutate(GoalsPercentage_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$GoalsPercentageLast20) %>% 
-  mutate(MissesPercentage_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$MissesPercentageLast20) %>% 
-  mutate(BlocksPercentage_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$BlocksPercentageLast20) %>% 
-  mutate(HitsPercentage_Last20 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$HitsPercentageLast20)
-
+finalData = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allYears), SIMPLIFY = FALSE))
+  
 setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[, 7:ncol(template)], "FenwickScores.csv")
+write_csv(finalData, "FenwickScores.csv")
