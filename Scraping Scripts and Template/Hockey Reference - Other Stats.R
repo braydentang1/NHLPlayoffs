@@ -24,6 +24,26 @@ rem_dr$open()
 
 grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
 
+  ############################################################################################
+  # Grabs the hockeyreference.com web page of a particular playoff matchup.
+  #
+  # Arguments:
+  #
+  # year -- integer: the year of NHL playoffs for a particular playoff matchup
+  # team.1 -- character string of a specific team that played against team.2 in the NHL playoffs
+  # team.2 -- character string of a specific team that played against team.1 in the NHL playoffs
+  # Round -- character string that gives the round of the playoff series between team.1 and team.2. Should be either "quarter-finals", "semi-finals", "finals", or "stanley-cup-final".
+  # confernece -- character string that gives the conference of play. Should be "western" or "eastern"
+  # 
+  #
+  # Returns:
+  # 
+  # list
+  #  A list that outlines the html page pulled from hockeyreference, given by read_html of rvest.
+  #
+  ############################################################################################  
+  
+  
   if(any(Round %in% c("quarter-finals", "semi-finals", "finals", "stanley-cup-final")) ==  FALSE){
     stop("Invalid round format.")
   }
