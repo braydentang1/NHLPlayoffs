@@ -24,24 +24,19 @@ rem_dr$open()
 
 grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
 
-  ############################################################################################
-  # Grabs the hockeyreference.com web page of a particular playoff matchup.
-  #
-  # Arguments:
-  #
-  # year -- integer: the year of NHL playoffs for a particular playoff matchup
-  # team.1 -- character string of a specific team that played against team.2 in the NHL playoffs
-  # team.2 -- character string of a specific team that played against team.1 in the NHL playoffs
-  # Round -- character string that gives the round of the playoff series between team.1 and team.2. Should be either "quarter-finals", "semi-finals", "finals", or "stanley-cup-final".
-  # confernece -- character string that gives the conference of play. Should be "western" or "eastern"
-  # 
-  #
-  # Returns:
-  # 
-  # list
-  #  A list that outlines the html page pulled from hockeyreference, given by read_html of rvest.
-  #
-  ############################################################################################  
+  #' Grabs the hockeyreference.com web page of a particular playoff matchup.
+  #'
+  #' @param year integer: the year of NHL playoffs for a particular playoff matchup
+  #' @param team.1 character string of a specific team that played against team.2 in the NHL playoffs
+  #' @param team.2 character string of a specific team that played against team.1 in the NHL playoffs
+  #' @param Round character string that gives the round of the playoff series between team.1 and team.2. Should be either "quarter-finals", "semi-finals", "finals", or "stanley-cup-final".
+  #' @param conference character string that gives the conference of play. Should be "western" or "eastern"
+  #' 
+  #' @return
+  #' A list that outlines the html page pulled from hockeyreference, given by read_html of rvest.
+  #'
+  #' @export
+  #' 
   
   
   if(any(Round %in% c("quarter-finals", "semi-finals", "finals", "stanley-cup-final")) ==  FALSE){
@@ -79,21 +74,17 @@ grabPageofMatchUp = function(year, team.1, team.2, Round, conference){
 
 grabPageandGamesofSpecificTeam = function(team, year, lookup_Accronyms){
   
-  ############################################################################################
-  # Grabs the main page of a team from hockey reference for a particular year. 
-  #
-  # Arguments:
-  #
-  # team -- character string of a NHL team that played in the NHL regular season for the year.
-  # year -- year of data to pull from
-  # lookup_Accronyms -- a lookup table that finds accronyms for a particular team in the NHL regular season. See the README file in the repo for details.
-  #
-  # Returns:
-  # 
-  # list
-  #   A list that provides the main html webpage (resulting from a call to read_html of rvest), the game page, and the year for a particular team during the NHL regular season.
-  #
-  ############################################################################################  
+  #' Grabs the main page of a team from hockey reference for a particular year. 
+  #'
+  #' @param team character string of a NHL team that played in the NHL regular season for the year.
+  #' @param year year of data to pull from
+  #' @param lookup_Accronyms a lookup table that finds accronyms for a particular team in the NHL regular season. See the README file in the repo for details.
+  #'
+  #' @return
+  #' A list that provides the main html webpage (resulting from a call to read_html of rvest), the game page, and the year for a particular team during the NHL regular season.
+  #'
+  #' @export
+  #' 
   
   teamAcc = as.character(lookup_Accronyms[which(lookup_Accronyms$FullName == team),2])
   
@@ -106,24 +97,20 @@ grabPageandGamesofSpecificTeam = function(team, year, lookup_Accronyms){
 
 calculateH2H = function(mainpage, highest.seed, process = TRUE){
 
-  ############################################################################################
-  # Calculates the head to head during the regular season between two teams in a series, using a matchup page resulting from a call to grabPageofMatchUp.
-  #
-  # Arguments:
-  #
-  # mainpage -- a html page resulting from a call to grabPageofMatchUp
-  # highest.seed -- character string: the highest seed between two teams in a series. The highest seed is defined as the team that starts the playoff series at home.
-  # process -- a boolean. If TRUE, will provide the win rate against the lower seeded team during the regular season. If FALSE, will provide the raw data table for both teams involved in a playoff series. Default = TRUE.
-  # 
-  # Returns:
-  # 
-  # numeric
-  #   A numeric value representing the head to head win rate against the other team, from the higher seeds perspective during the regular season, or
-  # 
-  # tibble
-  #   A tibble containing the head to head record during the regular season for both teams involved in a playoff series.
-  #
-  ############################################################################################  
+  #' Calculates the head to head during the regular season between two teams in a series, using a matchup page resulting from a call to grabPageofMatchUp.
+  #'
+  #' Arguments:
+  #'
+  #' mainpage -- a html page resulting from a call to grabPageofMatchUp
+  #' highest.seed -- character string: the highest seed between two teams in a series. The highest seed is defined as the team that starts the playoff series at home.
+  #' process -- a boolean. If TRUE, will provide the win rate against the lower seeded team during the regular season. If FALSE, will provide the raw data table for both teams involved in a playoff series. Default = TRUE.
+  #' 
+  #' @return
+  #' A numeric value representing the head to head win rate against the other team, from the higher seeds perspective during the regular season, or
+  #' a tibble containing the head to head record during the regular season for both teams involved in a playoff series.
+  #'
+  #' @export
+  #' 
   
   paste(highest.seed)
   
@@ -162,22 +149,17 @@ calculateH2H = function(mainpage, highest.seed, process = TRUE){
 
 calculateGoalieStats = function(teamPage, returnGoalieSavePercentage = TRUE){
 
-  ############################################################################################
-  # Calculates weighted goalie statistics (by playing time) for a specified team during the NHL regular season.
-  #
-  # Arguments:
-  #
-  # teamPage -- a list of t
-  #
-  # Returns:
-  # 
-  # numeric
-  #   A numeric value representing the head to head win rate against the other team, from the higher seeds perspective during the regular season, or
-  # 
-  # tibble
-  #   A tibble containing the head to head record during the regular season for both teams involved in a playoff series.
-  #
-  ############################################################################################    
+  #' Calculates weighted goalie statistics (by playing time) for a specified team during the NHL regular season.
+  #'
+  #' @param teamPage a list containing html attributes as a result of calling function grabPageandGamesofSpecificTeam
+  #' @param returnGoalieSavePercentage a logical. Should the goalie save percentage be returned? If FALSE, will return the weighted goalie point share instead.
+  #'
+  #' @return
+  #' A numeric value representing the head to head win rate against the other team, from the higher seeds perspective during the regular season, or
+  #' a tibble containing the head to head record during the regular season for both teams involved in a playoff series.
+  #'  
+  #' @export
+  #'
   
 teamPage = teamPage$page
     

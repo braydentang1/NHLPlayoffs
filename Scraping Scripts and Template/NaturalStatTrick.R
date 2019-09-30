@@ -5,19 +5,15 @@ template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Templ
                 
 getData_nst = function(year){
   
-  ############################################################################################
-  # Pulls data from NaturalStatTrick, mostly specialized stats.
-  #
-  # Arguments:
-  #
-  # year -- an integer: the year of NHL Playoffs to pull data from.
-  #
-  # Returns:
-  #
-  # tibble
-  #  A tibble that contains stats on specialized stats for all teams during a particular NHL regular season.
-  #
-  ############################################################################################  
+  #' Pulls data from NaturalStatTrick, mostly specialized stats.
+  #'
+  #' @param year an integer: the year of NHL Playoffs to pull data from.
+  #'
+  #' @return
+  #' A tibble that contains stats on specialized stats for all teams during a particular NHL regular season.
+  #'
+  #' @export
+  #'
   
   year2 = year - 1
   
@@ -56,55 +52,50 @@ getData_nst = function(year){
 
 findMatch = function(team.1, team.2, stat, data, highest.seed){
   
-  ############################################################################################
-  # Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
-  # and calculates the difference in a statistic from the perspective of the higher seed.
-  #
-  # Arguments:
-  #
-  # team.1 -- character string; a team competing against team.2 in a particular NHL series
-  # team.2 -- character string; a team competing against team.1 in a particular NHL series
-  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
-  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
-  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
-  #
-  # Returns:
-  #
-  # numeric
-  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
-  #
-  ############################################################################################  
+  #' Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
+  #'   and calculates the difference in a statistic from the perspective of the higher seed.
+  #'
+  #' @param team.1 character string; a team competing against team.2 in a particular NHL series
+  #' @param team.2 character string; a team competing against team.1 in a particular NHL series
+  #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
+  #' @param data the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  #' @param highest.seed character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #'
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #'
   
   tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
   tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)]
   
 }
 
-processData = function(team.1, team.2, highest.seed, year, data){
+processData = function(team.1, team.2, highest.seed, year, data, start_col = 3L){
   
   ############################################################################################
-  # Processes the dataset for team.1 and team.2 for a particular dataset.
-  #
-  # Arguments:
-  #
-  # team.1 -- character string; a team competing against team.2 in a particular NHL series
-  # team.2 -- character string; a team competing against team.1 in a particular NHL series
-  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
-  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
-  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
-  #
-  # Returns:
-  #
-  # numeric
-  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
-  #
-  ############################################################################################  
+  #' Processes the dataset for team.1 and team.2 for a particular dataset. 
+  #' Starts processing at column 3 of data by default.
+  #'
+  #' @param team.1 character string; a team competing against team.2 in a particular NHL series
+  #' @param team.2 character string; a team competing against team.1 in a particular NHL series
+  #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
+  #' @param data the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  #' @param highest.seed character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #' @param start_col a vector of length one that gives the starting column index to start processing from. All columns from the given column index and onwards are processed. Default = 3L.
+  #' 
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #' 
   
   data = data %>% filter(., Year == year)
   
-  team_vec = as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
+  team_vec = as_tibble(unlist(lapply(colnames(data)[start_col:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
     rownames_to_column(.) %>%
-    mutate(rowname = colnames(data)[3:ncol(data)]) %>%
+    mutate(rowname = colnames(data)[start_col:ncol(data)]) %>%
     spread(rowname, value) 
   
   team_vec

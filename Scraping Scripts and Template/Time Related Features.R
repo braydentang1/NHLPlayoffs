@@ -6,24 +6,20 @@ template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Templ
 startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Time Related Features.csv") %>% filter(Year >= 2008)
 
 getData.nst.Time = function(year, round, start, end, event = FALSE){
-  
-  ############################################################################################
-  # Retrieves data from NaturalStatTrick in a "walk-through" fashion through the playoffs (to prevent data leakage).
-  #
-  # Arguments:
-  #
-  # year -- an integer: the year of playoffs. Example: 2009 for the 2009 NHL Playoffs.
-  # round -- either "quarter-finals", "semi-finals", "finals" or "stanley-cup-final"
-  # start -- starting date of the playoffs
-  # end -- the ending date of a particular round
-  # event -- the context of the data during the game. Must be either "penaltykill" or "powerplay". By default, assumes score and venue adjusted data during regular 5v5 play.
-  #
-  # Returns:
-  #
-  # tibble
-  #  A tibble that contains relevant playoff data from NaturalStatTrick.
-  #
-  ############################################################################################
+
+  #' Retrieves data from NaturalStatTrick in a "walk-through" fashion through the playoffs (to prevent data leakage).
+  #'
+  #' @param year an integer: the year of playoffs. Example: 2009 for the 2009 NHL Playoffs.
+  #' @param round either "quarter-finals", "semi-finals", "finals" or "stanley-cup-final"
+  #' @param start starting date of the playoffs
+  #' @param end the ending date of a particular round
+  #' @param event the context of the data during the game. Must be either "penaltykill" or "powerplay". By default, assumes score and venue adjusted data during regular 5v5 play.
+  #'
+  #' @return
+  #' A tibble that contains relevant playoff data from NaturalStatTrick.
+  #'
+  #' @export
+  #'
   
   if(event == "penaltykill"){
     
@@ -150,24 +146,20 @@ write_csv(allData.penaltykill, "TimeData_PenaltyKill.csv")
 
 findMatch = function(team.1, team.2, stat, data, highest.seed, round){
   
-  ############################################################################################
-  # Parses the raw dataset given by the function "getData.nst.time", finds the two teams that are playing each other during a round in the playoffs, and differences their stats.
-  #
-  # Arguments:
-  #
-  # team.1 -- a team that is playing against team.2 in a particular round of the playoffs
-  # team.2 -- a second team that is playing against team.1 in a particular round of the playoffs
-  # stat -- the particular statistic (i.e. the column name) in data
-  # data -- the "raw" dataset given by the function getData.nst.time
-  # highest.seed -- specifies which of team.1 or team.2 is the highest seed. The highest seed is defined in terms of who starts the series at home. The name of the team must match one of team.1 or team.2.
-  # round -- the round of which the playoff series between team.1 and team.2 is being played. Can be "quarter-finals", "semi-finals", "finals" or "stanley-cup-final".
-  #
-  # Returns:
-  #
-  # numeric
-  #  A numeric value that provides the difference between the highest seed and the lower seed between team.1 and team.2, for a particular column found in data.
-  #
-  ############################################################################################
+  #' Parses the raw dataset given by the function "getData.nst.time", finds the two teams that are playing each other during a round in the playoffs, and differences their stats.
+  #'
+  #' @param team.1 a team that is playing against team.2 in a particular round of the playoffs
+  #' @param team.2 a second team that is playing against team.1 in a particular round of the playoffs
+  #' @param stat the particular statistic (i.e. the column name) in data
+  #' @param data the "raw" dataset given by the function getData.nst.time
+  #' @param highest.seed specifies which of team.1 or team.2 is the highest seed. The highest seed is defined in terms of who starts the series at home. The name of the team must match one of team.1 or team.2.
+  #' @param round the round of which the playoff series between team.1 and team.2 is being played. Can be "quarter-finals", "semi-finals", "finals" or "stanley-cup-final".
+  #'
+  #' @return
+  #' A numeric value that provides the difference between the highest seed and the lower seed between team.1 and team.2, for a particular column found in data.
+  #'
+  #' @export 
+  #'
   
   if(round == "quarter-finals"){
     0
@@ -191,40 +183,38 @@ findMatch = function(team.1, team.2, stat, data, highest.seed, round){
   }
 }
 
-processData = function(year, team.1, team.2, highest.seed, round, data){
+processData = function(year, team.1, team.2, highest.seed, round, data, start_col = 4L){
   
-  ############################################################################################
-  # A wrapper around the function findMatch that processes the data into a usable form. For quarter-final matchups, sets all values to 0 since there are no prior playoff games for that particular season.
-  #
-  # Arguments:
-  #
-  # year -- an integer: the year of the NHL Playoffs
-  # team.1 -- character string of the name of a particular team playing in the NHL playoffs, playing against team.2
-  # team.2 -- character string the name of a particular team playing in the NHL playoffs, playing against team.1
-  # highest.seed -- character string representing the highest seed amongst team.1 or team.2. The highest seed is defined as the team that starts the playoff series at home.
-  # round -- the round of the playoff series between team.1 and team.2
-  # data -- the dataset that should be the result of a call to getData.nst.time
-  #
-  # Returns:
-  #
-  # tibble
-  #  A tibble that provides the processed data for a particular matchup of the NHL Playoffs.
-  #
-  ############################################################################################
+  #' A wrapper around the function findMatch that processes the data into a usable form. For quarter-final matchups, sets all values to 0 since there are no prior playoff games for that particular season.
+  #'   Starts processing data at column 4 by default.
+  #'
+  #' @param year an integer: the year of the NHL Playoffs
+  #' @param team.1 character string of the name of a particular team playing in the NHL playoffs, playing against team.2
+  #' @param team.2 character string the name of a particular team playing in the NHL playoffs, playing against team.1
+  #' @param highest.seed character string representing the highest seed amongst team.1 or team.2. The highest seed is defined as the team that starts the playoff series at home.
+  #' @param round the round of the playoff series between team.1 and team.2
+  #' @param data the dataset that should be the result of a call to getData.nst.time
+  #' @param start_col a vector of length one that gives the starting column index to start processing from. All columns from the given column index and onwards are processed. Default = 4L.
+  #'
+  #' @return
+  #' A tibble that provides the processed data for a particular matchup of the NHL Playoffs.
+  #'
+  #' @export
+  #'
   
   if(year <= 2007){
     
     if(round == "quarter-finals"){
       
       tmp = as_tibble(matrix(c(rep(0, ncol(data)- 3)), ncol = ncol(data) - 3))
-      colnames(tmp) = colnames(data)[4:ncol(data)]
+      colnames(tmp) = colnames(data)[start_col:ncol(data)]
       
       tmp
       
     } else{
       
       tmp = as_tibble(matrix(c(rep(NA, ncol(data)- 3)), ncol = ncol(data) - 3))
-      colnames(tmp) = colnames(data)[4:ncol(data)]
+      colnames(tmp) = colnames(data)[start_col:ncol(data)]
       
       tmp
     }
@@ -233,9 +223,9 @@ processData = function(year, team.1, team.2, highest.seed, round, data){
     
     data = data %>% filter(., Year == year)
     
-    team_vec = as_tibble(unlist(lapply(colnames(data)[4:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed, round = round))) %>%
+    team_vec = as_tibble(unlist(lapply(colnames(data)[start_col:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed, round = round))) %>%
       rownames_to_column(.) %>%
-      mutate(rowname = colnames(data)[4:ncol(data)]) %>%
+      mutate(rowname = colnames(data)[start_col:ncol(data)]) %>%
       spread(rowname, value) 
     
   }

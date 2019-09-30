@@ -21,19 +21,15 @@ rm(accronyms_pg, accronyms, fullnames)
 
 getData_pon = function(year){
   
-  ############################################################################################
-  # Pulls data from Puck on Net, namely, stats from the last 20 games of the regular season.
-  #
-  # Arguments:
-  #
-  # year -- an integer: the year of NHL Playoffs to pull data from.
-  #
-  # Returns:
-  #
-  # tibble
-  #  A tibble that contains stats from the last 20 games played.
-  #
-  ############################################################################################  
+  #' Pulls data from Puck on Net, namely, stats from the last 20 games of the regular season.
+  #'
+  #' @param year an integer: the year of NHL Playoffs to pull data from.
+  #'
+  #' @return
+  #' A tibble that contains stats from the last 20 games played.
+  #'
+  #' @export
+  #'
     year2 = year - 1
     
     mainpage = read_html(paste("http://www.puckon.net/fenwick.php?s=",year2,"-09-01&e=",year,"-06-30&f=0&ld=1&l=82&p=0", sep=""))
@@ -121,54 +117,48 @@ getData_pon = function(year){
 
 findMatch = function(team.1, team.2, stat, data, highest.seed){
   
-  ############################################################################################
-  # Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
-  # and calculates the difference in a statistic from the perspective of the higher seed.
-  #
-  # Arguments:
-  #
-  # team.1 -- character string; a team competing against team.2 in a particular NHL series
-  # team.2 -- character string; a team competing against team.1 in a particular NHL series
-  # stat -- character string; a column name found in the raw data given by the argument data to compute the differencing
-  # data -- the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
-  # highest.seed -- character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
-  #
-  # Returns:
-  #
-  # numeric
-  #  A numeric value that gives the difference in a statistic, from the higher seeds perspective.
-  #
-  ############################################################################################  
+  #' Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
+  #'   and calculates the difference in a statistic from the perspective of the higher seed.
+  #'
+  #' @param team.1 character string; a team competing against team.2 in a particular NHL series
+  #' @param team.2 a team competing against team.1 in a particular NHL series
+  #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
+  #' @param data the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
+  #' @param highest.seed character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #'
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #'
   
   tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
   tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)] 
 }
 
-processData = function(team.1, team.2, highest.seed, data, year){
+processData = function(team.1, team.2, highest.seed, data, year, start_col = 5L){
   
-  ############################################################################################
-  # Processes the raw data from the function getData_pon to be the differences in stats between two teams from the highest seeds perspective.
-  #
-  # Arguments:
-  #
-  # team.1 -- a particular team in a NHL playoff series, playing against team.2
-  # team.2 -- a particular team in a NHL playoff series, playing against team.1
-  # highest.seed -- the highest seed between team.1 and team.2
-  # data -- the raw data resulting from the function getData_pon
-  # year -- the year of the NHL playoffs for the series played between team.1 and team.2
-  #
-  # Returns:
-  #
-  # list
-  #  A list of the processed stats given in the raw dataset.
-  #
-  ############################################################################################  
+  #' Processes the raw data from the function getData_pon to be the differences in stats between two teams from the highest seeds perspective.
+  #'  Starts processing at column 5 by default.
+  #'
+  #' @param team.1 a particular team in a NHL playoff series, playing against team.2
+  #' @param team.2 a particular team in a NHL playoff series, playing against team.1
+  #' @param highest.seed the highest seed between team.1 and team.2
+  #' @param the raw data resulting from the function getData_pon
+  #' @param year the year of the NHL playoffs for the series played between team.1 and team.2
+  #' @param start_col a vector of length one that gives the starting column index to start processing from. All columns from the given column index and onwards are processed. Default = 5L.
+  #'
+  #' @return
+  #'  A list of the processed stats given in the raw dataset.
+  #'
+  #' @export
+  #'
   
   data = data %>% filter(., Year == year)
   
-  team_vec = as_tibble(unlist(lapply(colnames(data)[5:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
+  team_vec = as_tibble(unlist(lapply(colnames(data)[start_col:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
     rownames_to_column(.) %>%
-    mutate(rowname = colnames(data)[5:ncol(data)]) %>%
+    mutate(rowname = colnames(data)[start_col:ncol(data)]) %>%
     spread(rowname, value) 
   
   team_vec
