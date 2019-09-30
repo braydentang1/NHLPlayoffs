@@ -59,26 +59,22 @@ allSeeds = sample(1:1000000000, 42, replace = FALSE)
 
 giveResults = function(seed, allData, times = 20, p = 0.8, k = 3, numofModels = 5, nIters = 42, useOnlyVariables = NULL){
   
-  ############################################################################################
-  # Runs the entire modelling pipeline from start to finish.
-  #
-  # Arguments:
-  #
-  # seed -- an integer to determine data splitting
-  # allData -- the entire dataset to train and evaluate the model using k-fold cross validation and Monte Carlo cross validation.
-  # times -- number of models to include in each bootstrap model. Default = 20.
-  # p -- numeric value in [0,1] to determine how much of the entire dataset should be used for training. Default = 0.8.
-  # k -- integer value specifying the number of folds in k-fold cross validation for hyperparameter tuning. Default = 3.
-  # numofModels -- integer value that specifies the amount of models to fit in the ensemble. Default = 5.
-  # nIters -- an integer specifying the number of rounds to use in Bayesian Optimization for hyperparameter tuning. Default = 42.
-  # useOnlyVariables -- a character vector that gives specific variables to use when producing kNN variables. Default = NULL.
-  #
-  # Returns:
-  #
-  # list
-  #  A list containing the log loss on the test set and the variable importance scores from the fitted model.
-  #
-  ############################################################################################
+  #' Runs the entire modelling pipeline from start to finish.
+  #'
+  #' @param seed an integer to determine data splitting
+  #' @param allData the entire dataset to train and evaluate the model using k-fold cross validation and Monte Carlo cross validation.
+  #' @param times number of models to include in each bootstrap model. Default = 20.
+  #' @param p numeric value in [0,1] to determine how much of the entire dataset should be used for training. Default = 0.8.
+  #' @param k integer value specifying the number of folds in k-fold cross validation for hyperparameter tuning. Default = 3.
+  #' @param numofModels integer value that specifies the amount of models to fit in the ensemble. Default = 5.
+  #' @param nIters an integer specifying the number of rounds to use in Bayesian Optimization for hyperparameter tuning. Default = 42.
+  #' @param useOnlyVariables a character vector that gives specific variables to use when producing kNN variables. Default = NULL.
+  #'
+  #' @return
+  #' A list containing the log loss on the test set and the variable importance scores from the fitted model.
+  #'
+  #' @export
+  #' 
   
   writeLines(paste("Seed:", seed))
   
