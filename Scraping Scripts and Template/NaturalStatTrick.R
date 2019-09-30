@@ -74,7 +74,6 @@ findMatch = function(team.1, team.2, stat, data, highest.seed){
 
 processData = function(team.1, team.2, highest.seed, year, data, start_col = 3L){
   
-  ############################################################################################
   #' Processes the dataset for team.1 and team.2 for a particular dataset. 
   #' Starts processing at column 3 of data by default.
   #'
