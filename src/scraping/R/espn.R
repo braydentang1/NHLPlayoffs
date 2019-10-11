@@ -1,7 +1,7 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv") 
+template = read_csv("/home/brayden/GitHub/NHLPlayoffs/src/scraping/templates/template.csv") 
 
 accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
 accronyms = accronyms_pg %>% 
@@ -134,12 +134,10 @@ processData = function(team.1, team.2, highest.seed, data, year){
        PenaltyKill_PostAllStar = as.numeric(team_PK[which(c(team.1,team.2) == highest.seed)] - team_PK[which(c(team.1, team.2) != highest.seed)]))
 }
 
-allYears = bind_rows(lapply(seq(2006, 2019,1), FUN = getData_ESPN)) 
+allYears = map_df(seq(2006, 2019,1), getData_ESPN)
 allYears$PenaltyKill_PostAllStar = ifelse(allYears$PenaltyKill_PostAllStar == 0, NA, allYears$PenaltyKill_PostAllStar)
 
-template = template %>% rowwise %>% 
-  mutate(RPI = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$RPI) %>%
-  mutate(PenaltyKill_PostAllStar = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = allYears, year = Year)$PenaltyKill_PostAllStar)
+stuff = pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), function(team1, team2, highest.seed, year) processData(team1, team2, highest.seed, year, data = allYears))
 
 setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
 write_csv(template[,7:ncol(template)], "ESPNStats.csv")

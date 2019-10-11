@@ -1,21 +1,21 @@
-source('/home/brayden/GitHub/NHLPlayoffs/Modelling/All Functions.R')
+source('src/modelling/main/all-functions.R')
 
 #..................................Read data in....................................#
 #Change directories to pull in data from the "Required Data Sets" folder located in the repository.
 
 cat("Reading in Data..... \n")
-allData = read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ELORatings.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/TimeRelatedPlayoffFeatures.csv")) %>%
+allData = read_csv("data/processed/2008-2019_hockey-reference_other.csv") %>%
+  bind_cols(read_csv("data/processed/2008-2019_hockey-reference_aggregated.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_corsica_all-team-stats.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_corsica_game-score.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_elo-ratings.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_espn_stats.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_naturalstattrick_scf.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_nhl-official.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_puck-on-net_last20.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_oddsportal_odds.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_evolving-hockey_WAR.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_naturalstattrick_time-related.csv")) %>%
   mutate(ResultProper = as.factor(ResultProper)) %>%
   filter(!is.na(ResultProper))
 
@@ -42,15 +42,24 @@ allData = allData %>%
 
 #...................................Check skewness and kurtosis..................#
 
-kurt = allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::kurtosis(., na.rm=TRUE))) %>%
-                                         gather(., Variable, Kurtosis)
-skew = allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
-                                         gather(., Variable, Skewness) %>%
-                                         left_join(., kurt, by = "Variable")
+kurt = allData %>% 
+  select_if(., is.numeric) %>% 
+  summarize_all(., funs(moments::kurtosis(., na.rm=TRUE))) %>%
+  gather(., Variable, Kurtosis)
+
+skew = allData %>% 
+  select_if(., is.numeric) %>% 
+  summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
+  gather(., Variable, Skewness) %>%
+  left_join(., kurt, by = "Variable")
+
 rm(kurt)
-allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
-                                          gather(., Variable, Skew) %>%
-                                          filter(., abs(Skew) >= 1)
+
+allData %>% 
+  select_if(., is.numeric) %>% 
+  summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
+  gather(., Variable, Skew) %>%
+  filter(., abs(Skew) >= 1)
 
 
 #..........................Global Envrionment..............................................................#
