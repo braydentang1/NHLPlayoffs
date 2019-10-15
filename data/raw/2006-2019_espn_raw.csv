@@ -1,0 +1,423 @@
+year,team,rpi,penaltykill_post_allstar
+2006,Detroit Red Wings,0.599,NA
+2006,Ottawa Senators,0.593,NA
+2006,Dallas Stars,0.59,NA
+2006,Buffalo Sabres,0.589,NA
+2006,Carolina Hurricanes,0.582,NA
+2006,Calgary Flames,0.578,NA
+2006,Nashville Predators,0.574,NA
+2006,Mighty Ducks of Anaheim,0.573,NA
+2006,San Jose Sharks,0.571,NA
+2006,Colorado Avalanche,0.566,NA
+2006,Philadelphia Flyers,0.566,NA
+2006,Montreal Canadiens,0.565,NA
+2006,New Jersey Devils,0.565,NA
+2006,Edmonton Oilers,0.564,NA
+2006,New York Rangers,0.564,NA
+2006,Vancouver Canucks,0.56,NA
+2006,Los Angeles Kings,0.56,NA
+2006,Toronto Maple Leafs,0.559,NA
+2006,Tampa Bay Lightning,0.555,NA
+2006,Atlanta Thrashers,0.553,NA
+2006,Minnesota Wild,0.551,NA
+2006,Phoenix Coyotes,0.548,NA
+2006,Florida Panthers,0.546,NA
+2006,Boston Bruins,0.537,NA
+2006,New York Islanders,0.533,NA
+2006,Columbus Blue Jackets,0.527,NA
+2006,Washington Capitals,0.523,NA
+2006,Chicago Blackhawks,0.514,NA
+2006,Pittsburgh Penguins,0.506,NA
+2006,St Louis Blues,0.502,NA
+2007,Detroit Red Wings,0.589,NA
+2007,Buffalo Sabres,0.589,NA
+2007,Nashville Predators,0.585,NA
+2007,Anaheim Ducks,0.583,NA
+2007,San Jose Sharks,0.581,NA
+2007,Dallas Stars,0.581,NA
+2007,Ottawa Senators,0.58,NA
+2007,Vancouver Canucks,0.578,NA
+2007,New Jersey Devils,0.578,NA
+2007,Minnesota Wild,0.578,NA
+2007,Pittsburgh Penguins,0.573,NA
+2007,Calgary Flames,0.569,NA
+2007,Colorado Avalanche,0.567,NA
+2007,Atlanta Thrashers,0.56,NA
+2007,Toronto Maple Leafs,0.558,NA
+2007,Montreal Canadiens,0.557,NA
+2007,New York Rangers,0.557,NA
+2007,New York Islanders,0.556,NA
+2007,Tampa Bay Lightning,0.555,NA
+2007,Carolina Hurricanes,0.549,NA
+2007,Florida Panthers,0.544,NA
+2007,St Louis Blues,0.542,NA
+2007,Boston Bruins,0.537,NA
+2007,Edmonton Oilers,0.534,NA
+2007,Columbus Blue Jackets,0.532,NA
+2007,Chicago Blackhawks,0.53,NA
+2007,Los Angeles Kings,0.524,NA
+2007,Phoenix Coyotes,0.524,NA
+2007,Washington Capitals,0.522,NA
+2007,Philadelphia Flyers,0.503,NA
+2008,Detroit Red Wings,0.589,94.1
+2008,San Jose Sharks,0.583,94.3
+2008,Montreal Canadiens,0.574,93.3
+2008,Anaheim Ducks,0.573,95.8
+2008,Pittsburgh Penguins,0.571,92.7
+2008,Dallas Stars,0.569,94.1
+2008,Minnesota Wild,0.568,95.5
+2008,New Jersey Devils,0.565,93.3
+2008,New York Rangers,0.565,95.6
+2008,Colorado Avalanche,0.564,92.7
+2008,Calgary Flames,0.563,93
+2008,Philadelphia Flyers,0.562,95.1
+2008,Ottawa Senators,0.56,91.6
+2008,Boston Bruins,0.557,91.9
+2008,Nashville Predators,0.557,94.6
+2008,Chicago Blackhawks,0.553,93.8
+2008,Vancouver Canucks,0.553,93.5
+2008,Buffalo Sabres,0.552,93.1
+2008,Edmonton Oilers,0.552,94.3
+2008,Washington Capitals,0.551,92.8
+2008,Carolina Hurricanes,0.55,93.8
+2008,Phoenix Coyotes,0.55,92.2
+2008,Toronto Maple Leafs,0.544,91.2
+2008,New York Islanders,0.54,91.5
+2008,Columbus Blue Jackets,0.54,91.5
+2008,St Louis Blues,0.54,93.9
+2008,Florida Panthers,0.538,94.1
+2008,Los Angeles Kings,0.532,91.9
+2008,Atlanta Thrashers,0.524,91.8
+2008,Tampa Bay Lightning,0.519,94.2
+2009,San Jose Sharks,0.594,91.4
+2009,Boston Bruins,0.594,92.2
+2009,Detroit Red Wings,0.59,90.5
+2009,Chicago Blackhawks,0.58,90.6
+2009,Washington Capitals,0.579,93
+2009,New Jersey Devils,0.576,90.1
+2009,Pittsburgh Penguins,0.569,94.8
+2009,Vancouver Canucks,0.569,93
+2009,Philadelphia Flyers,0.567,92.9
+2009,Calgary Flames,0.567,91.7
+2009,St Louis Blues,0.564,95.2
+2009,Carolina Hurricanes,0.563,93.4
+2009,New York Rangers,0.562,95.1
+2009,Columbus Blue Jackets,0.56,93.9
+2009,Anaheim Ducks,0.558,91.9
+2009,Montreal Canadiens,0.558,91.9
+2009,Florida Panthers,0.557,93.6
+2009,Buffalo Sabres,0.557,89.6
+2009,Nashville Predators,0.556,92.6
+2009,Minnesota Wild,0.552,94.5
+2009,Edmonton Oilers,0.547,91.4
+2009,Dallas Stars,0.545,90.8
+2009,Ottawa Senators,0.545,91
+2009,Toronto Maple Leafs,0.542,90.3
+2009,Los Angeles Kings,0.541,93.1
+2009,Phoenix Coyotes,0.54,89.1
+2009,Atlanta Thrashers,0.533,90.4
+2009,Colorado Avalanche,0.524,93.1
+2009,Tampa Bay Lightning,0.517,89.9
+2009,New York Islanders,0.512,90.6
+2010,San Jose Sharks,0.601,95.4
+2010,Washington Capitals,0.597,95.3
+2010,Chicago Blackhawks,0.597,97.4
+2010,Phoenix Coyotes,0.59,97.5
+2010,Detroit Red Wings,0.584,97.8
+2010,Los Angeles Kings,0.581,95.1
+2010,Vancouver Canucks,0.58,95.9
+2010,Nashville Predators,0.579,96.5
+2010,New Jersey Devils,0.574,97.9
+2010,Pittsburgh Penguins,0.569,96.6
+2010,Buffalo Sabres,0.568,96.5
+2010,Colorado Avalanche,0.567,93.4
+2010,Anaheim Ducks,0.565,94.4
+2010,St Louis Blues,0.564,98
+2010,Dallas Stars,0.564,93.1
+2010,Calgary Flames,0.561,95.7
+2010,Ottawa Senators,0.558,96.9
+2010,Boston Bruins,0.553,97.4
+2010,Minnesota Wild,0.553,95.4
+2010,Philadelphia Flyers,0.552,97.6
+2010,New York Rangers,0.55,96.5
+2010,Columbus Blue Jackets,0.549,94.9
+2010,Montreal Canadiens,0.547,96.5
+2010,Atlanta Thrashers,0.541,95.6
+2010,Tampa Bay Lightning,0.538,94.3
+2010,Carolina Hurricanes,0.537,95.6
+2010,New York Islanders,0.535,94
+2010,Florida Panthers,0.534,94.8
+2010,Toronto Maple Leafs,0.528,95.8
+2010,Edmonton Oilers,0.52,95.4
+2011,Vancouver Canucks,0.599,NA
+2011,Philadelphia Flyers,0.586,NA
+2011,Detroit Red Wings,0.584,NA
+2011,San Jose Sharks,0.577,NA
+2011,Washington Capitals,0.577,NA
+2011,Los Angeles Kings,0.576,NA
+2011,Phoenix Coyotes,0.575,NA
+2011,Boston Bruins,0.575,NA
+2011,Pittsburgh Penguins,0.574,NA
+2011,Tampa Bay Lightning,0.573,NA
+2011,Dallas Stars,0.573,NA
+2011,Chicago Blackhawks,0.572,NA
+2011,Anaheim Ducks,0.568,NA
+2011,Nashville Predators,0.568,NA
+2011,Montreal Canadiens,0.567,NA
+2011,Calgary Flames,0.565,NA
+2011,Minnesota Wild,0.561,NA
+2011,Columbus Blue Jackets,0.557,NA
+2011,St Louis Blues,0.554,NA
+2011,New York Rangers,0.553,NA
+2011,Buffalo Sabres,0.553,NA
+2011,Carolina Hurricanes,0.547,NA
+2011,New Jersey Devils,0.545,NA
+2011,Toronto Maple Leafs,0.542,NA
+2011,Atlanta Thrashers,0.537,NA
+2011,Colorado Avalanche,0.533,NA
+2011,Florida Panthers,0.533,NA
+2011,New York Islanders,0.533,NA
+2011,Ottawa Senators,0.524,NA
+2011,Edmonton Oilers,0.522,NA
+2012,New York Rangers,0.59,93.5
+2012,Pittsburgh Penguins,0.588,95.5
+2012,St Louis Blues,0.587,96.8
+2012,Vancouver Canucks,0.586,95.5
+2012,Nashville Predators,0.582,95.1
+2012,Philadelphia Flyers,0.581,92.8
+2012,New Jersey Devils,0.579,96.5
+2012,Detroit Red Wings,0.578,93.4
+2012,Chicago Blackhawks,0.576,92.7
+2012,Boston Bruins,0.574,93.5
+2012,Phoenix Coyotes,0.569,94.8
+2012,San Jose Sharks,0.566,89.8
+2012,Los Angeles Kings,0.566,95.9
+2012,Florida Panthers,0.561,91.6
+2012,Washington Capitals,0.56,94
+2012,Ottawa Senators,0.559,93.5
+2012,Dallas Stars,0.558,93.7
+2012,Calgary Flames,0.557,94.8
+2012,Colorado Avalanche,0.554,95.3
+2012,Buffalo Sabres,0.553,94.6
+2012,Winnipeg Jets,0.547,91.1
+2012,Tampa Bay Lightning,0.547,92.6
+2012,New York Islanders,0.545,89.8
+2012,Anaheim Ducks,0.545,92.2
+2012,Carolina Hurricanes,0.544,93.6
+2012,Minnesota Wild,0.543,92.6
+2012,Toronto Maple Leafs,0.542,94.2
+2012,Montreal Canadiens,0.539,94.9
+2012,Edmonton Oilers,0.533,93.9
+2012,Columbus Blue Jackets,0.525,90.9
+2013,Chicago Blackhawks,0.622,85.6
+2013,Pittsburgh Penguins,0.603,78.8
+2013,Anaheim Ducks,0.593,83.9
+2013,St Louis Blues,0.584,86.5
+2013,Montreal Canadiens,0.578,79.6
+2013,Los Angeles Kings,0.577,83.2
+2013,Boston Bruins,0.575,85.6
+2013,San Jose Sharks,0.572,86.3
+2013,Detroit Red Wings,0.57,84.2
+2013,Vancouver Canucks,0.569,86.4
+2013,Toronto Maple Leafs,0.567,88.4
+2013,Columbus Blue Jackets,0.565,81.6
+2013,New York Rangers,0.561,81.5
+2013,Ottawa Senators,0.561,88.2
+2013,Minnesota Wild,0.56,80
+2013,New York Islanders,0.557,78.4
+2013,Phoenix Coyotes,0.557,80.1
+2013,Washington Capitals,0.556,79.6
+2013,Dallas Stars,0.553,81.5
+2013,Philadelphia Flyers,0.543,89
+2013,Buffalo Sabres,0.542,79.4
+2013,New Jersey Devils,0.54,80.1
+2013,Winnipeg Jets,0.539,80.3
+2013,Edmonton Oilers,0.536,83.4
+2013,Nashville Predators,0.533,75.2
+2013,Calgary Flames,0.531,83
+2013,Colorado Avalanche,0.519,80.4
+2013,Carolina Hurricanes,0.517,77.7
+2013,Tampa Bay Lightning,0.512,79.8
+2013,Florida Panthers,0.5,73.6
+2014,Anaheim Ducks,0.6,NA
+2014,Colorado Avalanche,0.597,NA
+2014,St Louis Blues,0.595,NA
+2014,Boston Bruins,0.594,NA
+2014,San Jose Sharks,0.592,NA
+2014,Chicago Blackhawks,0.589,NA
+2014,Pittsburgh Penguins,0.586,NA
+2014,Los Angeles Kings,0.576,NA
+2014,Minnesota Wild,0.576,NA
+2014,Tampa Bay Lightning,0.572,NA
+2014,Montreal Canadiens,0.57,NA
+2014,Dallas Stars,0.567,NA
+2014,New York Rangers,0.566,NA
+2014,Philadelphia Flyers,0.564,NA
+2014,Columbus Blue Jackets,0.562,NA
+2014,Nashville Predators,0.562,NA
+2014,Detroit Red Wings,0.559,NA
+2014,Phoenix Coyotes,0.558,NA
+2014,Washington Capitals,0.555,NA
+2014,Winnipeg Jets,0.555,NA
+2014,New Jersey Devils,0.553,NA
+2014,Ottawa Senators,0.553,NA
+2014,Vancouver Canucks,0.55,NA
+2014,Carolina Hurricanes,0.547,NA
+2014,Toronto Maple Leafs,0.545,NA
+2014,Calgary Flames,0.541,NA
+2014,New York Islanders,0.54,NA
+2014,Edmonton Oilers,0.527,NA
+2014,Florida Panthers,0.521,NA
+2014,Buffalo Sabres,0.5,NA
+2015,New York Rangers,0.592,86.9
+2015,St Louis Blues,0.591,87.4
+2015,Montreal Canadiens,0.588,81.9
+2015,Anaheim Ducks,0.585,81.7
+2015,Tampa Bay Lightning,0.585,86.1
+2015,Nashville Predators,0.583,83.8
+2015,Chicago Blackhawks,0.581,75.6
+2015,Minnesota Wild,0.578,90.8
+2015,Winnipeg Jets,0.577,78.4
+2015,New York Islanders,0.576,83.1
+2015,Washington Capitals,0.574,83.6
+2015,Vancouver Canucks,0.573,82.1
+2015,Detroit Red Wings,0.57,76.2
+2015,Ottawa Senators,0.57,82.2
+2015,Pittsburgh Penguins,0.569,81.1
+2015,Calgary Flames,0.568,86.3
+2015,Boston Bruins,0.567,80.5
+2015,Dallas Stars,0.566,83.5
+2015,Los Angeles Kings,0.565,86.7
+2015,Colorado Avalanche,0.564,85.9
+2015,Florida Panthers,0.558,77.8
+2015,Columbus Blue Jackets,0.557,81
+2015,San Jose Sharks,0.556,73.9
+2015,Philadelphia Flyers,0.547,81.4
+2015,New Jersey Devils,0.541,82.4
+2015,Carolina Hurricanes,0.531,80.6
+2015,Toronto Maple Leafs,0.526,76.8
+2015,Edmonton Oilers,0.514,72.3
+2015,Arizona Coyotes,0.508,77.7
+2015,Buffalo Sabres,0.505,77.3
+2016,Washington Capitals,0.602,85.7
+2016,Dallas Stars,0.584,85.6
+2016,St Louis Blues,0.581,85
+2016,Pittsburgh Penguins,0.578,85.6
+2016,Chicago Blackhawks,0.574,76.4
+2016,New York Rangers,0.574,76.1
+2016,Florida Panthers,0.574,74.6
+2016,New York Islanders,0.57,80.2
+2016,Anaheim Ducks,0.57,84.1
+2016,Los Angeles Kings,0.569,80
+2016,Philadelphia Flyers,0.565,84.5
+2016,Nashville Predators,0.564,84.8
+2016,Tampa Bay Lightning,0.564,88.1
+2016,San Jose Sharks,0.563,82.4
+2016,Detroit Red Wings,0.557,82.5
+2016,Boston Bruins,0.557,78.6
+2016,Minnesota Wild,0.552,75.3
+2016,Carolina Hurricanes,0.549,87.2
+2016,Ottawa Senators,0.546,76.7
+2016,New Jersey Devils,0.546,86
+2016,Colorado Avalanche,0.544,81.1
+2016,Montreal Canadiens,0.543,77.9
+2016,Buffalo Sabres,0.54,85.1
+2016,Winnipeg Jets,0.538,80.4
+2016,Columbus Blue Jackets,0.535,81.1
+2016,Arizona Coyotes,0.535,78.1
+2016,Calgary Flames,0.531,75.6
+2016,Vancouver Canucks,0.529,82.2
+2016,Toronto Maple Leafs,0.522,83.5
+2016,Edmonton Oilers,0.52,81.5
+2017,Washington Capitals,0.602,82.5
+2017,Pittsburgh Penguins,0.591,82.4
+2017,Columbus Blue Jackets,0.588,81.4
+2017,Chicago Blackhawks,0.58,82.1
+2017,New York Rangers,0.579,76.1
+2017,Anaheim Ducks,0.577,86.8
+2017,Minnesota Wild,0.576,82.1
+2017,Montreal Canadiens,0.576,86.1
+2017,Edmonton Oilers,0.573,77.8
+2017,Ottawa Senators,0.569,75
+2017,San Jose Sharks,0.568,78.3
+2017,St Louis Blues,0.567,88.9
+2017,New York Islanders,0.567,84.9
+2017,Boston Bruins,0.565,84.2
+2017,Toronto Maple Leafs,0.564,78.5
+2017,Tampa Bay Lightning,0.563,84.6
+2017,Nashville Predators,0.56,78.5
+2017,Calgary Flames,0.559,83.1
+2017,Philadelphia Flyers,0.555,79.8
+2017,Carolina Hurricanes,0.555,79.8
+2017,Winnipeg Jets,0.55,78.7
+2017,Los Angeles Kings,0.548,87.5
+2017,Florida Panthers,0.543,87.5
+2017,Buffalo Sabres,0.54,83
+2017,Detroit Red Wings,0.54,81.1
+2017,Dallas Stars,0.537,75
+2017,New Jersey Devils,0.53,78
+2017,Arizona Coyotes,0.524,78.2
+2017,Vancouver Canucks,0.523,71.9
+2017,Colorado Avalanche,0.492,74.3
+2018,Nashville Predators,0.601,80.8
+2018,Winnipeg Jets,0.595,81
+2018,Tampa Bay Lightning,0.587,71.4
+2018,Boston Bruins,0.586,83.7
+2018,Vegas Golden Knights,0.584,80.4
+2018,Washington Capitals,0.577,80.4
+2018,Minnesota Wild,0.576,79.1
+2018,Toronto Maple Leafs,0.576,77.6
+2018,Anaheim Ducks,0.573,84.6
+2018,San Jose Sharks,0.571,87.7
+2018,Pittsburgh Penguins,0.57,74.4
+2018,Los Angeles Kings,0.568,83.3
+2018,Colorado Avalanche,0.567,82.3
+2018,Philadelphia Flyers,0.566,76.7
+2018,St Louis Blues,0.565,74.4
+2018,New Jersey Devils,0.565,78.5
+2018,Columbus Blue Jackets,0.565,74.1
+2018,Florida Panthers,0.563,81.8
+2018,Dallas Stars,0.563,80
+2018,Calgary Flames,0.547,83.2
+2018,Carolina Hurricanes,0.545,77.8
+2018,New York Islanders,0.54,72.6
+2018,Chicago Blackhawks,0.54,74.1
+2018,Edmonton Oilers,0.539,85.1
+2018,New York Rangers,0.535,80.9
+2018,Vancouver Canucks,0.531,79.1
+2018,Detroit Red Wings,0.527,74.8
+2018,Arizona Coyotes,0.527,80.2
+2018,Montreal Canadiens,0.525,67.9
+2018,Ottawa Senators,0.519,78.1
+2018,Buffalo Sabres,0.512,76.7
+2019,Tampa Bay Lightning,0.61,87.2
+2019,Boston Bruins,0.578,81.7
+2019,Calgary Flames,0.576,81
+2019,Washington Capitals,0.574,82.4
+2019,New York Islanders,0.573,82.1
+2019,Toronto Maple Leafs,0.568,77.9
+2019,Pittsburgh Penguins,0.568,76.4
+2019,Nashville Predators,0.567,84.8
+2019,Carolina Hurricanes,0.567,85
+2019,San Jose Sharks,0.567,80
+2019,Columbus Blue Jackets,0.566,90.1
+2019,Winnipeg Jets,0.565,78.2
+2019,St Louis Blues,0.565,85.3
+2019,Montreal Canadiens,0.562,84
+2019,Dallas Stars,0.557,82.2
+2019,Vegas Golden Knights,0.555,75.3
+2019,Colorado Avalanche,0.552,82.3
+2019,Florida Panthers,0.547,82.4
+2019,Arizona Coyotes,0.544,81.5
+2019,Minnesota Wild,0.543,77.3
+2019,Chicago Blackhawks,0.543,70.2
+2019,Philadelphia Flyers,0.541,84.7
+2019,Vancouver Canucks,0.537,84.9
+2019,Anaheim Ducks,0.535,78.1
+2019,New York Rangers,0.535,82.2
+2019,Edmonton Oilers,0.534,70.7
+2019,Buffalo Sabres,0.532,80
+2019,Detroit Red Wings,0.529,76.3
+2019,New Jersey Devils,0.527,86.4
+2019,Los Angeles Kings,0.523,80.7
+2019,Ottawa Senators,0.515,85.2

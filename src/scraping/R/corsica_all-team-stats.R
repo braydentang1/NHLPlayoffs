@@ -38,7 +38,7 @@ get_data <- function(year) {
   
 }
 
-process_data <- function(team1, team2, highest_seed, year_of_play, data){
+process_data <- function(team1, team2, highest_seed, year_of_play, data) {
   
   data <- data %>% 
     filter(., year == year_of_play)
@@ -61,7 +61,7 @@ process_data <- function(team1, team2, highest_seed, year_of_play, data){
 }
 
 allData <- map_df(2008:2019, get_data)
-write_csv(allData, "data/raw/2008-2019_corsica-all-team-stats_raw.csv")
+write_csv(allData, "data/raw/2008-2019_corsica_all-team-stats_raw.csv")
 
 final = bind_rows(tibble(cf_team = rep(NA,30), cf_per60team = rep(NA, 30), ca_per60team = rep(NA, 30)),
                   pmap_dfr(

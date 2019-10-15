@@ -24,7 +24,7 @@ lookup_accronyms <- cbind(full_names = full_names, team = accronyms) %>%
 rm(accronyms_pg, accronyms, full_names)
 
 
-get_data = function(year){
+get_data = function(year) {
   
   data <- read_csv(paste("data/external/corsica_game-score/", year, ".csv", sep=""), na = "--") %>%
           .[,2:ncol(.)] %>%
@@ -71,7 +71,7 @@ all_combined <- map_df(2008:2019, get_data) %>%
 
 write_csv(all_combined, "data/raw/2008-2019_corsica_game-score_raw.csv")
 
-findMatch <- function(team1, team2, stat, data, highest_seed){
+find_match <- function(team1, team2, stat, data, highest_seed) {
   
   data <- data %>%
                 left_join(., lookup_accronyms, by = "team") %>%
@@ -81,12 +81,12 @@ findMatch <- function(team1, team2, stat, data, highest_seed){
   tmp[which(c(team1, team2) == highest_seed)] - tmp[which(c(team1, team2) != highest_seed)] 
 }
 
-processData <- function(team1, team2, highest_seed, data, year_of_play){
+process_data <- function(team1, team2, highest_seed, data, year_of_play) {
   
   data <- data %>% 
           filter(., year == year_of_play)
 
-  team_vec <- as_tibble(unlist(lapply(colnames(data)[2:(ncol(data)-1)], FUN = findMatch, team1 = team1, team2 = team2, data = data, highest_seed = highest_seed))) %>%
+  team_vec <- as_tibble(unlist(lapply(colnames(data)[2:(ncol(data)-1)], FUN = find_match, team1 = team1, team2 = team2, data = data, highest_seed = highest_seed))) %>%
     rownames_to_column(.) %>%
     mutate(rowname = colnames(data)[2:(ncol(data)-1)]) %>%
     spread(rowname, value) 
@@ -95,7 +95,7 @@ processData <- function(team1, team2, highest_seed, data, year_of_play){
   
 }
 
-final <- pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~processData(..1, ..2, ..3, data = all_combined, ..4)) %>%
+final <- pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = all_combined, ..4)) %>%
          select_if(~sum(!is.na(.)) > 0) 
   
 write_csv(final, "data/processed/2008-2019_corsica_game-score.csv")

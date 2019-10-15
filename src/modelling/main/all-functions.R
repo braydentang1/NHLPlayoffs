@@ -9,7 +9,7 @@ library(parallel)
 library(fastknn)
 
 #..................................Bagging Function...................................#
-baggedModel = function(train, test, label_train, alpha_a, s_lambda_a, times, calibrate = FALSE){
+bagged_model <- function(train, test, label_train, alpha, s_lambda, times, calibrate = FALSE) {
   
   #' Generates a bagged (bootstrapped aggregated) elastic net model given a set of hyper parameters alpha and lambda.
   #'
@@ -29,55 +29,51 @@ baggedModel = function(train, test, label_train, alpha_a, s_lambda_a, times, cal
   #'
 
   set.seed(3742301)
-  samples = caret::createResample(y = label_train, times = times)
-  pred = vector("list", length(samples))
-  var_imp = vector("list", length(samples))
-  insample_pred = vector("list", length(samples))
+  samples <- caret::createResample(y = label_train, times = times)
+  pred <- vector("list", length(samples))
+  var_imp <- vector("list", length(samples))
+  insample_pred <- vector("list", length(samples))
   
-  for (g in 1:length(samples)){
+  for (g in 1:length(samples)) {
     
-    train_temp = train[samples[[g]], ]
-    train_label = label_train[samples[[g]]]
-    model_x = glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), y = train_label, family = "binomial", alpha = alpha_a, nlambda = 120, standardize = FALSE)
-    s_lambda_a = case_when(s_lambda_a > length(model_x$lambda) ~ length(model_x$lambda), TRUE ~ s_lambda_a)
+    train_temp <- train[samples[[g]], ]
+    train_label <- label_train[samples[[g]]]
+    model_x <- glmnet(x = data.matrix(train_temp[, !names(train_temp) %in% c("result_factor")]), y = train_label, family = "binomial", alpha = alpha, nlambda = 120, standardize = FALSE)
+    s_lambda <- case_when(s_lambda > length(model_x$lambda) ~ length(model_x$lambda), TRUE ~ s_lambda)
     
-    pred[[g]] = predict(model_x, newx = data.matrix(test[, !names(test) %in% c("ResultProper")]), type = "response")[, s_lambda_a]
-    insample_pred[[g]] = predict(model_x, newx = data.matrix(train_temp[, !names(train_temp) %in% c("ResultProper")]), type = "response")[, s_lambda_a]
+    pred[[g]] <- predict(model_x, newx = data.matrix(test[, !names(test) %in% c("result_factor")]), type = "response")[, s_lambda]
+    insample_pred[[g]] <- predict(model_x, newx = data.matrix(train_temp[, !names(train_temp) %in% c("result_factor")]), type = "response")[, s_lambda]
     
-    var_imp[[g]] = tibble::rownames_to_column(var_imp(model_x, lambda = model_x$lambda[s_lambda_a]), var = "variable")
-    colnames(var_imp[[g]])[2] = paste("Overall:", g, sep = "")
+    var_imp[[g]] <- tibble::rownames_to_column(caret::varImp(model_x, lambda = model_x$lambda[s_lambda]), var = "variable")
+    colnames(var_imp[[g]])[2] <- paste("Overall:", g, sep = "")
     remove(model_x, train_temp, train_label)
     
   }
   
-  pred = bind_cols(pred) %>%
+  pred <- bind_cols(pred) %>%
     transmute(predicted = rowMeans(.))
   
-  insample_pred = bind_cols(insample_pred) %>%
+  insample_pred <- bind_cols(insample_pred) %>%
     transmute(predicted = rowMeans(.))
   
-  var_imp = var_imp %>% reduce(left_join, by = "variable") 
+  var_imp <- var_imp %>% reduce(left_join, by = "variable") 
   
-  means = var_imp %>% select_if(is.numeric) %>% transmute(variable_importance = rowMeans(.))
+  means <- var_imp %>% 
+    select_if(is.numeric) %>%
+    transmute(variable_importance = rowMeans(.))
   
-  varImp = tibble(Variable = var_imp$variable, meanImportance = means$variable_importance)
+  var_imp <- tibble(Variable = var_imp$variable, mean_importance = means$variable_importance)
   
-  if(calibrate == TRUE){
-    
-    list(predictions = platt.scale(label_train = label_train, predicted_prob_train = insample_pred, 
+  if (calibrate == TRUE) {
+    list(predictions = platt_scale(label_train = label_train, predicted_prob_train = insample_pred, 
                                    predicted_prob_test = pred), variable_importance = var_imp)
-    
-  } else{
-    
+  } else {
     list(predictions = pred$predicted, variable_importance = var_imp)  
-    
   }
-  
-  
 }
 
 #..................................Platt Scaling/sigmoid........................................#
-platt.scale = function(label_train, predicted_prob_train, predicted_prob_test){
+platt_scale <- function(label_train, predicted_prob_train, predicted_prob_test) {
   
   #' Calibrates a vector of probabilities using platt scaling.
   #' 
@@ -91,18 +87,16 @@ platt.scale = function(label_train, predicted_prob_train, predicted_prob_test){
   #' @export
   #'
   
-  model = glm(formula = label_train ~ ., data = predicted_prob_train, family = binomial(link = "logit"))
+  model <- glm(formula = label_train ~ ., data = predicted_prob_train, family = binomial(link = "logit"))
   
-  scaled.prob = predict(model, newdata = predicted_prob_test, type = c("response"))
-  
-  scaled.prob
+  predict(model, newdata = predicted_prob_test, type = c("response"))
   
 }
 
 
 #..................................Log Loss Function....................................#
 
-logLoss = function(scores, label){
+log_loss <- function(scores, label) {
   
   #' Computes the log loss given a set of probabilities and ground truth labels.
   #' 
@@ -117,25 +111,24 @@ logLoss = function(scores, label){
   #' @export
   #' 
 
-  if (is.factor(label)){
-    u = ifelse(label ==  "W", 1,0)
-  } else{
-    u = label
+  if (is.factor(label)) {
+    u <- ifelse(label ==  "W", 1,0)
+  } else {
+    u <- label
   }
   
-  tmp = data.frame(scores = scores, target = u)
+  tmp <- data.frame(scores = scores, target = u)
   
   #In case there are probabilities of 1 or 0 predicted by the model (very unlikely unless severe overfitting)
-  tmp = tmp %>% mutate(scores = ifelse(scores == 1, 0.9999999999999999999, ifelse(scores == 0 , 0.0000000000000000001, scores))) %>%
-    mutate(logLoss = -(target * log(scores) + (1-target) * log(1-scores)))
+  tmp <- tmp %>%
+    mutate(scores = ifelse(scores == 1, 0.9999999999999999999, ifelse(scores == 0 , 0.0000000000000000001, scores))) %>%
+    mutate(log_loss = -(target * log(scores) + (1 - target) * log(1 - scores)))
   
-  mean(tmp$logLoss)
+  mean(tmp$log_loss)
 }
 
-
-
 #..................................PCA Function....................................#
-add_pca_variables = function(train_data, test_data, standardize = FALSE){
+add_pca_variables <- function(train_data, test_data, ncomp = 5L, standardize = FALSE) {
   
   #' Binds PCA variables on to the training dataset (does not drop the columns used to create the PCA).
   #'   Does the same thing for the test set using the learned projection from the training set.
@@ -150,37 +143,37 @@ add_pca_variables = function(train_data, test_data, standardize = FALSE){
   #' @export 
   #'
 
-  train_data_tmp = train_data[, !names(train_data) %in% c("ResultProper")] %>% select_if(., is.numeric)
-  test_data_tmp = test_data[, !names(test_data) %in% c("ResultProper")] %>% select_if(., is.numeric)
+  train_data_tmp <- train_data[, !names(train_data) %in% c("result_factor")] %>% select_if(., is.numeric)
+  test_data_tmp <- test_data[, !names(test_data) %in% c("result_factor")] %>% select_if(., is.numeric)
   
-  pca_parameters = prcomp(train_data_tmp, center = FALSE, scale. = FALSE)
-  pca_traindata = predict(pca_parameters, newdata = train_data_tmp)[,1:5] %>% as_tibble(.) 
+  pca_parameters <- prcomp(train_data_tmp, center = FALSE, scale. = FALSE)
+  pca_train_data <- predict(pca_parameters, newdata = train_data_tmp)[, 1:ncomp] %>% as_tibble(.) 
   
-  if(standardize == TRUE){
+  if (standardize == TRUE) {
+    pca_train_params <- caret::preProcess(pca_train_data, method = c("center", "scale"))
+    pca_train_data <- predict(pca_train_params, newdata = pca_train_data)
     
-    pca_train_params = caret::preProcess(pca_train_data, method = c("center", "scale"))
-    pca_train_data = predict(pca_train_params, newdata = pca_train_data)
-    pca_new_data = predict(pca_parameters, newdata = test_data_tmp)[,1:5] %>% as_tibble(.) %>% predict(pca_train_params, newdata = .)
+    pca_new_data <- predict(pca_parameters, newdata = test_data_tmp)[,1:ncomp] %>%
+      as_tibble(.) %>% 
+      predict(pca_train_params, newdata = .)
+  } else {
     
-  }else{
-    
-    if(nrow(test_data) == 1){
-      
-      pca_newdata = predict(pca_parameters, newdata = test_data_tmp)[,1:5] %>% as_tibble(., rownames = "id") %>% spread(., key = "id", value = value)
-      
-    }else{
-      
-      pca_newdata = predict(pca_parameters, newdata = test_data_tmp)[,1:5] %>% as_tibble(.)
-      
+    if (nrow(test_data) == 1) {
+      pca_newdata <- predict(pca_parameters, newdata = test_data_tmp)[, 1:ncomp] %>%
+        as_tibble(., rownames = "id") %>% 
+        spread(., key = "id", value = value)
+    } else {
+      pca_newdata <- predict(pca_parameters, newdata = test_data_tmp)[,1:ncomp] %>% 
+        as_tibble(.)
     }
   }
-  
-  
-  list(train = bind_cols(train_data, pca_train_data), test = bind_cols(test_data, pca_newdata))
+  list(
+    train = bind_cols(train_data, pca_train_data) %>% set_names(~str_to_lower(.)), 
+    test = bind_cols(test_data, pca_newdata) %>% set_names(~str_to_lower(.)))
 }
 
 #..................................kNN Function....................................#
-addKNN_variables = function(traindata, testdata, include_PCA = FALSE, distances = TRUE, useOnlyVariables =  NULL){
+add_knn_variables <- function(train_data, test_data, include_PCA = FALSE, distances = TRUE, use_only_variables =  NULL) {
   
   #' Binds kNN variables to the dataset (does not delete the original variables used to create them)
   #' Returns cumulative euclidian distances (sum of euclidian distances) to the k most closest neighbours for each class label to an observation, by default.
@@ -197,56 +190,68 @@ addKNN_variables = function(traindata, testdata, include_PCA = FALSE, distances 
   #' @export
   #'
 
-  if(!is.null(useOnlyVariables)){
-    
-    traindata_tmp = traindata %>% select(., useOnlyVariables)
-    testdata_tmp = testdata %>% select(., useOnlyVariables)
-    
+  if (!is.null(use_only_variables)) {
+    train_data_tmp <- train_data %>% select(., use_only_variables)
+    test_data_tmp <- test_data %>% select(., use_only_variables)
   }
   
-  if(include_PCA == TRUE){
-    
-    traindata_tmp = traindata %>% select_if(., is.numeric)
-    testdata_tmp = testdata %>% select_if(., is.numeric)
-    
-  }else{
-    
-    traindata_tmp = traindata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
-    testdata_tmp = testdata %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("PC"))
-    
+  if (include_PCA == TRUE) {
+    train_data_tmp <- train_data %>% select_if(., is.numeric)
+    test_data_tmp <- test_data %>% select_if(., is.numeric)
+  } else {
+    train_data_tmp <- train_data %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("pc"))
+    test_data_tmp <- test_data %>% select_if(., is.numeric) %>% as_tibble(.) %>% select(-starts_with("pc"))
   }
   
-  if (distances == TRUE){
+  if (distances == TRUE) {
+    new_frames_with_knn <- fastknn::knnExtract(
+      xtr = data.matrix(train_data_tmp), 
+      ytr = train_data$result_factor,
+      xte = data.matrix(test_data_tmp),
+      k = 1,
+      normalize = NULL)
     
-    newframeswithKNN = fastknn::knnExtract(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 1, normalize = NULL)
-    KNN_train = newframeswithKNN$new.tr %>% as_tibble(.) 
+    knn_train <- new_frames_with_knn$new.tr %>% as_tibble(.) 
     
-    KNN_train.params = caret::preProcess(KNN_train, method = c("center", "scale"))
-    KNN_train = predict(KNN_train.params, newdata = KNN_train)
+    knn_train_params <- caret::preProcess(knn_train, method = c("center", "scale"))
+    knn_train <- predict(knn_train_params, newdata = knn_train)
     
-    KNN_test = newframeswithKNN$new.te %>% as_tibble(.) %>% predict(KNN_train.params, newdata = .)
+    knn_test <- new_frames_with_knn$new.te %>% as_tibble(.) %>% predict(knn_train_params, newdata = .)
     
-    list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
+    list(
+      train = bind_cols(train_data, knn_train) %>% set_names(~str_to_lower(.)),
+      test = bind_cols(test_data, knn_test) %>% set_names(~str_to_lower(.)))
     
-  }else{
+  } else {
     
-    KNN_train  = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(traindata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) 
+    knn_train <- tibble(knn_W = fastknn(
+      xtr = data.matrix(train_data_tmp),
+      ytr = train_data$result_factor,
+      xte = data.matrix(train_data_tmp),
+      k = 5, 
+      method = "vote", 
+      normalize = NULL)$prob[,2]) 
     
-    KNN_train.params = caret::preProcess(KNN_train, method = c("center", "scale"))
-    KNN_train = predict(KNN_train.params, newdata = KNN_train)
+    knn_train_params <- caret::preProcess(knn_train, method = c("center", "scale"))
+    knn_train <- predict(knn_train_params, newdata = knn_train)
     
-    KNN_test = tibble(knn_W = fastknn(xtr = data.matrix(traindata_tmp), ytr = traindata$ResultProper, xte = data.matrix(testdata_tmp), k = 5, method = "vote", normalize = NULL)$prob[,2]) %>%
-      predict(KNN_train.params, newdata = .)
+    knn_test <- tibble(knn_w = fastknn(
+      xtr = data.matrix(train_data_tmp), 
+      ytr = train_data$result_factor, 
+      xte = data.matrix(test_data_tmp), 
+      k = 5, 
+      method = "vote", 
+      normalize = NULL)$prob[,2]) %>%
+    predict(knn_train_params, newdata = .)
     
-    list(train = bind_cols(traindata, KNN_train), test = bind_cols(testdata, KNN_test))
-    
+    list(train = bind_cols(train_data, knn_train) %>% set_names(~str_to_lower(.)),
+         test = bind_cols(test_data, knn_test) %>% set_names(~str_to_lower(.)))
   }
-  
 }
 
 #.......................Define recipe.............................................#
 
-preProcess.recipe = function(trainX){
+pre_process_recipe <- function(trainX) {
   
   #' Creates a recipe that defines all of the preprocessing steps necessary for the dataset.
   #'
@@ -258,24 +263,24 @@ preProcess.recipe = function(trainX){
   #' @export
   #'
 
-  mainRecipe = recipe(ResultProper ~., data=trainX) %>%
+  main_recipe <- recipe(result_factor ~., data = trainX) %>%
     step_dummy(all_predictors(), -all_numeric()) %>%
-    step_interact(terms = ~ SRS:Fenwick:ELORating) %>%
-    step_interact(terms = ~ H2H:VegasOpeningOdds) %>%
-    step_interact(terms = ~ FaceoffWinPercentage:ShotPercentage) %>%
-    step_interact(terms = ~ contains("Round"):VegasOpeningOdds) %>%
-    step_interact(terms = ~ SDRecord:SOS) %>%
+    step_interact(terms = ~ srs:fenwick:elo_rating) %>%
+    step_interact(terms = ~ h2h:vegas_odds) %>%
+    step_interact(terms = ~ faceoff_win_percentage:shot_percentage) %>%
+    step_interact(terms = ~ contains("round"):vegas_odds) %>%
+    step_interact(terms = ~ sd_record:sos) %>%
     step_zv(all_predictors()) %>%
     step_center(all_predictors()) %>%
     step_scale(all_predictors()) %>%
     step_knnimpute(neighbors = 15, all_numeric(), all_predictors()) 
   
-  mainRecipe
+  main_recipe
 }
 
 #.........................Define outer pipe for the outer cross validation fold...........................................#
 
-modelPipe.outer = function(lambda.final, alpha.final, processedData, times){
+model_pipe_outer <- function(lambda_final, alpha_final, processed_data, times) {
   
   #' Fits a model on a training set, then validates the model using a specified set of hyperparameters (ideally found using the inner pipeline) on a held out test set. Works with function processFolds and is not intended to be used outside of this context.
   #'
@@ -290,26 +295,23 @@ modelPipe.outer = function(lambda.final, alpha.final, processedData, times){
   #' @export 
   #'
   
-  train = processedData$Train
-  test = processedData$Test
+  train <- processed_data$train
+  test <- processed_data$test
   
-  model = baggedModel(train = train[, !names(train) %in% c("ResultProper")], test=test, label_train = train$ResultProper, 
-                      alpha.a = alpha.final, s_lambda.a = lambda.final, times = times, calibrate = FALSE)
-  
-  #For AUROC
-  #ROC = roc(response = test$ResultProper, predictor = model$Predictions, levels = c("L", "W"))$auc
+  model <- bagged_model(train = train[, !names(train) %in% c("result_factor")], test = test, label_train = train$result_factor, 
+                      alpha = alpha_final, s_lambda = lambda_final, times = times, calibrate = FALSE)
   
   #For Log Loss
   
-  logloss = logLoss(scores = model$Predictions, label = test$ResultProper)
+  log_loss_tmp <- log_loss(scores = model$predictions, label = test$result_factor)
   
-  VarImp = model$VariableImportance
+  var_imp <- model$variable_importance
   
-  list(Predictions = model$Predictions, LogLoss = logloss, VarImp = VarImp)
+  list(predictions = model$predictions, log_loss = log_loss_tmp, var_imp = var_imp)
 }
 #.............................Process Folds...................................#
 
-processFolds = function(fold.index, mainTrain, useOnlyVariables = NULL){
+process_folds <- function(fold_index, main_train, use_only_variables = NULL) {
   
   #' Given a set of indices representing the training dataset (relative to the dataset mainTrain), process the training and implied testing datasets. 
   #'
@@ -323,31 +325,31 @@ processFolds = function(fold.index, mainTrain, useOnlyVariables = NULL){
   #' @export
   #'
 
-  train.param = prep(preProcess.recipe(trainX = mainTrain[fold.index,]), training = mainTrain[fold.index,])
-  train = bake(train.param, new_data = mainTrain[fold.index,])
-  test = bake(train.param, new_data = mainTrain[-fold.index,])
+  train_param <- prep(pre_process_recipe(trainX = main_train[fold_index, ]), training = main_train[fold_index, ])
+  train <- bake(train_param, new_data = main_train[fold_index, ])
+  test <- bake(train_param, new_data = main_train[-fold_index, ])
   
-  frameswithPCA = addPCA_variables(traindata = train, testdata = test)
+  frames_with_pca <- add_pca_variables(train_data = train, test_data = test)
   
-  train = frameswithPCA$train
-  test = frameswithPCA$test
+  train <- frames_with_pca$train
+  test <- frames_with_pca$test
   
-  rm(train.param, frameswithPCA)
+  rm(train_param, frames_with_pca)
   
-  frameswithKNN = addKNN_variables(traindata = train, testdata = test, distances = TRUE, useOnlyVariables = useOnlyVariables)
+  frames_with_knn <- add_knn_variables(train_data = train, test_data = test, distances = TRUE, use_only_variables = use_only_variables)
   
-  train = frameswithKNN$train
-  test = frameswithKNN$test
+  train <- frames_with_knn$train
+  test <- frames_with_knn$test
   
-  rm(frameswithKNN)
+  rm(frames_with_knn)
   
-  list(Train = train, Test = test)
+  list(train = train, test = test)
   
 }
 
 
 #..........................Processed variable importance output from the base model................................#
-processVarImp = function(varImpRaw){
+process_var_imp <- function(var_imp_raw) {
   
   #' Processes a list of variable importance scores generated by a bag of elastic net models. Uses simple averaging over all of the fitted models in the bag.
   #'
@@ -359,20 +361,20 @@ processVarImp = function(varImpRaw){
   #' @export
   #'
   
-  varImpNames = varImpRaw %>% 
-    select(., contains("Variable")) %>%
+  var_imp_names <- var_imp_raw %>% 
+    select(., contains("variable")) %>%
     .[,1]
   
-  final = varImpRaw %>% 
-    select(., contains("Importance")) %>%
-    transmute(Importance = rowMeans(.)) %>%
-    bind_cols(varImpNames, .)
+  final <- var_imp_raw %>% 
+    select(., contains("importance")) %>%
+    transmute(importance = rowMeans(.)) %>%
+    bind_cols(var_imp_names, .)
   
   final
 }
 
 #..........................Ensemble-simple average with different seeds................................#
-train.ensemble = function(folds, finalParameters, processedData, label_test, times){
+train_ensemble <- function(folds, final_parameters, processed_data, label_test, times) {
   
   #' Trains an ensemble of bagged elastic nets. The ensemble is just a simple average over all fitted models trained on different seeds.
   #' 
@@ -388,33 +390,42 @@ train.ensemble = function(folds, finalParameters, processedData, label_test, tim
   #' @export
   #'
   
-  finalPredictions = vector("list", nrow(finalParameters))
-  finalVarImp = vector("list", nrow(finalParameters))
+  final_predictions <- vector("list", nrow(final_parameters))
+  final_var_imp <- vector("list", nrow(final_parameters))
   
-  for (k in 1:nrow(finalParameters)){
+  for (k in 1:nrow(final_parameters)) {
     
-    finalModel = modelPipe.outer(lambda.final = as.integer(finalParameters$lambda[k]), alpha.final = finalParameters$alpha[k], times = times, processedData = processedData)
+    final_model <- model_pipe_outer(
+      lambda_final = as.integer(final_parameters$lambda[k]),
+      alpha_final = final_parameters$alpha[k], 
+      times = times, 
+      processed_data = processed_data)
     
-    finalPredictions[[k]] = finalModel$Predictions
-    finalVarImp[[k]] = finalModel$VarImp
+    final_predictions[[k]] <- final_model$predictions
+    final_var_imp[[k]] <- final_model$var_imp
     
-    rm(finalModel) 
+    rm(final_model) 
     
   }
   
-  if(nrow(finalParameters) > 1){
+  if (nrow(final_parameters) > 1) {
     
-    finalPredictions.processed = finalPredictions %>% reduce(cbind) %>% rowMeans(.)
+    final_pred_processed <- final_predictions %>%
+      reduce(cbind) %>%
+      rowMeans(.)
   
   } else {
     
-    finalPredictions.processed = finalPredictions
+    final_pred_processed <- final_predictions[[1]]  
     
   }
   
-  finalVarImp.processed = finalVarImp %>% reduce(left_join, by = "Variable") %>% processVarImp(.)
+  final_var_imp_processed <- final_var_imp %>% 
+    reduce(left_join, by = "variable") %>%
+    process_var_imp(.)
   
-  list(LogLoss = logLoss(scores = finalPredictions.processed, label = label_test), 
-       VarImp = finalVarImp.processed)
+  list(
+    log_loss = log_loss(scores = final_pred_processed, label = label_test), 
+    var_imp = final_var_imp_processed)
   
 }

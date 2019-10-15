@@ -1,4 +1,4 @@
-Year,Up.To.Round,Team,CF.Playoff,CA.Playoff,FenFor.Playoff,FenAga.Playoff,SCF.Playoff,SCA.Playoff,HDSV.Playoff,HDCF.Playoff,HDCA.Playoff,SavePercentage.Playoff,PDO.Playoff,xGF.Playoff,xGA.Playoff
+year,up_to_round,team,cf_playoff,ca_playoff,fen_for_playoff,fen_aga_playoff,scf_playoff,sca_playoff,hdsv_playoff,hdcf_playoff,hdca_playoff,save_percentage_playoff,pdo_playoff,xgf_playoff,xga_playoff
 2008,quarter-finals,Boston Bruins,57.77,53.67,40.55,41.56,26.78,24.7,82.83,8.49,10.06,91.83,0.986,2.16,2.11
 2008,quarter-finals,Montreal Canadiens,53.67,57.77,41.56,40.55,24.7,26.78,80.27,10.06,8.49,93.2,1.014,2.11,2.16
 2008,quarter-finals,Ottawa Senators,51.58,56.93,40.28,45.87,22.48,30.18,84.48,7.7,11.44,91.97,0.967,2.09,2.25

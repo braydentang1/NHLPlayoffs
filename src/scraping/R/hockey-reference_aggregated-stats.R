@@ -2,184 +2,203 @@ library(tidyverse)
 library(rvest)
 library(RSelenium)
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv")
+template <- read_csv("src/scraping/templates/template.csv")
 
-accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
-accronyms = accronyms_pg %>% 
+accronyms_pg <- read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
+
+accronyms <- accronyms_pg %>% 
   html_nodes(".column-width li") %>%
   html_text(.) %>%
   substr(., 1,3)
-fullnames = accronyms_pg %>% 
+
+full_names <- accronyms_pg %>% 
   html_nodes(".column-width li") %>%
   html_text(.) %>%
   substr(., 7, 1000000L)
 
-lookup_Accronyms = cbind(FullName = fullnames, Accronym = accronyms) %>% as_tibble(.) %>% bind_rows(., c(FullName = "Mighty Ducks of Anaheim", Accronym = "MDA")) %>% bind_rows(., c(FullName = "St Louis Blues", Accronym = "STL"))  
-lookup_Accronyms$Accronym = ifelse(lookup_Accronyms$Accronym == "VGK", "VEG", lookup_Accronyms$Accronym)                                                                       
+lookup_accronyms <- cbind(full_name = full_names, accronym = accronyms) %>%
+  as_tibble(.) %>% 
+  bind_rows(., c(full_name = "Mighty Ducks of Anaheim", accronym = "MDA")) %>%
+  bind_rows(., c(full_name = "St Louis Blues", accronym = "STL"))  
 
-rm(accronyms_pg, accronyms, fullnames)
+lookup_accronyms$accronym <- ifelse(
+  lookup_accronyms$accronym == "VGK", "VEG", lookup_accronyms$accronym)                                                                       
 
-#CAPS Sensitive!
-#Input winner_FullTeamName/loser_FullTeamName as ex: "Ottawa Senators" or "St Louis Blues" (no period!)
-#Input highest_seed as  ex: "Tampa Bay Lightning"
-#Input conference as "western or eastern"
-#Input round as "quarter-finals, "semi-finals", "finals", "or stanley-cup-final"
-#Input year as 2006 (number)
+rm(accronyms_pg, accronyms, full_names)
 
-rem_dr = remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
+rem_dr <- remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
 rem_dr$open()
 
-getData = function(year){
+get_data <- function(year) {
   
   rem_dr$navigate(paste("https://www.hockey-reference.com/leagues/NHL_",year,".html", sep = ""))
-  main = read_html(rem_dr$getPageSource()[[1]])
+  main <- read_html(rem_dr$getPageSource()[[1]])
   
-  team_name = main %>%
+  team_name <- main %>%
               html_nodes("#stats tbody .left") %>%
               html_text(.) %>%
               str_replace(.,"[*]", "") %>%
               str_replace(., "[.]", "") %>%
-              tibble(Team = .)
+              tibble(team = .)
   
-  average_age = main %>%
+  average_age <- main %>%
               html_nodes("#stats tbody .left+ .right") %>%
               html_text(.) %>%
               as.numeric(.) %>%
-              tibble(AverageAge = .)
+              tibble(average_age = .)
   
-  games_played = main %>%
+  games_played <- main %>%
     html_nodes("#stats tbody .right:nth-child(4)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(GamesPlayed = .) 
+    tibble(games_played = .) 
   
-  wins = main %>%
+  wins <- main %>%
     html_nodes("#stats tbody .right:nth-child(5)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(Wins = .) %>%
-    transmute(RegularSeasonWinPercentage = Wins/games_played$GamesPlayed)
+    tibble(wins = .) %>%
+    transmute(regular_season_winpercentage = wins/games_played$games_played)
   
-  otl = main %>%
+  otl <- main %>%
     html_nodes("#stats tbody .right:nth-child(7)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(OTL = .) %>%
-    mutate(OTL = case_when(year == 2013 ~ OTL/48, year != 2013 ~ OTL/82))
+    tibble(otl = .) %>%
+    mutate(otl = case_when(year == 2013 ~ otl/48, year != 2013 ~ otl/82))
   
-  Points = main %>%
+  points <- main %>%
     html_nodes("#stats tbody .right:nth-child(8)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(Points = .) %>%
-    mutate(Points = case_when(year == 2013 ~ Points/48, year != 2013 ~ Points/82))
+    tibble(points = .) %>%
+    mutate(points = case_when(year == 2013 ~ points/48, year != 2013 ~ points/82))
   
-  PointsPercentage = main %>%
+  points_percentage <- main %>%
     html_nodes("#stats tbody .right:nth-child(9)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PointsPercentageofMax = .) 
+    tibble(points_percentage_ofmax = .) 
   
-  GoalsFor = main %>%
+  goals_for <- main %>%
     html_nodes("#stats tbody .right:nth-child(10)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(GoalsFor = .) %>%
-    mutate(GoalsFor = case_when(year == 2013 ~ GoalsFor/48, year != 2013 ~ GoalsFor/82))
+    tibble(goals_for = .) %>%
+    mutate(goals_for = case_when(year == 2013 ~ goals_for/48, year != 2013 ~ goals_for/82))
   
-  GoalsAgainst = main %>%
+  goals_against <- main %>%
     html_nodes("#stats tbody .right:nth-child(11)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(GoalsAgainst = .) %>%
-    mutate(GoalsAgainst = case_when(year == 2013 ~ GoalsAgainst/48, year != 2013 ~ GoalsAgainst/82))
+    tibble(goals_against = .) %>%
+    mutate(goals_against = case_when(year == 2013 ~ goals_against/48, year != 2013 ~ goals_against/82))
   
-  GoalDifferential = tibble(GoalDiff = GoalsFor$GoalsFor - GoalsAgainst$GoalsAgainst)
+  goal_differential <- tibble(goal_diff = goals_for$goals_for - goals_against$goals_against)
   
-  SRS = main %>%
+  srs <- main %>%
     html_nodes("#stats tbody .right:nth-child(14)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(SRS = .)
+    tibble(srs = .)
   
-  SOS = main %>%
+  sos <- main %>%
     html_nodes("#stats tbody .right:nth-child(15)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(SOS = .)
+    tibble(sos = .)
   
-  PenaltyinMinsPG = main %>%
+  penalty_mins_pg <- main %>%
     html_nodes("tbody .right:nth-child(27)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PenaltyMinsPG = .)
+    tibble(penalty_mins_pg = .)
   
-  PowerPlayGoals = main %>%
+  powerplay_goals <- main %>%
     html_nodes("#stats tbody .right:nth-child(19)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PowerPlayGoals = .) %>%
-    mutate(PowerPlayGoals = case_when(year == 2013 ~ PowerPlayGoals/48, year != 2013 ~ PowerPlayGoals/82))
+    tibble(powerplay_goals = .) %>%
+    mutate(powerplay_goals = case_when(year == 2013 ~ powerplay_goals/48, year != 2013 ~ powerplay_goals/82))
   
-  PowerPlayOppurtunities = main %>%
+  powerplay_oppurtunities <- main %>%
     html_nodes("#stats tbody .right:nth-child(20)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PowerPlayOppurtunities = .) %>%
-    mutate(PowerPlayOppurtunities = case_when(year == 2013 ~ PowerPlayOppurtunities/48, year != 2013 ~ PowerPlayOppurtunities/82))
+    tibble(powerplay_oppurtunities = .) %>%
+    mutate(powerplay_oppurtunities = case_when(year == 2013 ~ powerplay_oppurtunities/48, year != 2013 ~ powerplay_oppurtunities/82))
   
-  PowerPlayPercentage = main %>%
+  powerplay_percentage <- main %>%
     html_nodes("#stats tbody .right:nth-child(21)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PowerPlayPercentage =.)
+    tibble(powerplay_percentage = .)
   
-  PenaltyKillPercentage = main %>%
+  penaltykill_percentage <- main %>%
     html_nodes("tbody .right:nth-child(24)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(PenaltyKillPercentage =.)
+    tibble(penaltykill_percentage = .)
   
-  SOG = main %>%
+  sog <- main %>%
     html_nodes("tbody .right:nth-child(29)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(SOG =.) %>%
-    mutate(SOG = case_when(year == 2013 ~ SOG/48, year != 2013 ~ SOG/82))
+    tibble(sog =.) %>%
+    mutate(sog = case_when(year == 2013 ~ sog/48, year != 2013 ~ sog/82))
   
-  ShotPercentage = main %>%
+  shot_percentage <- main %>%
     html_nodes("tbody .right:nth-child(30)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(ShotPercentage =.)
+    tibble(shot_percentage = .)
   
-  bind_cols(tibble(Year = as.numeric(rep(year, nrow(team_name)))), team_name, average_age, wins, otl, Points, PointsPercentage, GoalsFor, GoalsAgainst, GoalDifferential, SRS, SOS, PenaltyinMinsPG, PowerPlayGoals,
-            PowerPlayOppurtunities, PowerPlayPercentage, PenaltyKillPercentage, SOG, ShotPercentage)
+  bind_cols(tibble(
+    year = as.numeric(rep(year, nrow(team_name)))),
+    team_name, 
+    average_age, 
+    wins,
+    otl, 
+    points, 
+    points_percentage, 
+    goals_for, 
+    goals_against, 
+    goal_differential, 
+    srs, 
+    sos, 
+    penalty_mins_pg, 
+    powerplay_goals,
+    powerplay_oppurtunities, 
+    powerplay_percentage, 
+    penaltykill_percentage, 
+    sog, 
+    shot_percentage)
 }
 
-findMatch = function(team.1, team.2, stat, data, highest.seed){
-  tmp = unlist(c(data[, names(data) %in% c(stat)][which(data$Team == team.1),], data[, names(data) %in% c(stat)][which(data$Team == team.2),]))
-  tmp[which(c(team.1, team.2) == highest.seed)] - tmp[which(c(team.1, team.2) != highest.seed)] 
+find_match <- function(team1, team2, stat, data, highest_seed) {
+  tmp <- unlist(c(data[, names(data) %in% c(stat)][which(data$team == team1),], data[, names(data) %in% c(stat)][which(data$team == team2),]))
+  tmp[which(c(team1, team2) == highest_seed)] - tmp[which(c(team1, team2) != highest_seed)] 
 }
   
-processData = function(team.1, team.2, highest.seed, year, data){
+process_data = function(team1, team2, highest_seed, year_of_play, data) {
   
-  data = data %>% filter(., Year == year)
+  data <- data %>% filter(., year == year_of_play)
   
-  team_vec = as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = findMatch, team.1 = team.1, team.2 = team.2, data = data, highest.seed = highest.seed))) %>%
+  team_vec <- as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = find_match, team1 = team1, team2 = team2, data = data, highest_seed = highest_seed))) %>%
                   rownames_to_column(.) %>%
                   mutate(rowname = colnames(data)[3:ncol(data)]) %>%
                   spread(rowname, value) 
 
 }
 
-allData = bind_rows(lapply(2006:2019, FUN = getData))
+all_data <- map_df(2006:2019, get_data)
+write_csv(all_data, "data/raw/2006-2019_hockey-reference_aggregated_raw.csv")
 
-teams = template %>% transmute(Series = paste(Team1, "vs.", Team2, sep = " "))
+teams <- template %>%
+  transmute(series = paste(Team1, "vs.", Team2, sep = " "))
 
-final = bind_rows(mapply(FUN = processData, team.1 = template$Team1, team.2 = template$Team2, highest.seed = template$Highest.Seed, year = template$Year, MoreArgs = list(data = allData), SIMPLIFY = FALSE)) %>%
-        bind_cols(teams, .)
+final <- bind_cols(teams, pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, ..4, data = all_data)))
+
 rm(teams)
 
-setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(final[,2:ncol(final)], "HockeyReference1.csv")
+write_csv(final, "data/processed/2006-2019_hockey-reference_aggregated.csv")

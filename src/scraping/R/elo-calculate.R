@@ -2,250 +2,253 @@ library(tidyverse)
 library(lubridate)
 library(rvest)
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv") %>%
+template <- read_csv("src/scraping/templates/template.csv") %>%
               mutate(Team1 = ifelse(Team1 == "St Louis Blues", "St. Louis Blues", Team1)) %>%
               mutate(Team2 = ifelse(Team2 == "St Louis Blues", "St. Louis Blues", Team2)) %>%
               mutate(Highest.Seed = ifelse(Highest.Seed == "St Louis Blues", "St. Louis Blues", Highest.Seed))
 
-startdates = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Time Related Features.csv") %>%
+startdates <- read_csv("src/scraping/templates/time-related-features.csv") %>%
               mutate(Start = ymd(Start)) %>%
               mutate(End = ymd(End))
   
 
-accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
-accronyms = accronyms_pg %>% 
+accronyms_pg <- read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
+
+accronyms <- accronyms_pg %>% 
   html_nodes(".column-width li") %>%
   html_text(.) %>%
   substr(., 1,3)
-fullnames = accronyms_pg %>% 
+
+fullnames <- accronyms_pg %>% 
   html_nodes(".column-width li") %>%
   html_text(.) %>%
   substr(., 7, 1000000L)
 
-lookup_Accronyms = cbind(FullName = fullnames, Accronym = accronyms) %>% as_tibble(.) %>% bind_rows(., c(FullName = "Mighty Ducks of Anaheim", Accronym = "MDA")) %>% bind_rows(., c(FullName = "St Louis Blues", Accronym = "STL"))  
-lookup_Accronyms$Accronym = ifelse(lookup_Accronyms$Accronym == "VGK", "VEG", lookup_Accronyms$Accronym)                                                                       
+lookup_accronyms <- cbind(full_name = fullnames, accronym = accronyms) %>% as_tibble(.) %>% 
+  bind_rows(., c(full_name = "Mighty Ducks of Anaheim", accronym = "MDA")) %>%
+  bind_rows(., c(full_name = "St Louis Blues", accronym = "STL"))  
+
+lookup_accronyms$accronym <- ifelse(lookup_accronyms$accronym == "VGK", "VEG", lookup_accronyms$accronym)                                                                       
 
 rm(accronyms_pg, accronyms, fullnames)
 
 #The function below uses the formula given by http://hockeyanalytics.com/2016/07/elo-ratings-for-the-nhl/ to actually calculate ELO ratings. This is quite complex and so refer 
 #to the page for actual details.
 
-calculateM = function(goal.difference_home, ELO_Home, ELO_Visitor){
+calculate_M <- function(goal_difference_home, elo_home, elo_visitor) {
   
-  M = max(1,log(abs(goal.difference_home-0.0085*(ELO_Home - ELO_Visitor + 35)) + exp(1) -1))
-  ifelse(is.na(M), stop(paste("List of Parameters:",goal.difference_home, ELO_Home, ELO_Visitor, sep = " ")), M)
+  M <- max(1,log(abs(goal_difference_home-0.0085*(elo_home - elo_visitor + 35)) + exp(1) -1))
+  ifelse(is.na(M), stop(paste("List of Parameters:", goal_difference_home, elo_home, elo_visitor, sep = " ")), M)
 }
 
-calculateEH = function(ELO_Home, ELO_Visitor){
+calculate_EH <- function(elo_home, elo_visitor) {
   
-  EH = 1/(1 + 10^(-(ELO_Home - ELO_Visitor + 35) / 400))
+  EH <- 1/(1 + 10^(-(elo_home - elo_visitor + 35) / 400))
   ifelse(is.na(EH), stop("NA"), EH)
 }
 
-getData = function(year, last.games = 0){
+get_data <- function(year_of_play, last_games = 0) {
   
-  teamnames = read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year,"_standings.html", sep="")) %>%
+  team_names <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year_of_play,"_standings.html", sep="")) %>%
                 html_nodes("#standings td.left") %>%
                 html_text(.)
   
-  trackELO = tibble(Team = teamnames) %>%
-                bind_cols(., ELORating = rep(1500, nrow(.)), Year = rep(year, nrow(.)))
+  track_elo <- tibble(team = team_names) %>%
+                bind_cols(., elo_rating = rep(1500, nrow(.)), year = rep(year_of_play, nrow(.)))
   
-  rm(teamnames)
+  rm(team_names)
   
-  schedule_and_results = read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year,"_games.html", sep="")) 
+  schedule_and_results <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year_of_play,"_games.html", sep="")) 
           
-  visitor = schedule_and_results %>%
+  visitor <- schedule_and_results %>%
                 html_nodes("#games .left+ td.left") %>%
                 html_text(.) 
   
-  data  = schedule_and_results %>%
+  data <- schedule_and_results %>%
                 html_nodes("#games td:nth-child(4)") %>%
                 html_text(.) %>%
-                bind_cols(Visitor = visitor, Home = .)
+                bind_cols(visitor = visitor, home = .)
   
   rm(visitor)
-  data = schedule_and_results %>%
+  
+  data <- schedule_and_results %>%
                 html_nodes("#games .right:nth-child(3)") %>%
                 html_text(.) %>%
                 as.numeric(.) %>%
-                bind_cols(data, Goals_Visitor = .)
+                bind_cols(data, goals_visitor = .)
   
-  data = schedule_and_results %>%
+  data <- schedule_and_results %>%
                 html_nodes("#games .right:nth-child(5)") %>%
                 html_text(.) %>%
                 as.numeric(.) %>%
-                bind_cols(data, Goals_Home = .) 
+                bind_cols(data, goals_home = .) 
   
-  data = schedule_and_results %>%
+  data <- schedule_and_results %>%
                 html_nodes("#games td.center") %>%
                 html_text(.) %>%
-                bind_cols(data, SOorOTIndicator = .) %>%
-                mutate(Outcome.Home = ifelse(SOorOTIndicator == "SO", 0.5, 
-                                      ifelse(Goals_Home > Goals_Visitor, 1,0))) %>%
-                filter(.,!is.na(Goals_Visitor))
+                bind_cols(data, SO_or_OT_indicator = .) %>%
+                mutate(outcome_home = ifelse(SO_or_OT_indicator == "SO", 0.5, 
+                                      ifelse(goals_home > goals_visitor, 1,0))) %>%
+                filter(.,!is.na(goals_visitor))
   
-constant = ifelse(last.games == 0, 1, nrow(data)-last.games)
+constant <- ifelse(last_games == 0, 1, nrow(data)-last_games)
   
-  for (i in constant:nrow(data)){
+  for (i in constant:nrow(data)) {
     
-    visitorELO = trackELO$ELORating[which(trackELO$Team == data$Visitor[i])]
-    homeELO = trackELO$ELORating[which(trackELO$Team == data$Home[i])]
-    goal.difference = data$Goals_Home[i] - data$Goals_Visitor[i]
+    visitor_elo <- track_elo$elo_rating[which(track_elo$team == data$visitor[i])]
+    home_elo <- track_elo$elo_rating[which(track_elo$team == data$home[i])]
+    goal_difference <- data$goals_home[i] - data$goals_visitor[i]
     
-    ELOChange = 8 * 1 * calculateM(goal.difference_home = goal.difference, ELO_Home = homeELO, ELO_Visitor = visitorELO) * (data$Outcome.Home[i] - calculateEH(ELO_Home = homeELO, ELO_Visitor = visitorELO))
+    elo_change <- 8 * 1 * calculate_M(
+      goal_difference_home = goal_difference,
+      elo_home = home_elo,
+      elo_visitor = visitor_elo) * (data$outcome_home[i] - calculate_EH(elo_home = home_elo, elo_visitor = visitor_elo))
 
-    if(is.na(ELOChange)){
+    if (is.na(elo_change)) {
       paste("Iteration:", i, sep = " ")
     }
-    
-    trackELO$ELORating[which(trackELO$Team == data$Visitor[i])] = visitorELO + -ELOChange
-    trackELO$ELORating[which(trackELO$Team == data$Home[i])] = homeELO + ELOChange
+    track_elo$elo_rating[which(track_elo$team == data$visitor[i])] <- visitor_elo + -elo_change
+    track_elo$elo_rating[which(track_elo$team == data$home[i])] <- home_elo + elo_change
   }
   
   rm(i)
   
-  trackELO
+  track_elo
   
 }
 
-getData_Playoffs = function(year, ELO.EndofRegularSeason, round.end.dates){
+get_data_playoffs <- function(year_of_play, elo_end_of_regularseason, round_end_dates) {
   
-  page = read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year,"_games.html", sep=""))
+  page <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year_of_play,"_games.html", sep=""))
   
-  dates = page %>%
+  dates <- page %>%
     html_nodes("#games_playoffs .left:nth-child(1)") %>%
     html_text(.) %>%
     .[-str_detect(., "Date")] %>%
     ymd(.)
   
-  visitor = page %>%
+  visitor <- page %>%
     html_nodes("#games_playoffs .left+ .left a") %>%
     html_text(.) 
   
-  home = page %>%
+  home <- page %>%
     html_nodes("#games_playoffs td~ .left a") %>%
     html_text(.) 
   
-  visitor.score = page %>%
+  visitor_score <- page %>%
     html_nodes("#games_playoffs .right:nth-child(3)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     .[!is.na(.)]
   
-  home.score = page %>%
+  home_score <- page %>%
     html_nodes("#games_playoffs .right~ .left+ .right") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     .[!is.na(.)]
   
-  allData = tibble(Date = dates[1:length(home.score)], Visitor = visitor[1:length(home.score)], Home = home[1:length(home.score)], Goals.Visitor = visitor.score, Goals.Home = home.score) %>%
-    mutate(Outcome.Home = ifelse(Goals.Home > Goals.Visitor, 1,0))
+  all_data <- tibble(
+    date = dates[1:length(home_score)],
+    visitor = visitor[1:length(home_score)],
+    home = home[1:length(home_score)], 
+    goals_visitor = visitor_score,
+    goals_home = home_score) %>%
+  mutate(outcome_home = ifelse(goals_home > goals_visitor, 1,0))
   
-  enddates = round.end.dates %>% filter(Year == year)
+  end_dates <- round_end_dates %>% filter(Year == year_of_play)
   
-  if(nrow(enddates) == 1){
+  if (nrow(end_dates) == 1) {
     
-  semis = max(which(allData$Date <= enddates$End[1]))
-  finals = NULL
-  scf = NULL
+  semis <- max(which(all_data$date <= end_dates$End[1]))
+  finals <- NULL
+  scf <- NULL
   
-  }else if(nrow(enddates) == 2){
+  } else if (nrow(end_dates) == 2) {
     
-  semis = max(which(allData$Date <= enddates$End[1]))
-  finals = max(which(allData$Date <= enddates$End[2]))
-  scf = NULL
+  semis <- max(which(all_data$date <= end_dates$End[1]))
+  finals <- max(which(all_data$date <= end_dates$End[2]))
+  scf <- NULL
   
-  }else {
+  } else {
     
-  semis = max(which(allData$Date <= enddates$End[1]))
-  finals = max(which(allData$Date <= enddates$End[2]))
-  scf = max(which(allData$Date <= enddates$End[3])) 
+  semis <- max(which(all_data$date <= end_dates$End[1]))
+  finals <- max(which(all_data$date <= end_dates$End[2]))
+  scf <- max(which(all_data$date <= end_dates$End[3])) 
   
   }
   
-  ELORatings.Playoffs = vector("list", 3)
-  trackELO = ELO.EndofRegularSeason %>% filter(Year == year)
+  elo_ratings_playoffs <- vector("list", 3)
+  track_elo <- elo_end_of_regularseason %>% filter(year == year_of_play)
   
-  for (i in 1:nrow(allData)){
+  for (i in 1:nrow(all_data)) {
     
-    visitorELO = trackELO$ELORating[which(trackELO$Team == allData$Visitor[i])]
-    homeELO = trackELO$ELORating[which(trackELO$Team == allData$Home[i])]
-    goal.difference = allData$Goals_Home[i] - allData$Goals_Visitor[i]
+    visitor_elo <- track_elo$elo_rating[which(track_elo$team == all_data$visitor[i])]
+    home_elo <- track_elo$elo_rating[which(track_elo$team == all_data$home[i])]
+    goal_difference <- all_data$goals_home[i] - all_data$goals_visitor[i]
     
-    ELOChange = 8 * 1.5 * calculateM(goal.difference_home = goal.difference, ELO_Home = homeELO, ELO_Visitor = visitorELO) * (allData$Outcome.Home[i] - calculateEH(ELO_Home = homeELO, ELO_Visitor = visitorELO))
-    trackELO$ELORating[which(trackELO$Team == allData$Visitor[i])] = visitorELO + -ELOChange
-    trackELO$ELORating[which(trackELO$Team == allData$Home[i])] = homeELO + ELOChange
+    elo_change <- 8 * 1.5 * calculate_M(goal_difference_home = goal_difference, elo_home = home_elo, elo_visitor = visitor_elo) * (all_data$outcome_home[i] - calculate_EH(elo_home = home_elo, elo_visitor = visitor_elo))
+    track_elo$elo_rating[which(track_elo$team == all_data$visitor[i])] <- visitor_elo + -elo_change
+    track_elo$elo_rating[which(track_elo$team == all_data$home[i])] <- home_elo + elo_change
     
-    if(i == semis){
-      
-      ELORatings.Playoffs[[1]] = bind_cols(trackELO, Up.To.Start.of.Round = rep("semis", nrow(trackELO)))
-        
-    } else if(i == finals && !is.null(finals)){
-      
-      ELORatings.Playoffs[[2]] = bind_cols(trackELO, Up.To.Start.of.Round = rep("finals", nrow(trackELO)))
-      
-    } else if (i == scf && !is.null(scf)){
-      
-      ELORatings.Playoffs[[3]] = bind_cols(trackELO, Up.To.Start.of.Round = rep("stanley-cup", nrow(trackELO)))
-      
+    if (i == semis) {
+      elo_ratings_playoffs[[1]] <- bind_cols(track_elo, up_to_start_of_round = rep("semis", nrow(track_elo)))
+    } else if (i == finals && !is.null(finals)) {
+      elo_ratings_playoffs[[2]] <- bind_cols(track_elo, up_to_start_of_round = rep("finals", nrow(track_elo)))
+    } else if (i == scf && !is.null(scf)) {
+      elo_ratings_playoffs[[3]] <- bind_cols(track_elo, up_to_start_of_round = rep("stanley-cup", nrow(track_elo)))
     }
-    
   }
   
-  abc = bind_rows(ELORatings.Playoffs)
+  abc <- bind_rows(elo_ratings_playoffs)
   
 }
 
-frames_delay = lapply(seq(2006, 2019, 1), FUN = getData, last.games = 400)
-data_delay = bind_rows(frames_delay)
+data_delay <- map_df(seq(2006, 2019, 1), get_data, last_games = 400)
+data <- map_df(seq(2006, 2019, 1), get_data, last_games = 0)
+data_playoffs <- map_df(seq(2008, 2019, 1), get_data_playoffs, elo_end_of_regularseason = data, round_end_dates = startdates)
 
-frames = lapply(seq(2006, 2019, 1), FUN = getData, last.games = 0)
-data = bind_rows(frames)
+write_csv(data_delay, "data/raw/2006-2019_elo-ratings_last400.csv")
+write_csv(data, "data/raw/2006-2019_elo-ratings_all-games.csv")
+write_csv(data, "data/raw/2006-2019_elo-ratings_playoffs.csv")
 
-frames_playoffs = lapply(seq(2008, 2019,1), FUN = getData_Playoffs, ELO.EndofRegularSeason = data, round.end.dates = startdates)
-data.playoffs = bind_rows(frames_playoffs)
-
-rm(frames, frames_delay, frames_playoffs)
-
-processData = function(team.1, team.2, highest.seed, data, year){
+process_data <- function(team1, team2, highest_seed, data, year_of_play) {
   
-  data = data %>% filter(., Year == year)
+  data <- data %>% filter(., year == year_of_play)
   
-  team_ELO = c(data$ELORating[which(data$Team == team.1)], data$ELORating[which(data$Team == team.2)])
+  team_elo <- c(data$elo_rating[which(data$team == team1)], data$elo_rating[which(data$team == team2)])
 
-  out = as.numeric(team_ELO[which(c(team.1,team.2) == highest.seed)] - team_ELO[which(c(team.1, team.2) != highest.seed)]) 
+  as.numeric(team_elo[which(c(team1, team2) == highest_seed)] - team_elo[which(c(team1, team2) != highest_seed)]) 
   
 }
 
-processData.Playoffs = function(team.1, team.2, highest.seed, data, year, round){
+process_data_playoffs <- function(team1, team2, highest_seed, data, year_of_play, round) {
   
-  if(round == "quarter-finals"){
+  if (round == "quarter-finals") {
     NA
-  } else if(round == "semi-finals"){
+  } else if(round == "semi-finals") {
     
-    data = data %>% filter(., Year == year, Up.To.Start.of.Round == "semis")
-    team_ELO = c(data$ELORating[which(data$Team == team.1)], data$ELORating[which(data$Team == team.2)])
-    as.numeric(team_ELO[which(c(team.1,team.2) == highest.seed)] - team_ELO[which(c(team.1, team.2) != highest.seed)]) 
+    data <- data %>% filter(., year == year_of_play, up_to_start_of_round == "semis")
+    team_elo <- c(data$elo_rating[which(data$team == team1)], data$elo_rating[which(data$team == team2)])
+    as.numeric(team_elo[which(c(team1, team2) == highest_seed)] - team_elo[which(c(team1, team2) != highest_seed)]) 
     
-  } else if(round == "finals"){
+  } else if(round == "finals") {
     
-    data = data %>% filter(., Year == year, Up.To.Start.of.Round == "finals")
-    team_ELO = c(data$ELORating[which(data$Team == team.1)], data$ELORating[which(data$Team == team.2)])
-    as.numeric(team_ELO[which(c(team.1,team.2) == highest.seed)] - team_ELO[which(c(team.1, team.2) != highest.seed)]) 
+    data <- data %>% filter(., year == year_of_play, up_to_start_of_round == "finals")
+    team_elo <- c(data$elo_rating[which(data$team == team1)], data$elo_rating[which(data$team == team2)])
+    as.numeric(team_elo[which(c(team1, team2) == highest_seed)] - team_elo[which(c(team1, team2) != highest_seed)]) 
     
-  } else{
-    data = data %>% filter(., Year == year, Up.To.Start.of.Round == "stanley-cup")
-    team_ELO = c(data$ELORating[which(data$Team == team.1)], data$ELORating[which(data$Team == team.2)])
-    as.numeric(team_ELO[which(c(team.1,team.2) == highest.seed)] - team_ELO[which(c(team.1, team.2) != highest.seed)]) 
-  }
+  } else {
+    
+    data <- data %>% filter(., year == year_of_play, up_to_start_of_round == "stanley-cup")
+    team_elo <- c(data$elo_rating[which(data$team == team1)], data$elo_rating[which(data$team == team2)])
+    as.numeric(team_elo[which(c(team1, team2) == highest_seed)] - team_elo[which(c(team1, team2) != highest_seed)]) 
+  
+    }
 }
 
-template = template %>% rowwise %>% 
-  mutate(ELORating = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = data, year = Year)) %>%
-  mutate(ELORating_Q4 = processData(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = data_delay, year = Year)) %>%
-  mutate(ELORating.Playoffs = processData.Playoffs(team.1 = Team1, team.2 = Team2, highest.seed = Highest.Seed, data = data.playoffs, year = Year, round = Round)) %>%
-  mutate(ELORating.Playoffs = ifelse(is.na(ELORating.Playoffs), ELORating, ELORating.Playoffs))
+final <- tibble(elo_rating = pmap_dbl(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = data, ..4))) %>%
+  bind_cols(., tibble(elo_rating_q4 = pmap_dbl(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = data_delay, ..4)))) %>%
+  bind_cols(., tibble(elo_rating_playoffs = pmap_dbl(list(template$Team1, template$Team2, template$Highest.Seed, template$Year, template$Round), ~process_data_playoffs(..1, ..2, ..3, data = data_playoffs, ..4, ..5)))) %>%
+  mutate(elo_rating_playoffs = ifelse(is.na(elo_rating_playoffs), elo_rating, elo_rating_playoffs))
 
-setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[, 7:ncol(template)], "ELORatings.csv")
+write_csv(final, "data/processed/2006-2019_elo-ratings.csv")

@@ -1,143 +1,149 @@
 library(tidyverse)
 library(rvest)
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/src/scraping/templates/template.csv") 
+template <- read_csv("src/scraping/templates/template.csv") 
 
-accronyms_pg = read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
-accronyms = accronyms_pg %>% 
+accronyms_pg <- read_html("https://en.wikipedia.org/wiki/Template:NHL_team_abbreviations")
+
+accronyms <- accronyms_pg %>% 
   html_nodes(".column-width li") %>%
   html_text(.) %>%
   substr(., 1,3)
-fullnames = accronyms_pg %>% 
+
+full_names <- accronyms_pg %>% 
   html_nodes(".column-width li") %>%
   html_text(.) %>%
   substr(., 7, 1000000L)
 
-lookup_Accronyms = cbind(FullName = fullnames, Accronym = accronyms) %>%
+lookup_accronyms <- cbind(full_name = full_names, accronym = accronyms) %>%
   as_tibble(.) %>% 
-  bind_rows(., c(FullName = "Mighty Ducks of Anaheim", Accronym = "MDA")) 
+  bind_rows(., c(full_name = "Mighty Ducks of Anaheim", accronym = "MDA")) 
 
-rm(accronyms_pg, accronyms, fullnames)
+rm(accronyms_pg, accronyms, full_names)
 
-getData_ESPN = function(year){
+get_data_ESPN <- function(year) {
   
-  mainpage = read_html(paste("http://www.espn.com/nhl/stats/rpi/_/season/",year, sep=""))
-  secondary.page = read_html(paste("http://www.espn.com/nhl/statistics/team/_/stat/special-teams/sort/powerPlayPct/year/",year,"/seasontype/2/split/142", sep = ""))
+  main_page <- read_html(paste("http://www.espn.com/nhl/stats/rpi/_/season/", year, sep=""))
+  secondary_page <- read_html(paste("http://www.espn.com/nhl/statistics/team/_/stat/special-teams/sort/powerPlayPct/year/",year,"/seasontype/2/split/142", sep = ""))
 
-  teams = mainpage %>%
+  teams <- main_page %>%
     html_nodes("td:nth-child(2)") %>%
     html_text(.) %>%
     .[2:length(.)] %>%
-    tibble(Team = .) %>%
-    mutate(Team = ifelse(Team == "Detroit", "Detroit Red Wings",Team)) %>%
-    mutate(Team = ifelse(Team == "Ottawa", "Ottawa Senators",Team)) %>%
-    mutate(Team = ifelse(Team == "Dallas", "Dallas Stars",Team)) %>%
-    mutate(Team = ifelse(Team == "Buffalo", "Buffalo Sabres",Team)) %>%
-    mutate(Team = ifelse(Team == "Carolina", "Carolina Hurricanes",Team)) %>%
-    mutate(Team = ifelse(Team == "Calgary", "Calgary Flames",Team)) %>%
-    mutate(Team = ifelse(Team == "Atlanta", "Atlanta Thrashers", Team)) %>%
-    mutate(Team = ifelse(Team == "Nashville", "Nashville Predators", Team)) %>%
-    mutate(Team = ifelse(Team == "Anaheim" & year <= 2006, "Mighty Ducks of Anaheim", Team)) %>%
-    mutate(Team = ifelse(Team == "Anaheim", "Anaheim Ducks",Team)) %>%
-    mutate(Team = ifelse(Team == "San Jose", "San Jose Sharks", Team)) %>%
-    mutate(Team = ifelse(Team == "Colorado", "Colorado Avalanche",Team)) %>%
-    mutate(Team = ifelse(Team == "Philadelphia", "Philadelphia Flyers",Team)) %>%
-    mutate(Team = ifelse(Team == "Montreal", "Montreal Canadiens", Team)) %>%
-    mutate(Team = ifelse(Team == "New Jersey", "New Jersey Devils",Team)) %>%
-    mutate(Team = ifelse(Team == "Edmonton", "Edmonton Oilers",Team)) %>%
-    mutate(Team = ifelse(Team == "NY Rangers", "New York Rangers",Team)) %>%
-    mutate(Team = ifelse(Team == "Vancouver", "Vancouver Canucks",Team)) %>%
-    mutate(Team = ifelse(Team == "Los Angeles", "Los Angeles Kings",Team)) %>%
-    mutate(Team = ifelse(Team == "Toronto", "Toronto Maple Leafs",Team)) %>%
-    mutate(Team = ifelse(Team == "Tampa Bay", "Tampa Bay Lightning",Team)) %>%
-    mutate(Team = ifelse(Team == "Winnipeg" & year <= 2011, "Atlanta Thrashers",Team)) %>%
-    mutate(Team = ifelse(Team == "Minnesota", "Minnesota Wild",Team)) %>%
-    mutate(Team = ifelse(Team == "Arizona" & year <= 2014, "Phoenix Coyotes",Team)) %>%
-    mutate(Team = ifelse(Team == "Florida", "Florida Panthers",Team)) %>%
-    mutate(Team = ifelse(Team == "Boston", "Boston Bruins",Team)) %>%
-    mutate(Team = ifelse(Team == "NY Islanders", "New York Islanders",Team)) %>%
-    mutate(Team = ifelse(Team == "Columbus", "Columbus Blue Jackets",Team)) %>%
-    mutate(Team = ifelse(Team == "Washington", "Washington Capitals",Team)) %>%
-    mutate(Team = ifelse(Team == "Chicago", "Chicago Blackhawks",Team)) %>%
-    mutate(Team = ifelse(Team == "Pittsburgh", "Pittsburgh Penguins",Team)) %>%
-    mutate(Team = ifelse(Team == "St. Louis", "St Louis Blues",Team)) %>%
-    mutate(Team = ifelse(Team == "Vegas", "Vegas Golden Knights", Team)) %>%
-    mutate(Team = ifelse(Team == "Arizona", "Arizona Coyotes", Team)) %>%
-    mutate(Team = ifelse(Team == "Winnipeg", "Winnipeg Jets", Team))
+    tibble(team = .) %>%
+    mutate(team = ifelse(team == "Detroit", "Detroit Red Wings",team)) %>%
+    mutate(team = ifelse(team == "Ottawa", "Ottawa Senators",team)) %>%
+    mutate(team = ifelse(team == "Dallas", "Dallas Stars",team)) %>%
+    mutate(team = ifelse(team == "Buffalo", "Buffalo Sabres",team)) %>%
+    mutate(team = ifelse(team == "Carolina", "Carolina Hurricanes",team)) %>%
+    mutate(team = ifelse(team == "Calgary", "Calgary Flames",team)) %>%
+    mutate(team = ifelse(team == "Atlanta", "Atlanta Thrashers", team)) %>%
+    mutate(team = ifelse(team == "Nashville", "Nashville Predators", team)) %>%
+    mutate(team = ifelse(team == "Anaheim" & year <= 2006, "Mighty Ducks of Anaheim", team)) %>%
+    mutate(team = ifelse(team == "Anaheim", "Anaheim Ducks",team)) %>%
+    mutate(team = ifelse(team == "San Jose", "San Jose Sharks", team)) %>%
+    mutate(team = ifelse(team == "Colorado", "Colorado Avalanche",team)) %>%
+    mutate(team = ifelse(team == "Philadelphia", "Philadelphia Flyers",team)) %>%
+    mutate(team = ifelse(team == "Montreal", "Montreal Canadiens", team)) %>%
+    mutate(team = ifelse(team == "New Jersey", "New Jersey Devils",team)) %>%
+    mutate(team = ifelse(team == "Edmonton", "Edmonton Oilers",team)) %>%
+    mutate(team = ifelse(team == "NY Rangers", "New York Rangers",team)) %>%
+    mutate(team = ifelse(team == "Vancouver", "Vancouver Canucks",team)) %>%
+    mutate(team = ifelse(team == "Los Angeles", "Los Angeles Kings",team)) %>%
+    mutate(team = ifelse(team == "Toronto", "Toronto Maple Leafs",team)) %>%
+    mutate(team = ifelse(team == "Tampa Bay", "Tampa Bay Lightning",team)) %>%
+    mutate(team = ifelse(team == "Winnipeg" & year <= 2011, "Atlanta Thrashers",team)) %>%
+    mutate(team = ifelse(team == "Minnesota", "Minnesota Wild",team)) %>%
+    mutate(team = ifelse(team == "Arizona" & year <= 2014, "Phoenix Coyotes",team)) %>%
+    mutate(team = ifelse(team == "Florida", "Florida Panthers",team)) %>%
+    mutate(team = ifelse(team == "Boston", "Boston Bruins",team)) %>%
+    mutate(team = ifelse(team == "NY Islanders", "New York Islanders",team)) %>%
+    mutate(team = ifelse(team == "Columbus", "Columbus Blue Jackets",team)) %>%
+    mutate(team = ifelse(team == "Washington", "Washington Capitals",team)) %>%
+    mutate(team = ifelse(team == "Chicago", "Chicago Blackhawks",team)) %>%
+    mutate(team = ifelse(team == "Pittsburgh", "Pittsburgh Penguins",team)) %>%
+    mutate(team = ifelse(team == "St. Louis", "St Louis Blues",team)) %>%
+    mutate(team = ifelse(team == "Vegas", "Vegas Golden Knights", team)) %>%
+    mutate(team = ifelse(team == "Arizona", "Arizona Coyotes", team)) %>%
+    mutate(team = ifelse(team == "Winnipeg", "Winnipeg Jets", team))
   
-  teams.2 = secondary.page %>%
+  teams2 <- secondary_page %>%
     html_nodes("td:nth-child(2)") %>%
     html_text(.) %>%
     .[. != "TEAM"] %>%
-    tibble(Team = .) %>%
-    mutate(Team = ifelse(Team == "Detroit", "Detroit Red Wings",Team)) %>%
-    mutate(Team = ifelse(Team == "Ottawa", "Ottawa Senators",Team)) %>%
-    mutate(Team = ifelse(Team == "Dallas", "Dallas Stars",Team)) %>%
-    mutate(Team = ifelse(Team == "Atlanta", "Atlanta Thrashers", Team)) %>%
-    mutate(Team = ifelse(Team == "Buffalo", "Buffalo Sabres",Team)) %>%
-    mutate(Team = ifelse(Team == "Carolina", "Carolina Hurricanes",Team)) %>%
-    mutate(Team = ifelse(Team == "Calgary", "Calgary Flames",Team)) %>%
-    mutate(Team = ifelse(Team == "Nashville", "Nashville Predators", Team)) %>%
-    mutate(Team = ifelse(Team == "Anaheim" & year <= 2006, "Mighty Ducks of Anaheim", Team)) %>%
-    mutate(Team = ifelse(Team == "Anaheim", "Anaheim Ducks",Team)) %>%
-    mutate(Team = ifelse(Team == "San Jose", "San Jose Sharks", Team)) %>%
-    mutate(Team = ifelse(Team == "Colorado", "Colorado Avalanche",Team)) %>%
-    mutate(Team = ifelse(Team == "Philadelphia", "Philadelphia Flyers",Team)) %>%
-    mutate(Team = ifelse(Team == "Montreal", "Montreal Canadiens", Team)) %>%
-    mutate(Team = ifelse(Team == "New Jersey", "New Jersey Devils",Team)) %>%
-    mutate(Team = ifelse(Team == "Edmonton", "Edmonton Oilers",Team)) %>%
-    mutate(Team = ifelse(Team == "NY Rangers", "New York Rangers",Team)) %>%
-    mutate(Team = ifelse(Team == "Vancouver", "Vancouver Canucks",Team)) %>%
-    mutate(Team = ifelse(Team == "Los Angeles", "Los Angeles Kings",Team)) %>%
-    mutate(Team = ifelse(Team == "Toronto", "Toronto Maple Leafs",Team)) %>%
-    mutate(Team = ifelse(Team == "Tampa Bay", "Tampa Bay Lightning",Team)) %>%
-    mutate(Team = ifelse(Team == "Winnipeg" & year <= 2011, "Atlanta Thrashers",Team)) %>%
-    mutate(Team = ifelse(Team == "Minnesota", "Minnesota Wild",Team)) %>%
-    mutate(Team = ifelse(Team == "Arizona" & year <= 2014, "Phoenix Coyotes",Team)) %>%
-    mutate(Team = ifelse(Team == "Florida", "Florida Panthers",Team)) %>%
-    mutate(Team = ifelse(Team == "Boston", "Boston Bruins",Team)) %>%
-    mutate(Team = ifelse(Team == "NY Islanders", "New York Islanders",Team)) %>%
-    mutate(Team = ifelse(Team == "Columbus", "Columbus Blue Jackets",Team)) %>%
-    mutate(Team = ifelse(Team == "Washington", "Washington Capitals",Team)) %>%
-    mutate(Team = ifelse(Team == "Chicago", "Chicago Blackhawks",Team)) %>%
-    mutate(Team = ifelse(Team == "Pittsburgh", "Pittsburgh Penguins",Team)) %>%
-    mutate(Team = ifelse(Team == "St. Louis", "St Louis Blues",Team)) %>%
-    mutate(Team = ifelse(Team == "Vegas", "Vegas Golden Knights", Team)) %>%
-    mutate(Team = ifelse(Team == "Arizona", "Arizona Coyotes", Team)) %>%
-    mutate(Team = ifelse(Team == "Winnipeg", "Winnipeg Jets", Team))
+    tibble(team = .) %>%
+    mutate(team = ifelse(team == "Detroit", "Detroit Red Wings",team)) %>%
+    mutate(team = ifelse(team == "Ottawa", "Ottawa Senators",team)) %>%
+    mutate(team = ifelse(team == "Dallas", "Dallas Stars",team)) %>%
+    mutate(team = ifelse(team == "Atlanta", "Atlanta Thrashers", team)) %>%
+    mutate(team = ifelse(team == "Buffalo", "Buffalo Sabres",team)) %>%
+    mutate(team = ifelse(team == "Carolina", "Carolina Hurricanes",team)) %>%
+    mutate(team = ifelse(team == "Calgary", "Calgary Flames",team)) %>%
+    mutate(team = ifelse(team == "Nashville", "Nashville Predators", team)) %>%
+    mutate(team = ifelse(team == "Anaheim" & year <= 2006, "Mighty Ducks of Anaheim", team)) %>%
+    mutate(team = ifelse(team == "Anaheim", "Anaheim Ducks",team)) %>%
+    mutate(team = ifelse(team == "San Jose", "San Jose Sharks", team)) %>%
+    mutate(team = ifelse(team == "Colorado", "Colorado Avalanche",team)) %>%
+    mutate(team = ifelse(team == "Philadelphia", "Philadelphia Flyers",team)) %>%
+    mutate(team = ifelse(team == "Montreal", "Montreal Canadiens", team)) %>%
+    mutate(team = ifelse(team == "New Jersey", "New Jersey Devils",team)) %>%
+    mutate(team = ifelse(team == "Edmonton", "Edmonton Oilers",team)) %>%
+    mutate(team = ifelse(team == "NY Rangers", "New York Rangers",team)) %>%
+    mutate(team = ifelse(team == "Vancouver", "Vancouver Canucks",team)) %>%
+    mutate(team = ifelse(team == "Los Angeles", "Los Angeles Kings",team)) %>%
+    mutate(team = ifelse(team == "Toronto", "Toronto Maple Leafs",team)) %>%
+    mutate(team = ifelse(team == "Tampa Bay", "Tampa Bay Lightning",team)) %>%
+    mutate(team = ifelse(team == "Winnipeg" & year <= 2011, "Atlanta Thrashers",team)) %>%
+    mutate(team = ifelse(team == "Minnesota", "Minnesota Wild",team)) %>%
+    mutate(team = ifelse(team == "Arizona" & year <= 2014, "Phoenix Coyotes",team)) %>%
+    mutate(team = ifelse(team == "Florida", "Florida Panthers",team)) %>%
+    mutate(team = ifelse(team == "Boston", "Boston Bruins",team)) %>%
+    mutate(team = ifelse(team == "NY Islanders", "New York Islanders",team)) %>%
+    mutate(team = ifelse(team == "Columbus", "Columbus Blue Jackets",team)) %>%
+    mutate(team = ifelse(team == "Washington", "Washington Capitals",team)) %>%
+    mutate(team = ifelse(team == "Chicago", "Chicago Blackhawks",team)) %>%
+    mutate(team = ifelse(team == "Pittsburgh", "Pittsburgh Penguins",team)) %>%
+    mutate(team = ifelse(team == "St. Louis", "St Louis Blues",team)) %>%
+    mutate(team = ifelse(team == "Vegas", "Vegas Golden Knights", team)) %>%
+    mutate(team = ifelse(team == "Arizona", "Arizona Coyotes", team)) %>%
+    mutate(team = ifelse(team == "Winnipeg", "Winnipeg Jets", team))
     
-  RPI = mainpage %>% 
+  rpi <- main_page %>% 
     html_nodes(".sortcell") %>%
     html_text(.) %>%
     as.numeric(.) %>%
-    tibble(RPI = .) 
+    tibble(rpi = .) 
   
-  PenaltyKill_PostAllStar = secondary.page %>% 
+  penaltykill_post_allstar <- secondary_page %>% 
     html_nodes("td:nth-child(10)") %>%
     html_text(.) %>%
     .[!is.na(.)] %>%
     .[. != "PCT"] %>% 
     as.numeric(.) %>%
-    bind_cols(teams.2, PenaltyKill_PostAllStar = .)
+    bind_cols(teams2, penaltykill_post_allstar = .)
 
-  data = bind_cols(tibble(Year = rep(year, nrow(teams))), teams, RPI) %>% left_join(., PenaltyKill_PostAllStar, by = "Team")
+  bind_cols(tibble(year = rep(year, nrow(teams))), teams, rpi) %>% 
+    left_join(., penaltykill_post_allstar, by = "team") %>%
+    mutate(penaltykill_post_allstar = ifelse(penaltykill_post_allstar == 0, NA, penaltykill_post_allstar))
   
 }
 
-processData = function(team.1, team.2, highest.seed, data, year){
-  data = data %>% filter(., Year == year)
+process_data <- function(team1, team2, highest_seed, data, year_of_play) {
   
-  team_RPI = c(data$RPI[which(data$Team == team.1)], data$RPI[which(data$Team == team.2)])
-  team_PK = c(data$PenaltyKill_PostAllStar[which(data$Team == team.1)], data$PenaltyKill_PostAllStar[which(data$Team == team.2)])
+  data <- data %>% filter(., year == year_of_play)
   
-  list(RPI = as.numeric(team_RPI[which(c(team.1,team.2) == highest.seed)] - team_RPI[which(c(team.1, team.2) != highest.seed)]),
-       PenaltyKill_PostAllStar = as.numeric(team_PK[which(c(team.1,team.2) == highest.seed)] - team_PK[which(c(team.1, team.2) != highest.seed)]))
+  team_rpi <- c(data$rpi[which(data$team == team1)], data$rpi[which(data$team == team2)])
+  team_pk <- c(data$penaltykill_post_allstar[which(data$team == team1)], data$penaltykill_post_allstar[which(data$team == team2)])
+  
+  list(rpi = as.numeric(team_rpi[which(c(team1, team2) == highest_seed)] - team_rpi[which(c(team1, team2) != highest_seed)]),
+       penaltykill_post_allstar = as.numeric(team_pk[which(c(team1, team2) == highest_seed)] - team_pk[which(c(team1, team2) != highest_seed)]))
 }
 
-allYears = map_df(seq(2006, 2019,1), getData_ESPN)
-allYears$PenaltyKill_PostAllStar = ifelse(allYears$PenaltyKill_PostAllStar == 0, NA, allYears$PenaltyKill_PostAllStar)
+all_years <- map_df(seq(2006, 2019,1), get_data_ESPN)
+all_years$penaltykill_post_allstar <- ifelse(all_years$penaltykill_post_allstar == 0, NA, all_years$penaltykill_post_allstar)
 
-stuff = pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), function(team1, team2, highest.seed, year) processData(team1, team2, highest.seed, year, data = allYears))
+write_csv(all_years, "data/raw/2006-2019_espn_raw.csv")
 
-setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[,7:ncol(template)], "ESPNStats.csv")
+final <- pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = all_years, ..4))
+
+write_csv(final, "data/processed/2006-2019_espn_stats.csv")

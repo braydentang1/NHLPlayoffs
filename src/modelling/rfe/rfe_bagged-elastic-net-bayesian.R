@@ -1,136 +1,139 @@
-#Load required functions 
-source("/home/brayden/GitHub/NHLPlayoffs/Modelling/RFE/All Functions - RFE.R")
+source('src/modelling/rfe/rfe_functions.R')
+
 #..................................Read data in....................................#
 #Change directories to pull in data from the "Required Data Sets" folder located in the repository.
 
 cat("Reading in Data..... \n")
-allData = read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference2.csv") %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/HockeyReference1.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaAllTeamStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/CorsicaGameScoreStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ELORatings.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/ESPNStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/FenwickScores.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/NHLOfficialStats.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/SCFScores.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/VegasOddsOpening.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/EvolvingHockey_WAR.csv")) %>%
-  bind_cols(read_csv("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets/TimeRelatedPlayoffFeatures.csv")) %>%
-  mutate(ResultProper = as.factor(ResultProper)) %>%
-  filter(!is.na(ResultProper))
+all_data <- read_csv("data/processed/2006-2019_hockey-reference_other.csv") %>%
+  bind_cols(read_csv("data/processed/2006-2019_hockey-reference_aggregated.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_corsica_all-team-stats_processed.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_corsica_game-score.csv")) %>%
+  bind_cols(read_csv("data/processed/2006-2019_elo-ratings.csv")) %>%
+  bind_cols(read_csv("data/processed/2006-2019_espn_stats.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_naturalstattrick_scf.csv")) %>%
+  bind_cols(read_csv("data/processed/2006-2019_nhl-official.csv")) %>%
+  bind_cols(read_csv("data/processed/2006-2019_puck-on-net_last20.csv")) %>%
+  bind_cols(read_csv("data/processed/2006-2019_oddsportal.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_evolving-hockey_WAR.csv")) %>%
+  bind_cols(read_csv("data/processed/2008-2019_naturalstattrick_time-related.csv")) %>%
+  mutate(result_factor = as.factor(result_factor)) %>%
+  filter(!is.na(result_factor)) %>%
+  select(-series) %>%
+  set_names(~ str_to_lower(.) %>%
+              str_replace_all(" ", "_") %>%
+              str_replace_all("%", "_percent") %>%
+              str_replace_all("/", "_per"))
 
 #...................................Engineering of some features..................#
 
-allData = allData %>% 
-  mutate(Round = as.factor(c(rep(c(1,1,1,1,1,1,1,1,2,2,2,2,3,3,4),13),c(1,1,1,1,1,1,1,1,2,2,2,2,3,3)))) %>%
-  mutate(PenaltyMinstoPowerPlaylog = sign(PenaltyMinsPG*60*82 /PowerPlayPercentage) * log(abs(PenaltyMinsPG*60*82 /PowerPlayPercentage) + 1)) %>%
-  mutate(Ratio_of_SRStoPoints = (SRS/Points)^1/3) %>%
-  mutate(PowerPlaytoPenaltyKill = sign(PowerPlayPercentage/PenaltyKillPercentage) * log(abs(PowerPlayPercentage/PenaltyKillPercentage) + 1)) %>%
-  mutate(PPO_x_PenaltyKill = PowerPlayOppurtunities * PenaltyKillPercentage) %>%
-  mutate(GS_max_log = sign(GS_mean) * log(abs(GS_mean) + 1)) %>%
-  mutate(CA_Per60Team_log = sign(CA_Per60Team) * log(abs(CA_Per60Team) + 1)) %>%
-  mutate(Ratio_of_GoalstoGoalsAgainstlog = sign(GoalsFor/GoalsAgainst) * log(abs(GoalsFor/GoalsAgainst) +1)) %>%
-  mutate(Ratio_of_HitstoBlockslog = sign(HitsatES/BlocksatES) * log(abs(HitsatES/BlocksatES) + 1)) %>%
-  mutate(SCFtoGoalsAgainstlog = sign(SCF/GoalsAgainst) * log(abs(SCF/GoalsAgainst) + 1)) %>%
-  mutate(CorsiDifftoSOSlog = sign((CF_Per60Team - CA_Per60Team)/SOS) * log(abs((CF_Per60Team - CA_Per60Team)/SOS) + 1)) %>%
-  mutate(xGDifftoSOS = (xGF.60 - xGA.60)/SOS) %>% 
-  mutate(GStoSOS = GS_mean / SOS) %>%
-  mutate(SRStoSOS = SRS/SOS) %>%
-  mutate("ixGF/60_max.TO.Rel CF%_max" = allData$'Rel CF%_max' / allData$'ixGF/60_max') %>%
-  mutate_if(is.numeric, funs(ifelse(is.nan(.), 0,.))) %>%
-  mutate_if(is.numeric, funs(ifelse(is.infinite(.), 0,.)))
-
-options(repr.matrix.max.rows=600, repr.matrix.max.cols=200, scipen = 999)
-
-#...................................Check skewness and kurtosis..................#
-
-kurt = allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::kurtosis(., na.rm=TRUE))) %>%
-                                         gather(., Variable, Kurtosis)
-allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
-                                         gather(., Variable, Skewness) %>%
-                                         left_join(., kurt, by = "Variable")
-rm(kurt)
-allData %>% select_if(., is.numeric) %>% summarize_all(., funs(moments::skewness(., na.rm=TRUE))) %>%
-                                          gather(., Variable, Skew) %>%
-                                          filter(., abs(Skew) >= 1)
+all_data <- all_data %>% 
+  mutate(round = as.factor(c(rep(c(1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4), 14)))) %>%
+  mutate(penalty_mins_to_powerplay_log = sign(penalty_mins_pg * 60 * 82 / powerplay_percentage) * log(abs(penalty_mins_pg * 60 * 82 / powerplay_percentage) + 1)) %>%
+  mutate(ratio_of_srs_to_points = (srs / points)^1/3) %>%
+  mutate(power_play_to_penaltykill = sign(powerplay_percentage / penaltykill_percentage) * log(abs(powerplay_percentage / penaltykill_percentage) + 1)) %>%
+  mutate(ppo_x_penaltykill = powerplay_oppurtunities * penaltykill_percentage) %>%
+  mutate(gs_max_log = sign(gs_mean) * log(abs(gs_mean) + 1)) %>%
+  mutate(ca_per60team_log = sign(ca_per60team) * log(abs(ca_per60team) + 1)) %>%
+  mutate(ratio_of_goals_to_goals_against_log = sign(goals_for / goals_against) * log(abs(goals_for / goals_against) +1)) %>%
+  mutate(ratio_of_hits_to_blocks_log = sign(hits_at_es / blocks_at_es) * log(abs(hits_at_es / blocks_at_es) + 1)) %>%
+  mutate(scf_to_goalsagainst_log = sign(scf / goals_against) * log(abs(scf / goals_against) + 1)) %>%
+  mutate(corsidiff_to_sos_log = sign((cf_per60team - ca_per60team) / sos) * log(abs((cf_per60team - ca_per60team) / sos) + 1)) %>%
+  mutate(xgdiff_to_sos = (xgf_60 - xga_60) / sos) %>% 
+  mutate(gs_to_sos = gs_mean / sos) %>%
+  mutate(srs_to_sos = srs / sos) %>%
+  mutate(rel_cf_max_to_ixgf60_max = rel_cf_percent_max / ixgf_per60_max) %>%
+  mutate_if(is.numeric, .funs = list(~ifelse(is.nan(.), 0, .))) %>%
+  mutate_if(is.numeric, .funs = list(~ ifelse(is.infinite(.), 0, .))) 
 
 #..........................Global Envrionment..............................................................#
 set.seed(40689)
-allSeeds = sample(1:1000000000, 60, replace = FALSE)
+all_seeds <- sample(1:1000000000, 42, replace = FALSE)
 
-giveResults = function(seed, allData, times = 20, p = 0.8, k = 3, nIters = 42, useOnlyVariables = NULL, subsets){
-  
-  ############################################################################################
-  # Runs the entire modelling pipeline from start to finish. Uses recursive feature elimination to choose variables.
-  #
-  # Arguments:
-  #
-  # seed -- an integer to determine data splitting
-  # allData -- the entire dataset to train and evaluate the model using k-fold cross validation and Monte Carlo cross validation.
-  # times -- number of models to include in each bootstrap model. Default = 20.
-  # p -- numeric value in [0,1] to determine how much of the entire dataset should be used for training. Default = 0.8.
-  # k -- integer value specifying the number of folds in k-fold cross validation for hyperparameter tuning. Default = 3.
-  # nIters -- an integer specifying the number of rounds to use in Bayesian Optimization for hyperparameter tuning. Default = 42.
-  # useOnlyVariables -- a character vector that gives specific variables to use when producing kNN variables. Default = NULL.
-  # subsets -- a vector of integers that specifies the top subsets of variables to select in recursive feature eliminaation. 
-  #
-  # Returns:
-  #
-  # tibble
-  #  A tibble with the subset size and log loss on a test set for a specific seed.
-  #
-  ############################################################################################
-  set.seed(seed)
-  allFolds = caret::createDataPartition(y = allData$ResultProper, times = 1, p = p)
-  mainTrain = allData[allFolds[[1]], ]
+give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, n_iters = 25, subsets, use_only_variables = NULL) {
   
   set.seed(seed)
-  innerFolds = caret::createMultiFolds(y = mainTrain$ResultProper, k = k, times = 1)
+  all_folds <- caret::createDataPartition(y = all_data$result_factor, times = 1, p = p)
+  main_train <- all_data[all_folds[[1]], ]
   
-  innerFolds.temp = innerFolds[str_detect(string = names(innerFolds), pattern = paste("Rep", 1, sep = ""))]
-  allProcessedFrames = lapply(innerFolds.temp, FUN = processFolds, mainTrain = mainTrain, )
+  set.seed(seed)
+  inner_folds <- caret::createMultiFolds(y = main_train$result_factor, k = k, times = 1)
   
-  bestParam = BayesianOptimization(FUN =  function(alpha, lambda){
+  inner_folds_temp <- inner_folds[str_detect(string = names(inner_folds), pattern = paste("Rep", 1, sep = ""))]
+  all_processed_frames <- map(inner_folds_temp, process_folds, main_train = main_train)
+  
+  best_param <- BayesianOptimization(FUN =  function(alpha, lambda) {
         
-    scores = vector("numeric", length(allProcessedFrames))
-    varImp = vector("list", length(allProcessedFrames))
+    scores <- vector("numeric", length(all_processed_frames))
+    var_imp <- vector("list", length(all_processed_frames))
 
-      for(m in 1:length(allProcessedFrames)){
+      for (m in 1:length(all_processed_frames)) {
                                      
-        model = baggedModel(train = allProcessedFrames[[m]]$Train, test = allProcessedFrames[[m]]$Test, label_train = allProcessedFrames[[m]]$Train$ResultProper, alpha = alpha, s_lambda.a = as.integer(lambda), times = times, calibrate = FALSE)
-        scores[m] = logLoss(scores = model$Predictions, label = allProcessedFrames[[m]]$Test$ResultProper)
-        varImp[[m]] = model$VariableImportance
+        model <- bagged_model(
+          train = all_processed_frames[[m]]$train,
+          test = all_processed_frames[[m]]$test,
+          label_train = all_processed_frames[[m]]$train$result_factor,
+          alpha = alpha,
+          s_lambda = as.integer(lambda),
+          times = times,
+          calibrate = FALSE)
+        
+        scores[m] <- log_loss(scores = model$predictions, label = all_processed_frames[[m]]$test$result_factor)
+        var_imp[[m]] <- model$variable_importance
 
         }
     
-    varImp = varImp %>% reduce(., left_join, by = "Variable") %>% processVarImp(.)    
+    var_imp <- var_imp %>%
+      reduce(left_join, by = "variable") %>%
+      process_var_imp(.)    
     
-    list(Score = -mean(scores), VariableImportance = varImp)
+    list(Score = -mean(scores), variable_importance = var_imp)
     
     }
-    , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)),
-                                   initPoints = 3, nIters = 45, convThresh = 1e+02, verbose = 1)
+    , bounds = list(alpha = c(0, 1), lambda = c(15L, 90L)), parallel = FALSE,
+                                   initPoints = 4, nIters = n_iters, convThresh = 1e+02, verbose = 1)
   
-  processed.bestParam = bestParam$ScoreDT[which(bestParam$ScoreDT$Score == max(bestParam$ScoreDT$Score)),]
-  finalVarImp = processed.bestParam %>% select(contains("VariableImportance")) %>% rename(Variable = VariableImportance.Variable, Importance = VariableImportance.Importance)
+  processed_best_param <- best_param$ScoreDT[which(best_param$ScoreDT$Score == max(best_param$ScoreDT$Score)), ]
   
-  rm(innerFolds.temp, bestParam)
+  final_var_imp <- processed_best_param %>%
+    select(contains("variable_importance")) %>%
+    rename(variable = variable_importance.variable, importance = variable_importance.importance)
   
-  rfeResults = bind_rows(lapply(subsets, FUN = rfeSelection, allProcessedFrames = allProcessedFrames, varImp = finalVarImp)) %>%
-    bind_rows(tibble(Subset.Size = nrow(finalVarImp), alpha = processed.bestParam$alpha[1], lambda = as.integer(processed.bestParam$lambda[1])))
+  rm(inner_folds_temp, best_param)
   
-  processedData = processFolds(fold.index = allFolds[[1]], mainTrain = allData)
-  finalTestSet.Score = mapply(modelPipe.outer, subset.n = rfeResults$Subset.Size, lambda.final = rfeResults$lambda, alpha.final = rfeResults$alpha, MoreArgs = list(processedData = processedData,
-                                                                                                                                                                    variableImportance = finalVarImp), SIMPLIFY = FALSE) %>%
-    lapply(., FUN = function(x){x$LogLoss}) 
+  rfe_results <- map_df(
+    subsets, 
+    rfe_selection, 
+    all_processed_frames = all_processed_frames,
+    n_iters = 7,
+    var_imp = final_var_imp) %>%
+  bind_rows(., tibble(
+    subset_size = nrow(final_var_imp),
+    alpha = processed_best_param$alpha[1],
+    lambda = as.integer(processed_best_param$lambda[1])))
   
-  tibble(Subset = rfeResults$Subset.Size, Score = unlist(finalTestSet.Score))  
+  processed_data <- process_folds(fold_index = all_folds[[1]], main_train = all_data)
+  
+  final_test_set_score <- pmap(
+    list(subset_n = rfe_results$subset_size, lambda_final = rfe_results$lambda, alpha_final = rfe_results$alpha),
+    ~model_pipe_outer(..1, ..2, ..3, processed_data = processed_data, times = times, variable_importance = final_var_imp)) %>%
+  map_dbl(., function(x) x$log_loss)
+  
+  tibble(subset = rfe_results$subset_size, score = final_test_set_score)  
 }
 
+results <- mclapply(
+  X = seeds,
+  FUN = give_results,
+  allData = allData,
+  times = 20, 
+  p = 0.8,
+  k = 3, 
+  n_iters = 25,
+  use_only_variables = c("h2h", "weighted_gps", "q2_record", "powerplay_oppurtunities", "penaltykill_percentage", "vegas_odds", "toi_percent_qot_mean"),
+  subsets = c(95, 100, 105)) %>%
+reduce(., left_join, by = "subset") 
 
-
-results = mclapply(X = seeds, FUN = giveResults, allData = allData, times = 20, p = 0.8, k = 3, nIters = 42, useOnlyVariables = c("H2H", "WeightedGPS", "Q2Record", "PowerPlayOppurtunities", "PenaltyKillPercentage", "VegasOpeningOdds", "TOI% QoT_mean"),
-                   subsets = c(95, 100, 105))
-
-processedResults = results %>% reduce(., left_join, by = "Subset")
-finalLogLoss = processedResults %>% select(-Subset) %>% transmute(Overall = rowMeans(.)) %>% bind_cols(Subset = processedResults$Subset, .)
+final_log_loss <- results %>% 
+  select(-subset) %>%
+  transmute(overall = rowMeans(.)) %>%
+  bind_cols(subset = results$subset, .)

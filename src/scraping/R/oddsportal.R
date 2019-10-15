@@ -2,13 +2,13 @@ library(tidyverse)
 library(rvest)
 library(RSelenium)
 
-rem_dr = remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
+rem_dr <- remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
 rem_dr$open()
 
-rem_dr2 = remoteDriver(remoteServerAddr = "localhost", port = 4433L, browserName = "chrome")
+rem_dr2 <- remoteDriver(remoteServerAddr = "localhost", port = 4433L, browserName = "chrome")
 rem_dr2$open()
 
-getData = function(year){
+get_data <- function(year) {
 
   #' Gets the historical odds from OddsPortal for every game during the playoffs of a particular year.
   #'
@@ -18,75 +18,79 @@ getData = function(year){
   #' A tibble that provides the odds for every game during the NHL playoffs.
   #'
   
-rem_dr$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-",year-1,"-",year,"/results/#/", sep = ""))  
-main = read_html(rem_dr$getPageSource()[[1]])
+rem_dr$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-", year - 1, "-", year, "/results/#/", sep = ""))  
+main <- read_html(rem_dr$getPageSource()[[1]])
 
 #I tried navigating on the page, but it appears that it doesn't work (it keeps parsing only the first page, not the second)
-rem_dr2$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-",year-1,"-",year,"/results/#/page/2/", sep = ""))  
-main2 = read_html(rem_dr2$getPageSource()[[1]])
+rem_dr2$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-", year-1, "-", year, "/results/#/page/2/", sep = ""))  
+main2 <- read_html(rem_dr2$getPageSource()[[1]])
 
-teams = main %>% 
+teams <- main %>% 
           html_nodes(".table-participant") %>%
           html_text(.) %>%
-          tibble(Teams = .) 
+          tibble(teams = .) 
 
-teams2 = main2 %>%
+teams2 <- main2 %>%
           html_nodes(".table-participant") %>%
           html_text(.) %>%
-          tibble(Teams = .)
+          tibble(teams = .)
 
-teams_fin = bind_rows(teams, teams2)
+teams_fin <- bind_rows(teams, teams2)
 
-playoff_indicator = main2 %>%
+playoff_indicator <- main2 %>%
           html_nodes(".ico-event-info") %>%
           html_text(.) 
 
-playoff_indicator = c(playoff_indicator, rep(NA, nrow(teams2) - length(playoff_indicator))) 
-playoff_indicator = c(rep(1, nrow(teams)),playoff_indicator)
+playoff_indicator <- c(playoff_indicator, rep(NA, nrow(teams2) - length(playoff_indicator))) 
+playoff_indicator <- c(rep(1, nrow(teams)),playoff_indicator)
 
 rm(teams, teams2)
 
-playoff_indicator = ifelse(!is.na(playoff_indicator), 1,0) %>% tibble(Playoff.Indicator = .)
+playoff_indicator <- ifelse(!is.na(playoff_indicator), 1,0) %>% tibble(playoff_indicator = .)
 
-odds = main %>%
+odds <- main %>%
           html_nodes(".table-score+ .odds-nowrp :nth-child(1)") %>%
           html_text(.) %>%
           as.numeric(.) %>%
-          tibble(Odds.HighestSeed =.)
+          tibble(odds_highest_seed = .)
 
-odds2 = main2 %>%
+odds2 <- main2 %>%
           html_nodes(".table-score+ .odds-nowrp :nth-child(1)") %>%
           html_text(.) %>%
           as.numeric(.) %>%
-          tibble(Odds.HighestSeed =.)
+          tibble(odds_highest_seed =.)
 
-odds.Highest_fin = bind_rows(odds, odds2)
+odds_highest_fin <- bind_rows(odds, odds2)
 
-odds = main %>% 
+odds <- main %>% 
           html_nodes(".odds-nowrp:nth-child(6) :nth-child(1)") %>%
           html_text(.) %>%
           as.numeric(.) %>%
-          tibble(Odds.LowestSeed = .)
-odds2 = main2 %>%
+          tibble(odds_lowest_seed = .)
+
+odds2 <- main2 %>%
           html_nodes(".odds-nowrp:nth-child(6) :nth-child(1)") %>%
           html_text(.) %>%
           as.numeric(.) %>%
-          tibble(Odds.LowestSeed = .)
+          tibble(odds_lowest_seed = .)
 
-Odds.Lowest_fin = bind_rows(odds, odds2)
+odds_lowest_fin <- bind_rows(odds, odds2)
 
 rm(odds, odds2)
 
-combined = bind_cols(tibble(Year = rep(year, nrow(playoff_indicator))),teams_fin, playoff_indicator, odds.Highest_fin, Odds.Lowest_fin) %>%
-                filter(Playoff.Indicator != 0)
+combined <- bind_cols(
+  tibble(year = rep(year, nrow(playoff_indicator))),
+  teams_fin,
+  playoff_indicator, 
+  odds_highest_fin, 
+  odds_lowest_fin) %>%
+filter(playoff_indicator != 0)
 
-rm(main, main2, odds.Highest_fin, Odds.Lowest_fin, playoff_indicator, teams_fin)
-
-combined %>% select(-Playoff.Indicator)
+combined %>% select(-playoff_indicator)
           
 }
 
-processData = function(year, team.1, team.2, data){
+process_data <- function(year_of_play, team1, team2, data) {
   
   #' Processes the raw dataset resulting from a call to the function getData
   #'
@@ -101,14 +105,14 @@ processData = function(year, team.1, team.2, data){
   #' @export
   #'
   
-  data = data %>% filter(Year == year)
+  data <- data %>% filter(year == year_of_play)
   
-  string1 = paste(team.1, "-", team.2, sep =" ")
-  string2 = paste(team.2, "-", team.1, sep = " ")
+  string1 <- paste(team1, "-", team2, sep = " ")
+  string2 <- paste(team2, "-", team1, sep = " ")
   
-  first_game = data[max(which(grepl(paste(c(string1, string2), collapse = "|"), data$Teams))),]
+  first_game <- data[max(which(grepl(paste(c(string1, string2), collapse = "|"), data$teams))), ]
   
-  first_game$Odds.HighestSeed - first_game$Odds.LowestSeed
+  tibble(vegas_odds = first_game$odds_highest_seed - first_game$odds_lowest_seed)
   
 }
 
@@ -116,7 +120,7 @@ processData = function(year, team.1, team.2, data){
 # Set the round argument to what is needed. Page 1 = quarters, page 2 = semis, page 3 = finals,
 # page 4= stanley cup.
 
-getData.current = function(year, round){
+get_data_current <- function(year, round) {
   
   #' Grabs data from the current year. OddsPortal has a separate page for NHL playoff games that are upcoming. This function requires
   #' that a saved copy of the HTML page is saved in some directory.
@@ -131,62 +135,60 @@ getData.current = function(year, round){
   #'
   
   
-  if(round == "quarter-finals"){
+  if (round == "quarter-finals") {
   
-  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg1.html", sep = ""))
+  page <- read_html(paste("data/external/oddsportal_current-odds/", year_of_play, "_pg1.html", sep = ""))
   
-  }else if(round == "semi-finals"){
+  } else if (round == "semi-finals") {
     
-  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg2.html", sep = ""))
+    page <- read_html(paste("data/external/oddsportal_current-odds/", year_of_play, "_pg2.html", sep = ""))
     
-  }else if(round == "finals"){
+  } else if (round == "finals") {
     
-  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg3.html", sep = ""))
+    page <- read_html(paste("data/external/oddsportal_current-odds/", year_of_play, "_pg3.html", sep = ""))
   
-  }else{
+  } else {
     
-  page = read_html(paste("/home/brayden/GitHub/NHLPlayoffs/Odds HTML Renders/", year, " pg4.html", sep = ""))
+    page <- read_html(paste("data/external/oddsportal_current-odds/", year_of_play, "_pg4.html", sep = ""))
     
   }
-  teams = page %>% 
+  
+  teams <- page %>% 
     html_nodes(".table-participant a:nth-child(3)") %>%
     html_text(.) %>%
     tibble(Teams = .) 
   
-  odds = page %>%
+  odds <- page %>%
     html_nodes(".table-participant+ .odds-nowrp a") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(Odds.HighestSeed =.)
   
-  odds2 = page %>%
+  odds2 <- page %>%
     html_nodes(".odds-nowrp~ .odds-nowrp+ .odds-nowrp:nth-child(5) a") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(Odds.LowestSeed =.)
   
-  combined = bind_cols(tibble(Year = rep(year, nrow(teams))), teams, odds, odds2)
-  
-  
+  bind_cols(tibble(year = rep(year, nrow(teams))), teams, odds, odds2)
 }
 
 
-template = read_csv("/home/brayden/GitHub/NHLPlayoffs/Scraping Scripts and Template/Templates/Template.csv") 
-template[template == "St Louis Blues"] = "St. Louis Blues"
-template[template == "Mighty Ducks of Anaheim"] = "Anaheim Ducks"
-template[template == "Phoenix Coyotes"] = "Arizona Coyotes"
-template[template == "Atlanta Thrashers"] = "Winnipeg Jets"
+template <- read_csv("src/scraping/templates/template.csv") %>%
+  replace(., . == "St Louis Blues", "St. Louis Blues") %>%
+  replace(., . == "Mighty Ducks of Anaheim", "Anaheim Ducks") %>%
+  replace(., . == "Phoenix Coyotes", "Arizona Coyotes") %>%
+  replace(., . == "Atlanta Thrashers", "Winnipeg Jets")
 
 #Note: the function call below sends an error because on OddsPortal the actual odds are missing! But, these values are not important as we only 
 #take the first game odds
 
-allData = bind_rows(lapply(2006:2019, FUN = getData)) 
+all_data <- map_df(2006:2019, get_data) %>%
+  write_csv(., "data/raw/2006-2019_oddsportal_raw.csv")
 
-template = template %>% 
-                rowwise %>%
-                mutate(VegasOpeningOdds = processData(year = Year, team.1 = Team1, team.2 = Team2, data = allData))
-
-setwd("/home/brayden/GitHub/NHLPlayoffs/Required Data Sets")
-write_csv(template[,7], "VegasOddsOpening.csv")
+final <- pmap_dfr(
+  list(template$Year, template$Team1, template$Team2), 
+  ~process_data(..1, ..2, ..3, data = all_data)) %>%
+write_csv(., "data/processed/2006-2019_oddsportal.csv")
 
 
