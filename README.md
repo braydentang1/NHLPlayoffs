@@ -1,5 +1,5 @@
 # NHLPlayoffs
-A model that aims to predict the outcome of a NHL playoff series before the first game is played. Currently, the model is an ensemble of five bagged elastic net models, trained on data from the 2006 to 2019 NHL playoffs.
+A model that aims to predict the outcome of a NHL playoff series before the first game is played. Currently, the model is an ensemble of five bagged elastic net models, trained on data from the 2006-2019 NHL playoffs.
 
 Sits at 0.65742 log loss using data from 2006 and onwards.
 
