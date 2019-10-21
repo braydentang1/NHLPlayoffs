@@ -3,6 +3,17 @@ A model that aims to predict the outcome of a NHL playoff series before the firs
 
 Sits at 0.65742 log loss using data from 2006 and onwards.
 
+# Dependecies:
+
+- glmnet
+- caret
+- tidyverse
+- recipes
+- moments
+- ParBayesianOptimization
+- paralllel
+- fastknn
+
 Folder Descriptions:
 -----
 - data: Contains all raw, processed, and external data sets that the model is fit on.
