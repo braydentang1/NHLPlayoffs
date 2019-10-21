@@ -27,6 +27,7 @@ TODO:
 - [x] 1. Finish the scraping automation.
 - [x] 2. Redo the modelling script. 
 - [x] 3. Add 2013 data. Improve the model below 0.67 log loss.
+- [ ] 4/5. Paired t-tests? 
 - [ ] 4/5. Document how to run the scripts from scratch.
 - [ ] 4/5. Docker?
 
