@@ -24,7 +24,7 @@ all_data <- read_csv("data/processed/2006-2019_hockey-reference_other.csv") %>%
               str_replace_all("%", "_percent") %>%
               str_replace_all("/", "_per"))
 
-#...................................Engineering of some features..................#
+  #...................................Engineering of some features..................#
 
 all_data <- all_data %>% 
   mutate(round = as.factor(c(rep(c(1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4), 14)))) %>%
@@ -50,6 +50,25 @@ set.seed(40689)
 all_seeds <- sample(1:1000000000, 42, replace = FALSE)
 
 give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, n_iters = 25, subsets, use_only_variables = NULL) {
+  
+  #' Generates a bagged (bootstrapped aggregated) elastic net model given a set of hyper parameters alpha and lambda.
+  #'
+  #' @param seed an integer that serves as the seed for caret::createDataPartition and caret::createMultiFolds.
+  #' @param all_data a tibble containing the entire data set. Must contain a column named "result_factor", a factor variable with 
+  #'  the outcome of the playoff series encoded as "W" or "L" for the higher seed.
+  #' @param times an integer that gives the number of bootstrap models to fit and aggregate. Default = 20.
+  #' @param p the proportion of data to be completely held out as the test data. Default = 0.8
+  #' @param k the number of folds to use in k-fold cross validation for hyper parameter tuning. Default = 3.
+  #' @param n_iters the number of Bayesian optimization iterations to use in hyper parameter tuning. Default = 25. 
+  #' @param subsets A vector of integers that provides the top k features to use, as given by the variable importance scores.
+  #' @param use_only_variables A character vector of column names to fit the kNN variables with. Default = NULL, which means that
+  #'  all variables in all_data will be used (except for "result_factor").
+  #'
+  #' @return 
+  #'  A tibble with columns subset and corresponding log loss scores for each subset on the test set.
+  #'  
+  #' @export
+  #'
   
   set.seed(seed)
   all_folds <- caret::createDataPartition(y = all_data$result_factor, times = 1, p = p)
@@ -121,6 +140,8 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, n_iters = 2
   tibble(subset = rfe_results$subset_size, score = final_test_set_score)  
 }
 
+# Run the model validation process. Warning: takes a long time.
+
 results <- mclapply(
   X = seeds,
   FUN = give_results,
@@ -132,6 +153,8 @@ results <- mclapply(
   use_only_variables = c("h2h", "weighted_gps", "q2_record", "powerplay_oppurtunities", "penaltykill_percentage", "vegas_odds", "toi_percent_qot_mean"),
   subsets = c(95, 100, 105)) %>%
 reduce(., left_join, by = "subset") 
+
+# Report the results in a readable format.
 
 final_log_loss <- results %>% 
   select(-subset) %>%

@@ -50,7 +50,25 @@ set.seed(40689)
 all_seeds <- sample(1:1000000000, 1, replace = FALSE)
 
 give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_models = 5, n_iters = 25, use_only_variables = NULL) {
-  
+  #' Generates a bagged (bootstrapped aggregated) elastic net model on a PCA transformed data set,
+  #'  given a set of hyper parameters alpha, ncomp, and lambda.
+  #'
+  #' @param seed an integer that serves as the seed for caret::createDataPartition and caret::createMultiFolds.
+  #' @param all_data a tibble containing the entire data set. Must contain a column named "result_factor", a factor variable with 
+  #'  the outcome of the playoff series encoded as "W" or "L" for the higher seed.
+  #' @param times an integer that gives the number of bootstrap models to fit and aggregate. Default = 20.
+  #' @param p the proportion of data to be completely held out as the test data. Default = 0.8
+  #' @param k the number of folds to use in k-fold cross validation for hyper parameter tuning. Default = 3.
+  #' @param n_iters the number of Bayesian optimization iterations to use in hyper parameter tuning. Default = 25. 
+  #' @param subsets A vector of integers that provides the top k features to use, as given by the variable importance scores.
+  #' @param use_only_variables A character vector of column names to fit the kNN variables with. Default = NULL, which means that
+  #'  all variables in all_data will be used (except for "result_factor").
+  #'
+  #' @return 
+  #'  A tibble with columns subset and corresponding log loss scores for each subset on the test set.
+  #'  
+  #' @export
+  #'
   writeLines(paste("Seed:", seed))
   
   set.seed(seed)

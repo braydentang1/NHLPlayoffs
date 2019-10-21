@@ -69,13 +69,13 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_mode
   #' Runs the entire modelling pipeline from start to finish.
   #'
   #' @param seed an integer to determine data splitting
-  #' @param allData the entire dataset to train and evaluate the model using k-fold cross validation and Monte Carlo cross validation.
+  #' @param all_data the entire dataset to train and evaluate the model using k-fold cross validation and Monte Carlo cross validation.
   #' @param times number of models to include in each bootstrap model. Default = 20.
   #' @param p numeric value in [0,1] to determine how much of the entire dataset should be used for training. Default = 0.8.
   #' @param k integer value specifying the number of folds in k-fold cross validation for hyperparameter tuning. Default = 3.
-  #' @param numofModels integer value that specifies the amount of models to fit in the ensemble. Default = 5.
-  #' @param nIters an integer specifying the number of rounds to use in Bayesian Optimization for hyperparameter tuning. Default = 42.
-  #' @param useOnlyVariables a character vector that gives specific variables to use when producing kNN variables. Default = NULL.
+  #' @param num_of_models integer value that specifies the amount of models to fit in the ensemble. Default = 5.
+  #' @param n_iters an integer specifying the number of rounds to use in Bayesian Optimization for hyperparameter tuning. Default = 42.
+  #' @param use_only_variables a character vector that gives specific variables to use when producing kNN variables. Default = NULL.
   #'
   #' @return
   #' A list containing the log loss on the test set and the variable importance scores from the fitted model.
