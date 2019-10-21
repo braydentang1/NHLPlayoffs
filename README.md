@@ -27,7 +27,7 @@ For validation of the model:
 
 1. Download/clone the repository.
 2. Set your current working directory to the directory of the downloaded repository on your local computer.
-3. Run "src/modelling/main/bagged-elastic-net-bayesian.R.
+3. Run "src/modelling/main/bagged-elastic-net-bayesian.R."
 
 For prediction of new data:
 
