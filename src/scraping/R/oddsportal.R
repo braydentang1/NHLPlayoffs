@@ -92,12 +92,12 @@ combined %>% select(-playoff_indicator)
 
 process_data <- function(year_of_play, team1, team2, data) {
   
-  #' Processes the raw dataset resulting from a call to the function getData
+  #' Processes the raw dataset resulting from a call to the function get_data
   #'
-  #' @param year an integer: playoff year of the particular series between team.1 and team.2 
-  #' @param team.1 a character string of a team in a playoff series that is playing against team.2
-  #' @param team.2 a character string of a team in a playoff series that is playing against team.1
-  #' @param data the raw dataset resulting from the function getData
+  #' @param year an integer: playoff year of the particular series between team1 and team2 
+  #' @param team1 a character string of a team in a playoff series that is playing against team2
+  #' @param team2 a character string of a team in a playoff series that is playing against team1
+  #' @param data the raw dataset resulting from the function get_data
   #'
   #' @return
   #' A tibble that provides the odds for every game during the NHL playoffs.

@@ -131,6 +131,7 @@ add_pca_variables <- function(train_data, test_data, ncomp = 5L, standardize = F
   #' 
   #' @param train_data a tibble containing the training set. Should not contain the target variable (ResultProper) and if ResultProper is included, this variable will be removed before running the PCA. The tibble should only contain numeric values and be standardized and scaled. 
   #' @param test_data a tibble containing the validation or test set. The tibble should only contain numeric values and be standardized and scaled.
+  #' @param ncomp An integer vector of length one that gives the number of principle components to retain. Default = %L.
   #' @param standardize a boolean. If TRUE, standardizes and scales the resulting PCA components.
   #'
   #' @return

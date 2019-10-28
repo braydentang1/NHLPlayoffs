@@ -147,15 +147,18 @@ find_match <- function(team1, team2, stat, data, highest_seed, round) {
   
   #' Parses the raw dataset given by the function "getData.nst.time", finds the two teams that are playing each other during a round in the playoffs, and differences their stats.
   #'
-  #' @param team.1 a team that is playing against team.2 in a particular round of the playoffs
-  #' @param team.2 a second team that is playing against team.1 in a particular round of the playoffs
+  #' @param team1 a team that is playing against team2 in a particular round of the playoffs
+  #' @param team2 a second team that is playing against team1 in a particular round of the playoffs
   #' @param stat the particular statistic (i.e. the column name) in data
-  #' @param data the "raw" dataset given by the function getData.nst.time
-  #' @param highest.seed specifies which of team.1 or team.2 is the highest seed. The highest seed is defined in terms of who starts the series at home. The name of the team must match one of team.1 or team.2.
-  #' @param round the round of which the playoff series between team.1 and team.2 is being played. Can be "quarter-finals", "semi-finals", "finals" or "stanley-cup-final".
+  #' @param data the "raw" dataset given by the function get_data_nst_time
+  #' @param highest_seed specifies which of team1 or team2 is the highest seed. 
+  #'  The highest seed is defined in terms of who starts the series at home. The name of the team must match one of team1 or team2.
+  #' @param round the round of which the playoff series between team1 and team2 is being played. 
+  #'  Can be "quarter-finals", "semi-finals", "finals" or "stanley-cup-final".
   #'
   #' @return
-  #' A numeric value that provides the difference between the highest seed and the lower seed between team.1 and team.2, for a particular column found in data.
+  #' A numeric value that provides the difference between the highest seed and the lower seed between team1 and team2,
+  #'  for a particular column found in data.
   #'
   #' @export 
   #'
@@ -183,18 +186,20 @@ find_match <- function(team1, team2, stat, data, highest_seed, round) {
   }
 }
 
-process_data = function(year_of_play, team1, team2, highest_seed, round, data, start_col = 4L){
+process_data = function(year_of_play, team1, team2, highest_seed, round, data, start_col = 4L) {
   
   #' A wrapper around the function findMatch that processes the data into a usable form. For quarter-final matchups, sets all values to 0 since there are no prior playoff games for that particular season.
   #'   Starts processing data at column 4 by default.
   #'
   #' @param year an integer: the year of the NHL Playoffs
-  #' @param team.1 character string of the name of a particular team playing in the NHL playoffs, playing against team.2
-  #' @param team.2 character string the name of a particular team playing in the NHL playoffs, playing against team.1
-  #' @param highest.seed character string representing the highest seed amongst team.1 or team.2. The highest seed is defined as the team that starts the playoff series at home.
+  #' @param team1 character string of the name of a particular team playing in the NHL playoffs, playing against team2
+  #' @param team2 character string the name of a particular team playing in the NHL playoffs, playing against team.1
+  #' @param highest_seed character string representing the highest seed amongst team.1 or team.2. 
+  #'  The highest seed is defined as the team that starts the playoff series at home.
   #' @param round the round of the playoff series between team.1 and team.2
   #' @param data the dataset that should be the result of a call to getData.nst.time
-  #' @param start_col a vector of length one that gives the starting column index to start processing from. All columns from the given column index and onwards are processed. Default = 4L.
+  #' @param start_col a vector of length one that gives the starting column index to start processing from.
+  #'  All columns from the given column index and onwards are processed. Default = 4L.
   #'
   #' @return
   #' A tibble that provides the processed data for a particular matchup of the NHL Playoffs.
