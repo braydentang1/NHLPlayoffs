@@ -33,9 +33,9 @@ grab_page_of_matchup <- function(year, team1, team2, round, conference) {
   #' Grabs the hockeyreference.com web page of a particular playoff matchup.
   #'
   #' @param year integer: the year of NHL playoffs for a particular playoff matchup
-  #' @param team.1 character string of a specific team that played against team.2 in the NHL playoffs
-  #' @param team.2 character string of a specific team that played against team.1 in the NHL playoffs
-  #' @param Round character string that gives the round of the playoff series between team.1 and team.2. Should be either "quarter-finals", "semi-finals", "finals", or "stanley-cup-final".
+  #' @param team1 character string of a specific team that played against team2 in the NHL playoffs
+  #' @param team2 character string of a specific team that played against team1 in the NHL playoffs
+  #' @param round character string that gives the round of the playoff series between team1 and team2. Should be either "quarter-finals", "semi-finals", "finals", or "stanley-cup-final".
   #' @param conference character string that gives the conference of play. Should be "western" or "eastern"
   #' 
   #' @return
@@ -84,7 +84,7 @@ grab_page_and_games_specific_team <- function(team, year, lookup_accronyms) {
   #'
   #' @param team character string of a NHL team that played in the NHL regular season for the year.
   #' @param year year of data to pull from
-  #' @param lookup_Accronyms a lookup table that finds accronyms for a particular team in the NHL regular season. See the README file in the repo for details.
+  #' @param lookup_accronyms a lookup table that finds accronyms for a particular team in the NHL regular season. See the README file in the repo for details.
   #'
   #' @return
   #' A list that provides the main html webpage (resulting from a call to read_html of rvest), the game page, and the year for a particular team during the NHL regular season.
@@ -104,13 +104,16 @@ grab_page_and_games_specific_team <- function(team, year, lookup_accronyms) {
 
 calculate_H2H <- function(main_page, highest_seed, process = TRUE) {
 
-  #' Calculates the head to head during the regular season between two teams in a series, using a matchup page resulting from a call to grabPageofMatchUp.
-  #'
-  #' Arguments:
-  #'
-  #' mainpage -- a html page resulting from a call to grabPageofMatchUp
-  #' highest.seed -- character string: the highest seed between two teams in a series. The highest seed is defined as the team that starts the playoff series at home.
-  #' process -- a boolean. If TRUE, will provide the win rate against the lower seeded team during the regular season. If FALSE, will provide the raw data table for both teams involved in a playoff series. Default = TRUE.
+  #' Calculates the head to head during the regular season between two teams in a series, using a matchup page resulting from
+  #'  a call to grab_page_of_matchup.
+  #'  
+  #' @param main_page html page resulting from a call to grabPageofMatchUp
+  #' @param highest_seed 
+  #'  character vector of length one that gives 
+  #'  the highest seed between two teams in a series. The highest seed is defined as the team that starts the playoff series at home.
+  #' @param process Logical vector of length one. 
+  #'  If TRUE, will provide the win rate against the lower seeded team during the regular season.
+  #'  If FALSE, will provide the raw data table for both teams involved in a playoff series. Default = TRUE.
   #' 
   #' @return
   #' A numeric value representing the head to head win rate against the other team, from the higher seeds perspective during the regular season, or
@@ -154,8 +157,8 @@ calculate_goalie_stats <- function(team_page, return_goalie_save_percentage = TR
 
   #' Calculates weighted goalie statistics (by playing time) for a specified team during the NHL regular season.
   #'
-  #' @param teamPage a list containing html attributes as a result of calling function grabPageandGamesofSpecificTeam
-  #' @param returnGoalieSavePercentage a logical. Should the goalie save percentage be returned? If FALSE, will return the weighted goalie point share instead.
+  #' @param team_page a list containing html attributes as a result of calling function grabPageandGamesofSpecificTeam
+  #' @param return_goalie_save_percentage a logical. Should the goalie save percentage be returned? If FALSE, will return the weighted goalie point share instead.
   #'
   #' @return
   #' A numeric value representing the head to head win rate against the other team, from the higher seeds perspective during the regular season, or
@@ -183,6 +186,14 @@ ifelse(return_goalie_save_percentage == TRUE, weighted_goalie_save_percentage, w
 }
 
 calculate_record_over_time <- function(team_page) {
+  
+  #' Calculates quarterly records over time for a specific NHL team as provided in a given HTML page.
+  #'
+  #' @param team_page A HTML page saved resulting from the function grab_page_and_games_specific_team 
+  #'
+  #' @return A numeric vector that provides the cumulative records over time by quarter.
+  #' @export
+  #'
   
   year <- as.numeric(team_page$year)
   team_page <- team_page$games
@@ -224,6 +235,15 @@ if (year != 2013) {
 
 calculate_player_points <- function(team_page) {
   
+  #' Grabs the total points for every player in a NHL team.
+  #'
+  #' @param team_page A HTML page saved resulting from the function grab_page_and_games_specific_team 
+  #'
+  #' @return A vector containing the player points for every player in a NHL team.
+  #' @export
+  #'
+  
+  
 player_points <- team_page$page %>%
     html_nodes("#skaters tfoot .right:nth-child(8)") %>%
     html_text(.) %>%
@@ -234,6 +254,14 @@ player_points
 }
 
 get_team_names <- function(year) {
+  
+  #' Grabs all of the team names for a particular NHL season.
+  #'
+  #' @param year The year of the NHL regular season to pull data from.
+  #'
+  #' @return A tibble that contains the year of data and the team names that played in that regular season.
+  #' @export
+  #'
   
   rem_dr$navigate(paste("https://www.hockey-reference.com/leagues/NHL_", year, ".html", sep = ""))
 
@@ -248,18 +276,48 @@ get_team_names <- function(year) {
 
 find_match <- function(team1, team2, stat, data, highest_seed) {
   
+  #' Finds the two relevant teams playing each other in the raw dataset provided by get_data_nst
+  #'   and calculates the difference in a statistic from the perspective of the higher seed.
+  #'
+  #' @param team1 character string; a team competing against team2 in a particular NHL series
+  #' @param team2 character string; a team competing against team1 in a particular NHL series
+  #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
+  #' @param data the raw dataset provided by get_data_nst
+  #' @param highest_seed character string; gives the highest seed among team1 or team2. The highest seed is defined as the team that starts the series at home.
+  #'
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #'
   tmp <- unlist(c(data[, names(data) %in% c(stat)][which(data$team == team1),], data[, names(data) %in% c(stat)][which(data$team == team2),]))
   tmp[which(c(team1, team2) == highest_seed)] - tmp[which(c(team1, team2) != highest_seed)] 
   
 }
 
-process_data <- function(team1, team2, highest_seed, year_of_play, data) {
+process_data <- function(team1, team2, highest_seed, year_of_play, data, start_col = 3L) {
+  
+  #' Processes the dataset for team1 and team2 for a particular dataset. 
+  #' Starts processing at column 3 of data by default.
+  #'
+  #' @param team1 character string; a team competing against team2 in a particular NHL series
+  #' @param team2 character string; a team competing against team1 in a particular NHL series
+  #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
+  #' @param data the raw dataset provided by get_data_nst
+  #' @param highest_seed character string; gives the highest seed among team1 or team2. The highest seed is defined as the team that starts the series at home.
+  #' @param start_col a vector of length one that gives the starting column index to start processing from. All columns from the given column index and onwards are processed. Default = 3L.
+  #' 
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #' 
   
   data <- data %>% filter(., year == year_of_play)
   
-  team_vec <- as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = find_match, team1 = team1, team2 = team2, data = data, highest_seed = highest_seed))) %>%
+  team_vec <- as_tibble(unlist(lapply(colnames(data)[start_col:ncol(data)], FUN = find_match, team1 = team1, team2 = team2, data = data, highest_seed = highest_seed))) %>%
     rownames_to_column(.) %>%
-    mutate(rowname = colnames(data)[3:ncol(data)]) %>%
+    mutate(rowname = colnames(data)[start_col:ncol(data)]) %>%
     spread(rowname, value) 
   
   team_vec
@@ -267,6 +325,19 @@ process_data <- function(team1, team2, highest_seed, year_of_play, data) {
 }
 
 get_winner <- function(pages, year, highest_seed, team1, team2) {
+  
+  #' Gets the winner of a particular series between team1 and team2.
+  #'
+  #' @param pages A list containing all of matchup (head to head) pages from hockey-reference for all NHL playoff series.
+  #' @param year A numeric vector of length one that gives the year in which the series between team1 and team2 is played.
+  #' @param highest_seed A character vector of length one that gives the highest seed between team1 and team2. The highest seed is defined as 
+  #'  the team who starts the series at home.
+  #' @param team1 A character vector of length one representing one of the two teams playing in a playoff series.
+  #' @param team2 A character vector of length one representing one of the two teams playing in a playoff series. 
+  #'
+  #' @return A character vector with the value "W", if the highest seed won, and "L", if the highest seed lost.
+  #' @export
+  #'
   
   all_playoff_teams <- pages[[year - 2005]] %>% 
               html_nodes("#all_playoffs td:nth-child(3)") %>%
@@ -291,6 +362,15 @@ get_winner <- function(pages, year, highest_seed, team1, team2) {
 }
 
 get_past_number_of_games <- function(year) {
+  
+  #' Calculates the past number of games played in the previous series during a particular year of the NHL Playoffs.
+  #' Returns NA for the first round (since there are no prior games played in this case).
+  #'
+  #' @param year A numeric vector of length one that contains an integer representing the year of the NHL Playoffs to obtain data from.
+  #'
+  #' @return A tibble containing the year, the teams involved in a series, and the number of games played in the prior series.
+  #' @export
+  #'
   
   main_page <- read_html(paste("https://www.hockey-reference.com/playoffs/NHL_", year, ".html", sep = ""))
   
@@ -321,6 +401,20 @@ get_past_number_of_games <- function(year) {
 }
 
 process_data_number_games <- function(team1, team2, round, highest_seed, year, data) {
+  
+  #' Title
+  #'
+  #' @param team1 
+  #' @param team2 
+  #' @param round 
+  #' @param highest_seed 
+  #' @param year 
+  #' @param data 
+  #'
+  #' @return
+  #' @export
+  #'
+  #' @examples
   
   if (round == "quarter-finals") {
     0

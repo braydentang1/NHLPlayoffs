@@ -31,6 +31,13 @@ rem_dr$open()
 
 get_data <- function(year) {
   
+  #' Gets aggregated stats from hockey-reference for every team in the NHL for a particular year.
+  #'
+  #' @param year an integer; the desired year of playoff data to pull odds from
+  #'
+  #' @return
+  #' A tibble that provides the entire set of aggregated stats for every team in the NHL for a particular year.
+  #'
   rem_dr$navigate(paste("https://www.hockey-reference.com/leagues/NHL_",year,".html", sep = ""))
   main <- read_html(rem_dr$getPageSource()[[1]])
   
@@ -176,19 +183,56 @@ get_data <- function(year) {
 }
 
 find_match <- function(team1, team2, stat, data, highest_seed) {
+  
+  #' Finds the two relevant teams playing each other in the raw dataset provided by
+  #' get_data_nhl_hitsandblocks or get_data and calculates the difference in a statistic from the perspective of the higher seed.
+  #'
+  #' @param team1 character string; a team competing against team2 in a particular NHL series
+  #' @param team2 character string; a team competing against team1 in a particular NHL series
+  #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
+  #' @param data the raw dataset provided by get_data_nhl_hitsandblocks or get_data_nhl_leading_and_trailing
+  #' @param highest_seed character string; gives the highest seed among team1 or team2. 
+  #' The highest seed is defined as the team that starts the series at home.
+  #'
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #'
+  
   tmp <- unlist(c(data[, names(data) %in% c(stat)][which(data$team == team1),], data[, names(data) %in% c(stat)][which(data$team == team2),]))
   tmp[which(c(team1, team2) == highest_seed)] - tmp[which(c(team1, team2) != highest_seed)] 
 }
   
-process_data = function(team1, team2, highest_seed, year_of_play, data) {
+process_data <- function(team1, team2, highest_seed, year_of_play, data, start_col = 3L) {
+  
+  #' Processes the dataset for team1 and team2 for a particular dataset. 
+  #' Starts processing at column 3 of data by default.
+  #'
+  #' @param team1 character string; a team competing against team2 in a particular NHL series
+  #' @param team2 character string; a team competing against team1 in a particular NHL series
+  #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
+  #' @param data the raw dataset provided by get_data
+  #' @param highest_seed character string; gives the highest seed among team1 or team2.
+  #'  The highest seed is defined as the team that starts the series at home.
+  #' @param start_col a vector of length one that gives the starting column index to start processing from. 
+  #' All columns from the given column index and onwards are processed. Default = 3L.
+  #' 
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #' 
   
   data <- data %>% filter(., year == year_of_play)
   
-  team_vec <- as_tibble(unlist(lapply(colnames(data)[3:ncol(data)], FUN = find_match, team1 = team1, team2 = team2, data = data, highest_seed = highest_seed))) %>%
-                  rownames_to_column(.) %>%
-                  mutate(rowname = colnames(data)[3:ncol(data)]) %>%
-                  spread(rowname, value) 
-
+  team_vec <- as_tibble(unlist(lapply(colnames(data)[start_col:ncol(data)], FUN = find_match, team1 = team1, team2 = team2, data = data, highest_seed = highest_seed))) %>%
+    rownames_to_column(.) %>%
+    mutate(rowname = colnames(data)[start_col:ncol(data)]) %>%
+    spread(rowname, value) 
+  
+  team_vec
+  
 }
 
 all_data <- map_df(2006:2019, get_data)

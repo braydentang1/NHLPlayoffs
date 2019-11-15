@@ -25,6 +25,14 @@ rm(accronyms_pg, accronyms, full_names)
 
 get_data <- function(year) {
   
+  #' Gets aggregated stats from Corsica for every team in the NHL for a particular year.
+  #'
+  #' @param year an integer; the desired year of playoff data to pull odds from
+  #'
+  #' @return
+  #' A tibble that provides the entire set of aggregated stats for every team in the NHL for a particular year.
+  #'
+
   data <- read_csv(paste("data/external/corsica_all-team-stats/", year,".csv", sep = "")) %>%
           mutate_if(is.character, funs(str_replace(., "L.A", "LAK"))) %>%
           mutate_if(is.character, funs(str_replace(., "N.J", "NJD"))) %>%
@@ -40,6 +48,20 @@ get_data <- function(year) {
 
 process_data <- function(team1, team2, highest_seed, year_of_play, data) {
   
+  #' Processes the dataset for team1 and team2 for a particular dataset. 
+  #'
+  #' @param team1 character string; a team competing against team2 in a particular NHL series
+  #' @param team2 character string; a team competing against team1 in a particular NHL series
+  #' @param highest_seed character string; gives the highest seed among team1 or team2
+  #'  The highest seed is defined as the team that starts the series at home
+  #'  @param year_of_play the year of NHL playoffs in which the series is played
+  #' @param data the raw dataset provided by get_data
+  #' 
+  #' @return
+  #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
+  #'
+  #' @export
+  #' 
   data <- data %>% 
     filter(., year == year_of_play)
   

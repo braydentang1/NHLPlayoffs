@@ -145,7 +145,7 @@ write_csv(all_data_penaltykill, "data/raw/2008-2019_naturalstattrick_raw-time-fe
 
 find_match <- function(team1, team2, stat, data, highest_seed, round) {
   
-  #' Parses the raw dataset given by the function "getData.nst.time", finds the two teams that are playing each other during a round in the playoffs, and differences their stats.
+  #' Parses the raw dataset given by the function "get_data_nst_time", finds the two teams that are playing each other during a round in the playoffs, and differences their stats.
   #'
   #' @param team1 a team that is playing against team2 in a particular round of the playoffs
   #' @param team2 a second team that is playing against team1 in a particular round of the playoffs
@@ -188,7 +188,7 @@ find_match <- function(team1, team2, stat, data, highest_seed, round) {
 
 process_data = function(year_of_play, team1, team2, highest_seed, round, data, start_col = 4L) {
   
-  #' A wrapper around the function findMatch that processes the data into a usable form. For quarter-final matchups, sets all values to 0 since there are no prior playoff games for that particular season.
+  #' A wrapper around the function find_match that processes the data into a usable form. For quarter-final matchups, sets all values to 0 since there are no prior playoff games for that particular season.
   #'   Starts processing data at column 4 by default.
   #'
   #' @param year an integer: the year of the NHL Playoffs

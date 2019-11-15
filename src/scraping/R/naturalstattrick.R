@@ -51,14 +51,14 @@ get_data_nst <- function(year) {
 
 find_match <- function(team1, team2, stat, data, highest_seed) {
   
-  #' Finds the two relevant teams playing each other in the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing,
+  #' Finds the two relevant teams playing each other in the raw dataset provided by get_data_nst
   #'   and calculates the difference in a statistic from the perspective of the higher seed.
   #'
-  #' @param team.1 character string; a team competing against team.2 in a particular NHL series
-  #' @param team.2 character string; a team competing against team.1 in a particular NHL series
+  #' @param team1 character string; a team competing against team2 in a particular NHL series
+  #' @param team2 character string; a team competing against team1 in a particular NHL series
   #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
-  #' @param data the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
-  #' @param highest.seed character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #' @param data the raw dataset provided by get_data_nst
+  #' @param highest_seed character string; gives the highest seed among team1 or team2. The highest seed is defined as the team that starts the series at home.
   #'
   #' @return
   #' A numeric value that gives the difference in a statistic, from the higher seeds perspective.
@@ -73,14 +73,14 @@ find_match <- function(team1, team2, stat, data, highest_seed) {
 
 process_data <- function(team1, team2, highest_seed, year_of_play, data, start_col = 3L) {
   
-  #' Processes the dataset for team.1 and team.2 for a particular dataset. 
+  #' Processes the dataset for team1 and team2 for a particular dataset. 
   #' Starts processing at column 3 of data by default.
   #'
-  #' @param team.1 character string; a team competing against team.2 in a particular NHL series
-  #' @param team.2 character string; a team competing against team.1 in a particular NHL series
+  #' @param team1 character string; a team competing against team2 in a particular NHL series
+  #' @param team2 character string; a team competing against team1 in a particular NHL series
   #' @param stat character string; a column name found in the raw data given by the argument data to compute the differencing
-  #' @param data the raw dataset provided by getData_nhl_HitsandBlocks or getData_nhl_LeadingandTrailing
-  #' @param highest.seed character string; gives the highest seed among team.1 or team.2. The highest seed is defined as the team that starts the series at home.
+  #' @param data the raw dataset provided by get_data_nst
+  #' @param highest_seed character string; gives the highest seed among team1 or team2. The highest seed is defined as the team that starts the series at home.
   #' @param start_col a vector of length one that gives the starting column index to start processing from. All columns from the given column index and onwards are processed. Default = 3L.
   #' 
   #' @return
