@@ -402,19 +402,20 @@ get_past_number_of_games <- function(year) {
 
 process_data_number_games <- function(team1, team2, round, highest_seed, year, data) {
   
-  #' Title
+  #' Processes the past number of games feature to be the difference in games played. 
   #'
-  #' @param team1 
-  #' @param team2 
-  #' @param round 
-  #' @param highest_seed 
-  #' @param year 
-  #' @param data 
+  #' @param team1 Character vector of length one that gives the team playing in a particular NHL Playoff series, against team2
+  #' @param team2 Character vector of length one that gives the team playing in a particular NHL Playoff series, against team1
+  #' @param round Character vector of length one that gives the playoff round that team1 and team2 are playing in.
+  #'  Possible values are "quarter-finals", "semi-finals", "finals", and "stanley-cup-final".
+  #' @param highest_seed Character vector of length one that gives the highest seed between team1 and team2. The highest 
+  #'  seed is defined as the team that starts the series at home.
+  #' @param year Numeric vector of length one that contains the year in which the playoff series was played
+  #' @param data The tibble resulting from a call to the function get_past_number_of_games
   #'
-  #' @return
+  #' @return A numeric vector containing the difference in past number of games between the highest seed of team1 and team2 and the lower seed.
   #' @export
   #'
-  #' @examples
   
   if (round == "quarter-finals") {
     0
