@@ -23,6 +23,14 @@ rm(accronyms_pg, accronyms, full_names)
 
 get_data_ESPN <- function(year) {
   
+  #' Grabs data from ESPN. Aggregates the data down so that one team = one row.
+  #'
+  #' @param year A numeric vector of length one that gives the year of a particular NHL regular season.
+  #'
+  #' @return A tibble containing the year of play and the teams aggregated WAR for all teams in the regular season.
+  #' @export
+  #'
+  
   main_page <- read_html(paste("http://www.espn.com/nhl/stats/rpi/_/season/", year, sep=""))
   secondary_page <- read_html(paste("http://www.espn.com/nhl/statistics/team/_/stat/special-teams/sort/powerPlayPct/year/",year,"/seasontype/2/split/142", sep = ""))
 
@@ -129,6 +137,19 @@ get_data_ESPN <- function(year) {
 }
 
 process_data <- function(team1, team2, highest_seed, data, year_of_play) {
+  
+  #' Processes the data resulting from a call to the function get_data_ESPN
+  #'
+  #' @param team1 A character vector of length one that is one of the two teams playing in a series, playing against team2.
+  #' @param team2 A character vector of length one that is one of the two teams playing in a series, playing against team1.
+  #' @param highest_seed A character vector of length one that is the highest seed between team1 and team2. The highest seed
+  #'  is defined as the team that starts the series at home.
+  #' @param data A tibble of data resulting from a call to the function get_data_ESPN 
+  #' @param year_of_play The year of NHL playoffs that the series between team1 and team2 is played.
+  #'
+  #' @return A list containing the difference in statistics between the higher seed of team1 and team2 and the other team.
+  #' @export
+  #'
   
   data <- data %>% filter(., year == year_of_play)
   

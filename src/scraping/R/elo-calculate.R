@@ -32,16 +32,35 @@ lookup_accronyms$accronym <- ifelse(lookup_accronyms$accronym == "VGK", "VEG", l
 
 rm(accronyms_pg, accronyms, fullnames)
 
-#The function below uses the formula given by http://hockeyanalytics.com/2016/07/elo-ratings-for-the-nhl/ to actually calculate ELO ratings. This is quite complex and so refer 
-#to the page for actual details.
+# The function below uses the formula given by http://hockeyanalytics.com/2016/07/elo-ratings-for-the-nhl/ to actually calculate ELO ratings. This is quite complex and so refer 
+# to the page for actual details.
 
 calculate_M <- function(goal_difference_home, elo_home, elo_visitor) {
   
+  #' Calculates the value M as given in the formula for ELO calculation.
+  #'
+  #' @param goal_difference_home A numeric vector of length one that gives the goal difference between the home team and away team.
+  #' @param elo_home A numeric vector of length one that gives the ELO rating for the home team.
+  #' @param elo_visitor A numeric vector of length one that gives the ELO rating for the visiting team.
+  #'
+  #' @return A numeric vector of length one which represents the constant M for a particular game.
+  #' @export
+  #'
+
   M <- max(1,log(abs(goal_difference_home-0.0085*(elo_home - elo_visitor + 35)) + exp(1) -1))
   ifelse(is.na(M), stop(paste("List of Parameters:", goal_difference_home, elo_home, elo_visitor, sep = " ")), M)
 }
 
 calculate_EH <- function(elo_home, elo_visitor) {
+  
+  #' Calculates the constant EH as needed for the ELO calculation.
+  #'
+  #' @param elo_home A numeric vector of length one that provides the ELO rating for the home team.
+  #' @param elo_visitor A numeric vector of length one that provides the ELO rating for the visiting team.
+  #'
+  #' @return A numeric vector of length one that provides the EH constant for calculation of ELO.
+  #' @export
+  #'
   
   EH <- 1/(1 + 10^(-(elo_home - elo_visitor + 35) / 400))
   ifelse(is.na(EH), stop("NA"), EH)
@@ -49,7 +68,17 @@ calculate_EH <- function(elo_home, elo_visitor) {
 
 get_data <- function(year_of_play, last_games = 0) {
   
-  team_names <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year_of_play,"_standings.html", sep="")) %>%
+  #' Calculates the ELO rating of all of the teams as of the start of the NHL playoffs for a particular year of NHL play.
+  #'
+  #' @param year_of_play The year of regular season to retrive as an integer vector of length one.
+  #' @param last_games Pull in the last (last_games) games of the regular season played. Optional argument, defaults to 0 (all of the games from the start of the 
+  #'  regular season are included).
+  #'
+  #' @return A tibble containing the ELO ratings for all of the teams who played in the regular season.
+  #' @export
+  #'
+  
+  team_names <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_", year_of_play,"_standings.html", sep="")) %>%
                 html_nodes("#standings td.left") %>%
                 html_text(.)
   
@@ -58,7 +87,7 @@ get_data <- function(year_of_play, last_games = 0) {
   
   rm(team_names)
   
-  schedule_and_results <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year_of_play,"_games.html", sep="")) 
+  schedule_and_results <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_", year_of_play,"_games.html", sep="")) 
           
   visitor <- schedule_and_results %>%
                 html_nodes("#games .left+ td.left") %>%
@@ -118,6 +147,21 @@ constant <- ifelse(last_games == 0, 1, nrow(data)-last_games)
 }
 
 get_data_playoffs <- function(year_of_play, elo_end_of_regularseason, round_end_dates) {
+  
+  #' Retrives the ELO ratings at the start of each playoff series through the playoffs in a walkthrough fashion (to avoid)
+  #'  data leakage. Playoff victories are weighted higher as given in the original formulation of this method.
+  #'  
+  #' @param year_of_play The year of NHL playoffs to calculate ELO ratings.
+  #' @param elo_end_of_regularseason The ELO ratings for all playoff teams at the end of the regular season.
+  #'  Should be the result of a call to the function get_data
+  #' @param round_end_dates A template that gives the starting and ending dates of each round of the NHL playoffs for the particular 
+  #'  year_of_play. The starting date is defined as the day of the first game that is played. The ending date is defined
+  #'  as the day of the last game that is played.
+  #'
+  #' @return A tibble containing the calculated ELO ratings for all of the teams in the NHL throughout the playoffs. 
+  #' @export
+  #'
+  #' @examples
   
   page <- read_html(paste("https://www.hockey-reference.com/leagues/NHL_",year_of_play,"_games.html", sep=""))
   
@@ -213,6 +257,19 @@ write_csv(data, "data/raw/2006-2019_elo-ratings_playoffs.csv")
 
 process_data <- function(team1, team2, highest_seed, data, year_of_play) {
   
+  #' Processes the data from get_data so that the difference in ELO from the highest seed of team1 or team2 and the other team is calculated.
+  #'
+  #' @param team1 A character vector of length one that is playing in a series during the NHL playoffs against team2.
+  #' @param team2 A character vector of length one that is playing in a series during the NHL playoffs against team1.
+  #' @param highest_seed A character vector of length one that is either team1 or team2, whichever is the highest seed. 
+  #'  A highest seed is defined as the team that starts the playoff series at home. 
+  #' @param data A tibble that is the result from a call to the function get_data.
+  #' @param year_of_play The year of NHL playoffs in which the series between team1 and team2 play.
+  #'
+  #' @return A numeric vector of length one that gives the difference in ELO rating between the higher seed of team1 and team2 and the lower seed.
+  #' @export
+  #'
+  
   data <- data %>% filter(., year == year_of_play)
   
   team_elo <- c(data$elo_rating[which(data$team == team1)], data$elo_rating[which(data$team == team2)])
@@ -222,6 +279,21 @@ process_data <- function(team1, team2, highest_seed, data, year_of_play) {
 }
 
 process_data_playoffs <- function(team1, team2, highest_seed, data, year_of_play, round) {
+  
+  #' Processes the data from get_data_playoffs so that the difference in ELO from the highest seed of team1 or team2
+  #'  and the other team is calculated.
+  #'
+  #' @param team1 A character vector of length one that is playing in a series during the NHL playoffs against team2.
+  #' @param team2 A character vector of length one that is playing in a series during the NHL playoffs against team1.
+  #' @param highest_seed A character vector of length one that is either team1 or team2, whichever is the highest seed. 
+  #'  A highest seed is defined as the team that starts the playoff series at home. 
+  #' @param data A tibble that is the result from a call to the function get_data.
+  #' @param year_of_play The year of NHL playoffs in which the series between team1 and team2 play.
+  #' @param round A character vector of length one that specifies the playoff round in which team1 and team2 play.
+  #'
+  #' @return A numeric vector of length one that gives the difference in ELO rating between the higher seed of team1 and team2 and the lower seed.
+  #' @export
+  #'
   
   if (round == "quarter-finals") {
     NA
