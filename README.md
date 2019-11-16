@@ -11,7 +11,7 @@ Sits at 0.65742 log loss using data from 2006 and onwards.
 - recipes
 - moments
 - ParBayesianOptimization
-- paralllel
+- parallel
 - fastknn
 - RSelenium and a proper configuration of Selenium installed on your local machine
 - rvest
