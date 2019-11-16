@@ -61,6 +61,14 @@ all_data <- all_data %>% filter(!is.na(result_factor))
 
 pre_process_data <- function(data) {
   
+  #' Pre processes the specified data as done in model validation.
+  #'
+  #' @param data The dataset to preprocess.
+  #'
+  #' @return A list containing the preprocessed dataset as well as the learned parameters needed to preprocess new data.
+  #' @export
+  #'
+  
   recipe_parameters <- prep(pre_process_recipe(data), training = data)
   
   processed_data_set <- bake(recipe_parameters, new_data = data) 
@@ -71,7 +79,21 @@ pre_process_data <- function(data) {
 #...........................Prediction Script.................................................................................#
 #Requires new data samples. 
 
-predict_NHL <- function(processed_data_set, recipe_parameters, new_data, final_parameters, times = 20) {
+predict_NHL <- function(processed_data_set, recipe_parameters, new_data, final_parameters, times = 20L) {
+  
+  #' Generates new predictions on new_data.
+  #'
+  #' @param processed_data_set A processed training set resulting from a call to the function pre_process_data.
+  #' @param recipe_parameters The learned parameters for preprocessing, resulting from a call to the function pre_process_data.
+  #' @param new_data A tibble containing the new observations to make predictions for.
+  #' @param final_parameters A tibble with two columns alpha and lambda that give the hyperparameters for each 
+  #'  bagged elastic net model used in the ensemble.
+  #' @param times An integer vector of length one that gives the number of bootstrap resamples to use per each fitted bagged elastic net model.
+  #'
+  #' @return A list containing a tibble containing predicted probabilities for the observations in new_data, and a tibble with variable
+  #'  importance scores derived from the fitted model.
+  #' @export
+  #'
   
   new_data <- new_data %>% 
     select(-result_factor) %>% 
