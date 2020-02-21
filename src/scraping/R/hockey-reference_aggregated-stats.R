@@ -142,7 +142,7 @@ get_data <- function(year) {
     tibble(powerplay_percentage = .)
   
   penaltykill_percentage <- main %>%
-    html_nodes("tbody .right:nth-child(24)") %>%
+    html_nodes("#stats tbody .right:nth-child(24)") %>%
     html_text(.) %>%
     as.numeric(.) %>%
     tibble(penaltykill_percentage = .)
