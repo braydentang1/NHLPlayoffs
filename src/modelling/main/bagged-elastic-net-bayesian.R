@@ -172,3 +172,4 @@ final_varimp <- process_varimp(var_imp_raw = map(results, function(x) x$var_imp)
 #...................................Paste the Results.........................................................#
 
 paste("Final LogLoss from Repeats: ", round(mean(final_log_loss), 5))
+saveRDS(final_log_loss, "results/logloss.rds")
