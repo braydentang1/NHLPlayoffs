@@ -62,9 +62,9 @@ rm(kurt)
 
 #..........................Global........................................#
 set.seed(40689)
-all_seeds <- sample(1:1000000000, 42, replace = FALSE)
+all_seeds <- sample(1:1000000000, 2, replace = FALSE)
 
-give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_models = 5, n_iters = 25, use_only_variables = NULL) {
+give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_models = 5, n_iters = 5, use_only_variables = NULL) {
   
   #' Runs the entire modelling pipeline from start to finish.
   #'
@@ -103,13 +103,13 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_mode
   
   writeLines(paste("Finished Processing Data For Seed:", seed, "in Rep:", i))
   
-      best_param <- bayesOpt(FUN = function(alpha, lambda) {
+  best_param <- bayesOpt(FUN = function(alpha, lambda) {
             
-        scores <- vector("numeric", length(all_processed_frames))
+  scores <- vector("numeric", length(all_processed_frames))
                                        
-          for (m in 1:length(all_processed_frames)) {
+    for (m in 1:length(all_processed_frames)) {
                                          
-            model <- bagged_model(
+      model <- bagged_model(
               train = all_processed_frames[[m]]$train,
               test = all_processed_frames[[m]]$test,
               label_train = all_processed_frames[[m]]$train$result_factor, 
@@ -118,17 +118,17 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_mode
               times = times, 
               calibrate = FALSE)
             
-            scores[m] <- log_loss(scores = model$predictions, label = all_processed_frames[[m]]$test$result_factor)
+      scores[m] <- log_loss(scores = model$predictions, label = all_processed_frames[[m]]$test$result_factor)
     
-            rm(model)
+      rm(model)
             
-          }
+      }
             
     
-        list(Score = -mean(scores))
+      list(Score = -mean(scores))
         
-        }
-        , bounds = list(alpha = c(0, 1), lambda = c(15L, 100L)), parallel = FALSE,
+    }
+  , bounds = list(alpha = c(0, 1), lambda = c(15L, 100L)), parallel = FALSE,
                                        initPoints = 3, iters.n = n_iters, convThresh = 100, verbose = 1)
   
   writeLines(paste("Store Final Parameters For Seed:", seed, "in Rep:", i))
@@ -163,7 +163,8 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_mode
 results <- mclapply(X = all_seeds, FUN = give_results, all_data = all_data, use_only_variables = c("h2h", "weighted_gps", "q2_record", "powerplay_oppurtunities", "penaltykill_percentage", "vegas_odds", "toi_percent_qot_mean"),
                    p = 0.8, k = 3, times = 20, num_of_models = 5, mc.cores = detectCores() - 2, mc.preschedule = FALSE)
 
-#results <- lapply(X = allSeeds, FUN = giveResults, allData = allData)
+# results <- lapply(X = all_seeds, FUN = give_results, all_data = all_data, use_only_variables = c("h2h", "weighted_gps", "q2_record", "powerplay_oppurtunities", "penaltykill_percentage", "vegas_odds", "toi_percent_qot_mean"),
+#                     p = 0.8, k = 3, times = 20, num_of_models = 5)
 
 final_log_loss <- map_dbl(results, function(x) x$log_loss)
 final_varimp <- process_varimp(var_imp_raw = map(results, function(x) x$var_imp) %>% reduce(left_join, by = "variable"))
