@@ -62,7 +62,7 @@ bagged_model <- function(train, test, label_train, alpha, s_lambda, times, calib
     select_if(is.numeric) %>%
     transmute(variable_importance = rowMeans(.))
   
-  var_imp <- tibble(Variable = var_imp$variable, mean_importance = means$variable_importance)
+  var_imp <- tibble(variable = var_imp$variable, mean_importance = means$variable_importance)
   
   if (calibrate == TRUE) {
     list(predictions = platt_scale(label_train = label_train, predicted_prob_train = insample_pred, 
@@ -192,8 +192,8 @@ add_knn_variables <- function(train_data, test_data, include_PCA = FALSE, distan
   #'
 
   if (!is.null(use_only_variables)) {
-    train_data_tmp <- train_data %>% select(., use_only_variables)
-    test_data_tmp <- test_data %>% select(., use_only_variables)
+    train_data_tmp <- train_data %>% select(., all_of(use_only_variables))
+    test_data_tmp <- test_data %>% select(., allof(use_only_variables))
   }
   
   if (include_PCA == TRUE) {
