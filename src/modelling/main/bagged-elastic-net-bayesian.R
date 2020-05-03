@@ -146,19 +146,18 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_mode
   writeLines(paste("Bind Rows for Seed:", seed))
   final_parameters <- bind_rows(final_parameters)
   
-    writeLines(paste("Score the Test Set for Seed:", seed))
-    processed_data <- process_folds(fold_index = all_folds[[1]], main_train = all_data, use_only_variables = use_only_variables)
-      final_test_set_score <- train_ensemble(folds = all_folds, 
+  writeLines(paste("Score the Test Set for Seed:", seed))
+  processed_data <- process_folds(fold_index = all_folds[[1]], main_train = all_data, use_only_variables = use_only_variables)
+  final_test_set_score <- train_ensemble(folds = all_folds, 
                                              times = times,
                                              final_parameters = final_parameters, 
                                              processed_data = processed_data, 
                                              label_test = all_data$result_factor[-all_folds[[1]]])
     
-    writeLines(paste("Log Loss Test Set:", final_test_set_score$log_loss, sep = " "))
+  writeLines(paste("Log Loss Test Set:", final_test_set_score$log_loss, sep = " "))
     
-    list(log_loss = final_test_set_score$log_loss, var_imp = final_test_set_score$var_imp)
-  #finalTestSet.Score$LogLoss
-  
+  list(log_loss = final_test_set_score$log_loss, var_imp = final_test_set_score$var_imp)
+
 }
 
 results <- mclapply(X = all_seeds, FUN = give_results, all_data = all_data, use_only_variables = c("h2h", "weighted_gps", "q2_record", "powerplay_oppurtunities", "penaltykill_percentage", "vegas_odds", "toi_percent_qot_mean"),

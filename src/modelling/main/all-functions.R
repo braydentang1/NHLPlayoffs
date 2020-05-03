@@ -193,7 +193,7 @@ add_knn_variables <- function(train_data, test_data, include_PCA = FALSE, distan
 
   if (!is.null(use_only_variables)) {
     train_data_tmp <- train_data %>% select(., all_of(use_only_variables))
-    test_data_tmp <- test_data %>% select(., allof(use_only_variables))
+    test_data_tmp <- test_data %>% select(., all_of(use_only_variables))
   }
   
   if (include_PCA == TRUE) {
