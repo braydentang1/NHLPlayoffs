@@ -20,6 +20,7 @@ Folder Descriptions:
 -----
 - data: Contains all raw, processed, and external data sets that the model is fit on.
 - src: Contains all modelling, prediction, and scraping scripts in R. Also contains templates used for building the dataset.
+- tests: Contains data sets with known correct values to check validity of input when scraping.
 
 How To Run:
 -----
@@ -40,9 +41,7 @@ TODO:
 - [x] 1. Finish the scraping automation.
 - [x] 2. Redo the modelling script. 
 - [x] 3. Add 2013 data. Improve the model below 0.67 log loss.
-- [ ] 4/5. Paired t-tests? 
-- [ ] 4/5. Document how to run the scripts from scratch.
-- [ ] 4/5. Docker?
+- [x] 4. Document how to run the scripts from scratch.
 
 Credits:
 -----
