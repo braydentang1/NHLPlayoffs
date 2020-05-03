@@ -1,4 +1,5 @@
 library(tidyverse)
+library(testthat)
 library(rvest)
 library(RSelenium)
 
@@ -26,7 +27,7 @@ lookup_accronyms$accronym <- ifelse(
 
 rm(accronyms_pg, accronyms, full_names)
 
-rem_dr <- remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
+rem_dr <- remoteDriver(port = 4445L, browserName = "chrome")
 rem_dr$open()
 
 get_data <- function(year) {
@@ -236,6 +237,11 @@ process_data <- function(team1, team2, highest_seed, year_of_play, data, start_c
 }
 
 all_data <- map_df(2006:2019, get_data)
+
+test_that("Scraped data does not match historically accurate values.", {
+  expect_equivalent(readRDS("tests/test_data/hockey_reference_agg-stats.rds"), all_data[1:392, ])
+})
+
 write_csv(all_data, "data/raw/2006-2019_hockey-reference_aggregated_raw.csv")
 
 teams <- template %>%

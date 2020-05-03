@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rvest)
+library(testthat)
 
 template <- read_csv("src/scraping/templates/template.csv")
 
@@ -181,6 +182,10 @@ process_data <- function(team1, team2, highest_seed, data, year_of_play, start_c
 
 all_years <- map_df(2006:2019, get_data_pon) %>%
   write_csv(., "data/raw/2006-2019_puck-on-net_last20_raw.csv")
+
+test_that("Scraped data does not match historical.", {
+  expect_equivalent(all_years, readRDS("tests/test_data/puckonnet.rds"))
+})
 
 final_data <- pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = all_years, ..4)) %>%
   write_csv(., "data/processed/2006-2019_puck-on-net_last20.csv")

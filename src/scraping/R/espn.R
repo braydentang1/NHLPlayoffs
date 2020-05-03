@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rvest)
+library(testthat)
 
 template <- read_csv("src/scraping/templates/template.csv") 
 
@@ -162,6 +163,10 @@ process_data <- function(team1, team2, highest_seed, data, year_of_play) {
 
 all_years <- map_df(seq(2006, 2019,1), get_data_ESPN)
 all_years$penaltykill_post_allstar <- ifelse(all_years$penaltykill_post_allstar == 0, NA, all_years$penaltykill_post_allstar)
+
+test_that("Raw data and historically correct values do not match.", {
+  expect_equivalent(readRDS("tests/test_data/espn.rds"), all_years)
+})
 
 write_csv(all_years, "data/raw/2006-2019_espn_raw.csv")
 

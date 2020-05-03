@@ -1,11 +1,12 @@
 library(tidyverse)
 library(rvest)
 library(RSelenium)
+library(testthat)
 
 rem_dr <- remoteDriver(remoteServerAddr = "localhost", port = 4445L, browserName = "chrome")
 rem_dr$open()
 
-rem_dr2 <- remoteDriver(remoteServerAddr = "localhost", port = 4433L, browserName = "chrome")
+rem_dr2 <- remoteDriver(remoteServerAddr = "localhost", port = 4444L, browserName = "chrome")
 rem_dr2$open()
 
 get_data <- function(year) {
@@ -19,10 +20,12 @@ get_data <- function(year) {
   #'
   
 rem_dr$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-", year - 1, "-", year, "/results/#/", sep = ""))  
+Sys.sleep(10)
 main <- read_html(rem_dr$getPageSource()[[1]])
 
 #I tried navigating on the page, but it appears that it doesn't work (it keeps parsing only the first page, not the second)
 rem_dr2$navigate(paste("https://www.oddsportal.com/hockey/usa/nhl-", year-1, "-", year, "/results/#/page/2/", sep = ""))  
+Sys.sleep(10)
 main2 <- read_html(rem_dr2$getPageSource()[[1]])
 
 teams <- main %>% 
@@ -185,6 +188,10 @@ template <- read_csv("src/scraping/templates/template.csv") %>%
 
 all_data <- map_df(2006:2019, get_data) %>%
   write_csv(., "data/raw/2006-2019_oddsportal_raw.csv")
+
+test_that("Odds don't match historical.", {
+  expect_equivalent(readRDS("tests/test_data/odds.rds"), final)
+})
 
 final <- pmap_dfr(
   list(template$Year, template$Team1, template$Team2), 

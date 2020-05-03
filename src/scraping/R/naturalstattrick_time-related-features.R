@@ -1,3 +1,6 @@
+## Currently there is a bug on NST where date filters do not work. Can't use
+# as a result.
+
 library(tidyverse)
 library(rvest)
 

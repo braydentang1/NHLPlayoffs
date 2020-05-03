@@ -1,6 +1,7 @@
 library(rvest)
 library(tidyverse)
 library(RSelenium)
+library(testthat)
 
 template <- read_csv("src/scraping/templates/template.csv")
 
@@ -132,16 +133,33 @@ calculate_H2H <- function(main_page, highest_seed, process = TRUE) {
     stop("Highest seed does not match any teams being pulled from main page.")
   }
   
-  H2H_stats <- main_page %>%
-    html_nodes("h2+ .game_summaries .winner td:nth-child(1) a") %>%
+  H2H_games <- main_page %>%
+    html_nodes(".adblock+ .game_summaries .right:nth-child(2)") %>%
     html_text(.) %>%
-    table() 
+    as.numeric(.)
   
-  if (length(H2H_stats) != 0) {
+  arrangements <- main_page %>%
+    html_nodes(".adblock+ .game_summaries a") %>%
+    html_text(.)
+  
+  if (length(H2H_games) != 0) {
+    
+    H2H_temp <- tibble(
+      full_name = arrangements[arrangements != "Final"],
+      score = H2H_games
+    ) %>%
+      mutate(game = rep(1:(nrow(.)/2), each = 2)) %>%
+      spread(key = game, value = score) 
+    
+    H2H_stats <- tibble(
+      full_name = H2H_temp$full_name,
+      wins = c(
+        sum(H2H_temp[1, 2:ncol(H2H_temp)] > H2H_temp[2, 2:ncol(H2H_temp)]),
+        sum(H2H_temp[1, 2:ncol(H2H_temp)] < H2H_temp[2, 2:ncol(H2H_temp)])    
+      )
+    )
     
     H2H_stats <- H2H_stats %>%
-      as_tibble(.) %>%
-      set_names(c("full_name", "wins")) %>%
       mutate(win_ratio = wins/sum(wins)) %>%
       mutate(full_name = str_remove(full_name, "[.]")) %>%
       right_join(., team_names, by = "full_name") %>%
@@ -471,6 +489,10 @@ all_team_pages <- pmap(list(all_data$team, all_data$year), ~grab_page_and_games_
 all_winners <- map(2006:2019, function(year) read_html(paste("https://www.hockey-reference.com/playoffs/NHL_",year, ".html", sep = "")))
 give_winners <- pmap_chr(list(template$Year, template$Team1, template$Team2, template$Highest.Seed), ~get_winner(pages = all_winners, ..1, ..4, ..2, ..3))
 
+test_that("Winners do not match correct values.", {
+  expect_equal(readRDS("tests/test_data/winners.rds"), give_winners)
+})
+
 rm(all_winners)
 
 final <- tibble(weighted_goalie_save_percentage = map_dbl(all_team_pages, calculate_goalie_stats, return_goalie_save_percentage = TRUE),
@@ -479,12 +501,25 @@ final <- tibble(weighted_goalie_save_percentage = map_dbl(all_team_pages, calcul
             bind_cols(all_data, .) %>%
             mutate(player_points = ifelse(year == 2013, player_points/48, player_points/82))
 
+test_that('Final df does not match historical values.', {
+  expect_equivalent(readRDS("tests/test_data/final.rds"), final[1:422, ])
+})
+
 records_over_time <- map_df(all_team_pages, calculate_record_over_time) %>%
                   bind_cols(team = all_data$team, .) %>%
                   mutate(sd_record = pmap_dbl(list(.$q1_record, .$q2_record, .$q3_record, .$q4_record), ~sd(c(..1, ..2, ..3, ..4, na.rm = TRUE))))
 
+test_that("Records over time do not match historical values.", {
+  expect_equivalent(readRDS("tests/test_data/records_over_time.rds"), records_over_time[1:422, ])
+  expect_true(!any(records_over_time[3:7] > 1))
+})
+
 all_H2H_pages <- pmap(list(template$Year, template$Team1, template$Team2, template$Round, template$Conference), ~grab_page_of_matchup(..1, ..2, ..3, ..4, ..5))
 give_H2H <- tibble(H2H = pmap_dbl(list(template$Highest.Seed, all_H2H_pages), ~calculate_H2H(..2, ..1, process = TRUE)))
+
+test_that("H2H page does not match historically calculated values.", {
+  expect_equivalent(readRDS("tests/test_data/H2H.rds"), give_H2H[1:210, ])
+})
 
 rm(all_data, all_H2H_pages, all_team_pages)
 gc()

@@ -15,7 +15,7 @@ all_data <- read_csv("data/processed/2006-2019_hockey-reference_other.csv") %>%
   bind_cols(read_csv("data/processed/2006-2019_puck-on-net_last20.csv")) %>%
   bind_cols(read_csv("data/processed/2006-2019_oddsportal.csv")) %>%
   bind_cols(read_csv("data/processed/2008-2019_evolving-hockey_WAR.csv")) %>%
-  bind_cols(read_csv("data/processed/2008-2019_naturalstattrick_time-related.csv")) %>%
+ # bind_cols(read_csv("data/processed/2008-2019_naturalstattrick_time-related.csv")) %>%
   mutate(result_factor = as.factor(result_factor)) %>%
   filter(!is.na(result_factor)) %>%
   select(-series) %>%
@@ -60,7 +60,7 @@ summary_stats <- all_data %>%
 
 rm(kurt)
 
-#..........................Global Envrionment..............................................................#
+#..........................Global........................................#
 set.seed(40689)
 all_seeds <- sample(1:1000000000, 42, replace = FALSE)
 

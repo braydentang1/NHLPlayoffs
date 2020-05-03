@@ -1,6 +1,7 @@
 library(tidyverse)
 library(lubridate)
 library(rvest)
+library(testthat)
 
 template <- read_csv("src/scraping/templates/template.csv") %>%
               mutate(Team1 = ifelse(Team1 == "St Louis Blues", "St. Louis Blues", Team1)) %>%
@@ -197,28 +198,28 @@ get_data_playoffs <- function(year_of_play, elo_end_of_regularseason, round_end_
     home = home[1:length(home_score)], 
     goals_visitor = visitor_score,
     goals_home = home_score) %>%
-  mutate(outcome_home = ifelse(goals_home > goals_visitor, 1,0))
+    mutate(outcome_home = ifelse(goals_home > goals_visitor, 1,0))
   
   end_dates <- round_end_dates %>% filter(Year == year_of_play)
   
   if (nrow(end_dates) == 1) {
     
-  semis <- max(which(all_data$date <= end_dates$End[1]))
-  finals <- NULL
-  scf <- NULL
-  
+    semis <- max(which(all_data$date <= end_dates$End[1]))
+    finals <- NULL
+    scf <- NULL
+    
   } else if (nrow(end_dates) == 2) {
     
-  semis <- max(which(all_data$date <= end_dates$End[1]))
-  finals <- max(which(all_data$date <= end_dates$End[2]))
-  scf <- NULL
-  
+    semis <- max(which(all_data$date <= end_dates$End[1]))
+    finals <- max(which(all_data$date <= end_dates$End[2]))
+    scf <- NULL
+    
   } else {
     
-  semis <- max(which(all_data$date <= end_dates$End[1]))
-  finals <- max(which(all_data$date <= end_dates$End[2]))
-  scf <- max(which(all_data$date <= end_dates$End[3])) 
-  
+    semis <- max(which(all_data$date <= end_dates$End[1]))
+    finals <- max(which(all_data$date <= end_dates$End[2]))
+    scf <- max(which(all_data$date <= end_dates$End[3])) 
+    
   }
   
   elo_ratings_playoffs <- vector("list", 3)
@@ -273,7 +274,7 @@ process_data <- function(team1, team2, highest_seed, data, year_of_play) {
   data <- data %>% filter(., year == year_of_play)
   
   team_elo <- c(data$elo_rating[which(data$team == team1)], data$elo_rating[which(data$team == team2)])
-
+  
   as.numeric(team_elo[which(c(team1, team2) == highest_seed)] - team_elo[which(c(team1, team2) != highest_seed)]) 
   
 }
@@ -314,13 +315,19 @@ process_data_playoffs <- function(team1, team2, highest_seed, data, year_of_play
     data <- data %>% filter(., year == year_of_play, up_to_start_of_round == "stanley-cup")
     team_elo <- c(data$elo_rating[which(data$team == team1)], data$elo_rating[which(data$team == team2)])
     as.numeric(team_elo[which(c(team1, team2) == highest_seed)] - team_elo[which(c(team1, team2) != highest_seed)]) 
-  
-    }
+    
+  }
 }
 
 final <- tibble(elo_rating = pmap_dbl(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = data, ..4))) %>%
   bind_cols(., tibble(elo_rating_q4 = pmap_dbl(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = data_delay, ..4)))) %>%
   bind_cols(., tibble(elo_rating_playoffs = pmap_dbl(list(template$Team1, template$Team2, template$Highest.Seed, template$Year, template$Round), ~process_data_playoffs(..1, ..2, ..3, data = data_playoffs, ..4, ..5)))) %>%
   mutate(elo_rating_playoffs = ifelse(is.na(elo_rating_playoffs), elo_rating, elo_rating_playoffs))
+
+# Test to ensure that the ELO Calculator produces values consistent with 
+# what was calculated in the past.
+test_that("First 210 rows of ELO Calculate do not match historical data.", {
+  expect_equivalent(readRDS("tests/test_data/elo.rds"), final[1:210, ])
+})
 
 write_csv(final, "data/processed/2006-2019_elo-ratings.csv")

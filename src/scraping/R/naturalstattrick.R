@@ -1,5 +1,6 @@
 library(tidyverse)
 library(rvest)
+library(testthat)
 
 template <- read_csv("src/scraping/templates/template.csv")
                 
@@ -35,12 +36,12 @@ get_data_nst <- function(year) {
           as.numeric(.) 
   
   hdcf <- main_page %>%
-          html_nodes("td:nth-child(34)") %>%
+          html_nodes("td:nth-child(37)") %>%
           html_text(.) %>%
           as.numeric(.)
   
   hdca <- main_page %>% 
-          html_nodes("td:nth-child(35)") %>%
+          html_nodes("td:nth-child(38)") %>%
           html_text(.) %>%
           as.numeric(.)
   
@@ -102,6 +103,11 @@ process_data <- function(team1, team2, highest_seed, year_of_play, data, start_c
 
 
 all_data <- map_df(2008:2019, get_data_nst)
+
+test_that("Data scraped does not match past data.", {
+  expect_equivalent(readRDS("tests/test_data/nst.rds"), all_data[1:362, ])
+})
+
 write_csv(all_data, "data/raw/2008-2019_naturalstattrick_raw.csv")
 
 final <- pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, ..4, data = all_data)) %>%

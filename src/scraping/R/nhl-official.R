@@ -1,6 +1,7 @@
 library(tidyverse)
 library(rvest)
 library(RSelenium)
+library(testthat)
 
 template <- read_csv("src/scraping/templates/template.csv")
 
@@ -42,18 +43,20 @@ get_data_nhl_hitsandblocks <- function(year) {
   #' @export
   #'
   
-  rem_dr$navigate(paste(
-    "http://www.nhl.com/stats/team?report=realtime&reportType=season&seasonFrom=", 
-    year - 1, 
+  rem_dr$navigate(paste0(
+    "http://www.nhl.com/stats/teams?report=realtime&reportType=season&seasonFrom=",
+    year - 1,
     year, 
-    "&seasonTo=", 
-    year - 1, 
+    "&seasonTo=",
+    year - 1,
     year, 
-    "&gameType=2&filter=gamesPlayed,gte,1&sort=hits",
-    sep = ""))
+    "&gameType=2&filter=gamesPlayed,gte,1&sort=gamesPlayed&page=0&pageSize=50"
+  ))
+  
+  Sys.sleep(10)
   
   main_page <- read_html(rem_dr$getPageSource()[[1]])
-  
+
   team_name <- main_page %>%
     html_nodes(".rt-td:nth-child(2)") %>%
     html_text(.) %>%
@@ -61,22 +64,17 @@ get_data_nhl_hitsandblocks <- function(year) {
     gsub("\\.", "",.) 
   
   hits <- main_page %>%
-    html_nodes(".rt-td:nth-child(10)") %>%
+    html_nodes(".rt-td:nth-child(8)") %>%
     html_text(.) %>%
     as.numeric(.) 
   
   blocks <- main_page %>%
-    html_nodes(".rt-td:nth-child(11)") %>%
-    html_text(.) %>%
-    as.numeric(.) 
-  
-  faceoff_win_percentage <- main_page %>%
-    html_nodes(".rt-td:nth-child(18)") %>%
+    html_nodes(".rt-td:nth-child(10)") %>%
     html_text(.) %>%
     as.numeric(.) 
   
   give_aways <- main_page %>%
-    html_nodes(".rt-td:nth-child(13)") %>%
+    html_nodes(".rt-td:nth-child(12)") %>%
     html_text(.) %>%
     as.numeric(.) 
   
@@ -86,16 +84,31 @@ get_data_nhl_hitsandblocks <- function(year) {
     as.numeric(.)
   
   if (year == 2013) {
-    hits <- hits / 48
-    blocks <- blocks / 48
     give_aways <- give_aways / 48
     take_aways <- take_aways / 48
   } else {
-    hits <- hits / 82
-    blocks <- blocks / 82
     give_aways <- give_aways / 82
     take_aways <- take_aways / 82
   }
+  
+  rem_dr$navigate(paste0(
+    "http://www.nhl.com/stats/teams?report=faceoffwins&reportType=season&seasonFrom=",
+    year - 1,
+    year, 
+    "&seasonTo=",
+    year - 1,
+    year, 
+    "&gameType=2&filter=gamesPlayed,gte,1&sort=gamesPlayed&page=0&pageSize=50"
+  ))
+  
+  Sys.sleep(10)
+  
+  main_page <- read_html(rem_dr$getPageSource()[[1]])
+  
+  faceoff_win_percentage <- main_page %>%
+    html_nodes(".rt-td:nth-child(8)") %>%
+    html_text(.) %>%
+    as.numeric(.)
   
   tibble(
     year = rep(year, length(team_name)), 
@@ -122,63 +135,67 @@ get_data_nhl_leading_and_trailing <- function(year) {
   #' @export
   #'
   
-  rem_dr$navigate(paste(
-    "http://www.nhl.com/stats/team?report=leadingtrailing&reportType=season&seasonFrom=",
+  rem_dr$navigate(paste0(
+    "http://www.nhl.com/stats/teams?report=leadingtrailing&reportType=season&seasonFrom=",
     year - 1, 
-    year,
+    year, 
     "&seasonTo=",
-    year - 1,
-    year,
-    "&gameType=2&filter=gamesPlayed,gte,1&sort=winsAfterLead1p", 
-    sep = ""))
+    year - 1, 
+    year, 
+    "&gameType=2&filter=gamesPlayed,gte,1&sort=winsLeadPeriod1&page=0&pageSize=50"
+  ))
   
-  main_page <- read_html(rem_dr$getPageSource()[[1]])
+  Sys.sleep(10)
   
-  main_page <- read_html(rem_dr$getPageSource()[[1]])
+    main_page <- read_html(rem_dr$getPageSource()[[1]])
   
-  team_name <- main_page %>%
-    html_nodes(".rt-td:nth-child(2)") %>%
-    html_text(.) %>%
-    gsub("é", "e",.) %>%
-    gsub("\\.", "",.) 
-  
-  win_percent_lead_1P <- main_page %>%
-    html_nodes(".rt-td:nth-child(13)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  win_percent_lead_2P <- main_page %>%
-    html_nodes(".rt-td:nth-child(17)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  win_percent_trail_1P <- main_page %>%
-    html_nodes(".rt-td:nth-child(21)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  win_percent_trail_2P <- main_page %>%
-    html_nodes(".rt-td:nth-child(25)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  ot_losses_lead_1P <- main_page %>%
-    html_nodes(".rt-td:nth-child(12)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  ot_losses_lead_2P <- main_page %>%
-    html_nodes(".rt-td:nth-child(16)") %>%
-    html_text(.) %>%
-    as.numeric(.)
-  
-  if (year == 2013) {
-    ot_losses_lead_1P <- ot_losses_lead_1P / 48
-    ot_losses_lead_2P <- ot_losses_lead_2P / 48
-  } else {
-    ot_losses_lead_1P <- ot_losses_lead_1P / 82
-    ot_losses_lead_2P <- ot_losses_lead_2P / 82
-  }
+    team_name <- main_page %>%
+        html_nodes(".rt-td:nth-child(2)") %>%
+        html_text(.) %>%
+        gsub("é", "e",.) %>%
+        gsub("\\.", "",.) 
+      
+    win_percent_lead_1P <- main_page %>%
+        html_nodes(".rt-td:nth-child(14)") %>%
+        html_text(.) %>%
+        as.numeric(.)
+      
+    win_percent_lead_2P <- main_page %>%
+        html_nodes(".rt-td:nth-child(19)") %>%
+        html_text(.) %>%
+        as.numeric(.)
+      
+    win_percent_trail_1P <- main_page %>%
+        html_nodes(".rt-td:nth-child(24)") %>%
+        html_text(.) %>%
+        as.numeric(.)
+      
+    win_percent_trail_2P <- main_page %>%
+          html_nodes(".rt-td:nth-child(29)") %>%
+          html_text(.) %>%
+          as.numeric(.)
+      
+    stuff <- main_page %>%
+        html_nodes(".rt-td") %>%
+        html_text(.) 
+    
+    ot_losses_lead_1P <- main_page %>%
+      html_nodes(".rt-td:nth-child(13)") %>%
+      html_text(.) %>%
+      as.numeric(.)
+    
+    ot_losses_lead_2P <- main_page %>%
+      html_nodes(".rt-td:nth-child(18)") %>%
+      html_text(.) %>%
+      as.numeric(.)
+    
+    if (year == 2013) {
+      ot_losses_lead_1P <- ot_losses_lead_1P / 48
+      ot_losses_lead_2P <- ot_losses_lead_2P / 48
+    } else {
+      ot_losses_lead_1P <- ot_losses_lead_1P / 82
+      ot_losses_lead_2P <- ot_losses_lead_2P / 82
+    }
   
   tibble(year = rep(year, length(team_name)),
          team = team_name,
@@ -250,6 +267,10 @@ process_data <- function(team1, team2, highest_seed, year_of_play, data, start_c
 all_data <- map_df(2006:2019, get_data_nhl_hitsandblocks) %>% 
   left_join(., map_df(2006:2019, get_data_nhl_leading_and_trailing), by = c("year", "team")) %>%
   write_csv(., "data/raw/2006-2019_nhl-official_raw.csv")
+
+test_that("Data scraped does not match historical values.", {
+  expect_equivalent(readRDS("tests/test_data/nhl_official.rds"), all_data[1:422, ])
+})
 
 final <- pmap_dfr(list(template$Year, template$Team1, template$Team2, template$Highest.Seed), ~process_data(..2, ..3, ..4, ..1, data = all_data))
 write_csv(final, "data/processed/2006-2019_nhl-official.csv")
