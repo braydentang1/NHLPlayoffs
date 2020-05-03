@@ -133,7 +133,9 @@ process_data <- function(team1, team2, highest_seed, year_of_play, data, start_c
   team_vec
   
 }
+
 final <- pmap_dfr(list(template$Team1, template$Team2, template$Highest.Seed, template$Year), ~process_data(..1, ..2, ..3, data = all_combined, ..4)) %>%
-         select_if(~sum(!is.na(.)) > 0) 
+         select_if(~sum(!is.na(.)) > 0) %>%
+         select(-year)
   
 write_csv(final, "data/processed/2008-2019_corsica_game-score.csv")

@@ -103,37 +103,37 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_mode
   
   writeLines(paste("Finished Processing Data For Seed:", seed, "in Rep:", i))
   
-  best_param <- BayesianOptimization(FUN = function(alpha, lambda) {
-        
-    scores <- vector("numeric", length(all_processed_frames))
-                                   
-      for (m in 1:length(all_processed_frames)) {
-                                     
-        model <- bagged_model(
-          train = all_processed_frames[[m]]$train,
-          test = all_processed_frames[[m]]$test,
-          label_train = all_processed_frames[[m]]$train$result_factor, 
-          alpha = alpha,
-          s_lambda = as.integer(lambda),
-          times = times, 
-          calibrate = FALSE)
-        
-        scores[m] <- log_loss(scores = model$predictions, label = all_processed_frames[[m]]$test$result_factor)
-
-        rm(model)
-        
-      }
-        
-
-    list(Score = -mean(scores))
+      best_param <- bayesOpt(FUN = function(alpha, lambda) {
+            
+        scores <- vector("numeric", length(all_processed_frames))
+                                       
+          for (m in 1:length(all_processed_frames)) {
+                                         
+            model <- bagged_model(
+              train = all_processed_frames[[m]]$train,
+              test = all_processed_frames[[m]]$test,
+              label_train = all_processed_frames[[m]]$train$result_factor, 
+              alpha = alpha,
+              s_lambda = as.integer(lambda),
+              times = times, 
+              calibrate = FALSE)
+            
+            scores[m] <- log_loss(scores = model$predictions, label = all_processed_frames[[m]]$test$result_factor)
     
-    }
-    , bounds = list(alpha = c(0, 1), lambda = c(15L, 100L)), parallel = FALSE,
-                                   initPoints = 4, nIters = n_iters, convThresh = 100, verbose = 1)
+            rm(model)
+            
+          }
+            
+    
+        list(Score = -mean(scores))
+        
+        }
+        , bounds = list(alpha = c(0, 1), lambda = c(15L, 100L)), parallel = FALSE,
+                                       initPoints = 3, iters.n = n_iters, convThresh = 100, verbose = 1)
   
   writeLines(paste("Store Final Parameters For Seed:", seed, "in Rep:", i))
-  final_parameters[[i]] <- tibble(alpha = best_param$ScoreDT$alpha[which.max(best_param$ScoreDT$Score)],
-                                  lambda = as.integer(best_param$ScoreDT$lambda[which.max(best_param$ScoreDT$Score)]))
+  final_parameters[[i]] <- tibble(alpha = best_param$scoreSummary$alpha[which.max(best_param$scoreSummary$Score)],
+                                  lambda = as.integer(best_param$scoreSummary$lambda[which.max(best_param$scoreSummary$Score)]))
 
   rm(inner_folds_temp, all_processed_frames, best_param)
   gc()
@@ -146,23 +146,23 @@ give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_mode
   writeLines(paste("Bind Rows for Seed:", seed))
   final_parameters <- bind_rows(final_parameters)
   
-  writeLines(paste("Score the Test Set for Seed:", seed))
-  processed_data <- process_folds(fold_index = all_folds[[1]], main_train = all_data, use_only_variables = use_only_variables)
-  final_test_set_score <- train_ensemble(folds = all_folds, 
-                                         times = times,
-                                         final_parameters = final_parameters, 
-                                         processed_data = processed_data, 
-                                         label_test = all_data$result_factor[-all_folds[[1]]])
-  
-  writeLines(paste("Log Loss Test Set:", final_test_set_score$log_loss, sep = " "))
-  
-  list(log_loss = final_test_set_score$log_loss, var_imp = final_test_set_score$var_imp)
+    writeLines(paste("Score the Test Set for Seed:", seed))
+    processed_data <- process_folds(fold_index = all_folds[[1]], main_train = all_data, use_only_variables = use_only_variables)
+    final_test_set_score <- train_ensemble(folds = all_folds, 
+                                           times = times,
+                                           final_parameters = final_parameters, 
+                                           processed_data = processed_data, 
+                                           label_test = all_data$result_factor[-all_folds[[1]]])
+    
+    writeLines(paste("Log Loss Test Set:", final_test_set_score$log_loss, sep = " "))
+    
+    list(log_loss = final_test_set_score$log_loss, var_imp = final_test_set_score$var_imp)
   #finalTestSet.Score$LogLoss
   
 }
 
 results <- mclapply(X = all_seeds, FUN = give_results, all_data = all_data, use_only_variables = c("h2h", "weighted_gps", "q2_record", "powerplay_oppurtunities", "penaltykill_percentage", "vegas_odds", "toi_percent_qot_mean"),
-                   p = 0.8, k = 3, times = 20, num_of_models = 5, mc.cores = 6, mc.preschedule = FALSE)
+                   p = 0.8, k = 3, times = 20, num_of_models = 5, mc.cores = detectCores() - 2, mc.preschedule = FALSE)
 
 #results <- lapply(X = allSeeds, FUN = giveResults, allData = allData)
 
@@ -172,11 +172,3 @@ final_varimp <- process_varimp(var_imp_raw = map(results, function(x) x$var_imp)
 #...................................Paste the Results.........................................................#
 
 paste("Final LogLoss from Repeats: ", round(mean(final_log_loss), 5))
-
-#..............................................Graphing the log loss scores.........................#
-
-# graphingParameters <- tibble(log_loss = final_log_loss)
-# 
-# ggplot(data = graphingParameters, aes(graphingParameters$LogLoss), colour = "Hist") +
-#   geom_histogram(bins = 10, binwidth = 0.01, colour = "green", fill = "darkgrey") +
-#   labs(title = "40 Repeats of Nested Cross Validation; Using Data up To 2019 Round 3", x = "LogLoss", subtitle = "Bins = 10, Width = 0.01")
