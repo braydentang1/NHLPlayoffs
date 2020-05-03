@@ -62,9 +62,9 @@ rm(kurt)
 
 #..........................Global........................................#
 set.seed(40689)
-all_seeds <- sample(1:1000000000, 2, replace = FALSE)
+all_seeds <- sample(1:1000000000, 42, replace = FALSE)
 
-give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_models = 5, n_iters = 5, use_only_variables = NULL) {
+give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_models = 5, n_iters = 25, use_only_variables = NULL) {
   
   #' Runs the entire modelling pipeline from start to finish.
   #'
