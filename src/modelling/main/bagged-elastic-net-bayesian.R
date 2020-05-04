@@ -65,7 +65,7 @@ set.seed(40689)
 all_seeds <- sample(1:1000000000, 42, replace = FALSE)
 
 give_results <- function(seed, all_data, times = 20, p = 0.8, k = 3, num_of_models = 5, n_iters = 25, use_only_variables = NULL) {
-  
+      
   #' Runs the entire modelling pipeline from start to finish.
   #'
   #' @param seed an integer to determine data splitting
@@ -167,7 +167,7 @@ results <- mclapply(X = all_seeds, FUN = give_results, all_data = all_data, use_
 #                     p = 0.8, k = 3, times = 20, num_of_models = 5)
 
 final_log_loss <- map_dbl(results, function(x) x$log_loss)
-final_varimp <- process_varimp(var_imp_raw = map(results, function(x) x$var_imp) %>% reduce(left_join, by = "variable"))
+final_varimp <- process_var_imp(var_imp_raw = map(results, function(x) x$var_imp) %>% reduce(left_join, by = "variable"))
 
 #...................................Paste the Results.........................................................#
 
