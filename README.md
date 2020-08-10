@@ -3,7 +3,7 @@ A model that aims to predict the outcome of a NHL playoff series before the firs
 
 Sits at 0.65742 log loss using data from 2006 and onwards (if using Time Related Features, which are currently inaccessible due to a Natural Stat Trick bug), otherwise 0.67949 is the estimated performance.
 
-# Dependecies:
+# Dependencies:
 
 - glmnet
 - caret
